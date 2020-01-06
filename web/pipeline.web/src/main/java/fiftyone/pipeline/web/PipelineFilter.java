@@ -1,0 +1,123 @@
+/* *********************************************************************
+ * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+ * Copyright 2019 51 Degrees Mobile Experts Limited, 5 Charlotte Close,
+ * Caversham, Reading, Berkshire, United Kingdom RG4 7BY.
+ *
+ * This Original Work is licensed under the European Union Public Licence (EUPL) 
+ * v.1.2 and is subject to its terms as set out below.
+ *
+ * If a copy of the EUPL was not distributed with this file, You can obtain
+ * one at https://opensource.org/licenses/EUPL-1.2.
+ *
+ * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ * amended by the European Commission) shall be deemed incompatible for
+ * the purposes of the Work and the provisions of the compatibility
+ * clause in Article 5 of the EUPL shall not apply.
+ * 
+ * If using the Work as, or as part of, a network application, by 
+ * including the attribution notice(s) required under Article 5 of the EUPL
+ * in the end user terms of the application under an appropriate heading, 
+ * such notice(s) shall fulfill the requirements of that article.
+ * ********************************************************************* */
+
+package fiftyone.pipeline.web;
+
+import fiftyone.pipeline.core.configuration.PipelineOptions;
+import fiftyone.pipeline.core.flowelements.Pipeline;
+import fiftyone.pipeline.core.flowelements.PipelineBuilder;
+import fiftyone.pipeline.web.services.*;
+
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import java.io.File;
+import java.io.IOException;
+
+import static fiftyone.pipeline.web.Constants.DEFAULT_CLIENTSIDE_ENABLED;
+import static fiftyone.pipeline.web.Constants.DEFAULT_CONFIG_FILE;
+
+public class PipelineFilter implements Filter {
+    private Pipeline pipeline;
+
+    private WebRequestEvidenceServiceCore evidenceService;
+
+    private PipelineResultServiceCore resultService;
+
+    private FlowDataProviderCore flowDataProviderCore;
+
+    private ClientsidePropertyServiceCore clientsidePropertyServiceCore;
+
+    private FiftyOneJSServiceCore jsService;
+
+    FilterConfig config;
+
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+        this.config = filterConfig;
+        String configFileName = filterConfig.getInitParameter("config-file");
+        if (configFileName == null || configFileName.isEmpty()) {
+            configFileName = DEFAULT_CONFIG_FILE;
+        }
+        boolean clientsideEnabled;
+        String clientsideEnabledString = filterConfig.getInitParameter("clientside-properties-enabled");
+        if (clientsideEnabledString == null) {
+            clientsideEnabled = DEFAULT_CLIENTSIDE_ENABLED;
+        }
+        else {
+            clientsideEnabled = Boolean.parseBoolean(clientsideEnabledString);
+        }
+
+        File configFile = new File(config.getServletContext()
+            .getRealPath(configFileName));
+        PipelineBuilder builder = new PipelineBuilder();
+        try {
+            JAXBContext jaxbContext = JAXBContext.newInstance(PipelineOptions.class);
+            Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+            // Bind the configuration to a pipeline options instance
+            PipelineOptions options = (PipelineOptions) unmarshaller.unmarshal(configFile);
+            pipeline = builder.buildFromConfiguration(options);
+        } catch (JAXBException e) {
+            throw new ServletException(e);
+        } catch (Exception e) {
+            throw new ServletException(e);
+        }
+
+        evidenceService = new WebRequestEvidenceServiceCore.Default();
+        resultService = new PipelineResultServiceCore.Default(evidenceService, pipeline);
+        flowDataProviderCore = new FlowDataProviderCore.Default();
+        clientsidePropertyServiceCore = new ClientsidePropertyServiceCore.Default(
+            flowDataProviderCore,
+            pipeline);
+        jsService = new FiftyOneJSServiceCore.Default(
+            clientsidePropertyServiceCore,
+            clientsideEnabled);
+    }
+
+    @Override
+    public void doFilter(
+        ServletRequest request,
+        ServletResponse response,
+        FilterChain chain) throws IOException, ServletException {
+        // Populate the request properties and store against the
+        // HttpContext.
+        resultService.process((HttpServletRequest)request);
+
+        // If 51Degrees JavaScript is being requested then serve it.
+        // Otherwise continue down the filter Pipeline.
+        if (jsService.serveJS((HttpServletRequest)request, (HttpServletResponse) response) == false) {
+            chain.doFilter(request, response);//sends request to next resource
+        }
+    }
+
+    @Override
+    public void destroy() {
+        try {
+            pipeline.close();
+        } catch (Exception e) {
+            // Nothing to be done here as everything is closing anyway.
+        }
+    }
+}

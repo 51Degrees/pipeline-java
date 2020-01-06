@@ -1,0 +1,95 @@
+/* *********************************************************************
+ * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+ * Copyright 2019 51 Degrees Mobile Experts Limited, 5 Charlotte Close,
+ * Caversham, Reading, Berkshire, United Kingdom RG4 7BY.
+ *
+ * This Original Work is licensed under the European Union Public Licence (EUPL) 
+ * v.1.2 and is subject to its terms as set out below.
+ *
+ * If a copy of the EUPL was not distributed with this file, You can obtain
+ * one at https://opensource.org/licenses/EUPL-1.2.
+ *
+ * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ * amended by the European Commission) shall be deemed incompatible for
+ * the purposes of the Work and the provisions of the compatibility
+ * clause in Article 5 of the EUPL shall not apply.
+ * 
+ * If using the Work as, or as part of, a network application, by 
+ * including the attribution notice(s) required under Article 5 of the EUPL
+ * in the end user terms of the application under an appropriate heading, 
+ * such notice(s) shall fulfill the requirements of that article.
+ * ********************************************************************* */
+
+package fiftyone.pipeline.engines.fiftyone.flowelements;
+
+import fiftyone.pipeline.core.data.factories.ElementDataFactory;
+import fiftyone.pipeline.core.typed.TypedKey;
+import fiftyone.pipeline.core.typed.TypedKeyDefault;
+import fiftyone.pipeline.engines.data.AspectData;
+import fiftyone.pipeline.engines.fiftyone.data.*;
+import fiftyone.pipeline.engines.flowelements.OnPremiseAspectEngineBase;
+import fiftyone.pipeline.util.Types;
+import org.slf4j.Logger;
+
+public abstract class FiftyOneOnPremiseAspectEngineBase<
+    TData extends AspectData,
+    TProperty extends FiftyOneAspectPropertyMetaData>
+    extends OnPremiseAspectEngineBase<TData, TProperty>
+    implements FiftyOneAspectEngine<TData, TProperty> {
+
+    public FiftyOneOnPremiseAspectEngineBase(
+        Logger logger,
+        ElementDataFactory<TData> aspectDataFactory,
+        String tempDataFilePath) {
+        super(logger, aspectDataFactory, tempDataFilePath);
+    }
+
+
+    @Override
+    public TypedKey<TData> getTypedDataKey() {
+        if (typedKey == null) {
+            typedKey = new TypedKeyDefault<>(getElementDataKey(), Types.findSubClassParameterType(this, FiftyOneOnPremiseAspectEngineBase.class, 0));
+        }
+        return typedKey;
+    }
+
+    @Override
+    public abstract CloseableIterable<ProfileMetaData> getProfiles();
+
+    @Override
+    public ProfileMetaData getProfile(int profileId) {
+        for (ProfileMetaData profile : getProfiles()) {
+            if (profile.getProfileId() == profileId) {
+                return profile;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public abstract CloseableIterable<ComponentMetaData> getComponents();
+
+    @Override
+    public ComponentMetaData getComponent(String name) {
+        for (ComponentMetaData component : getComponents()) {
+            if (component.getName().equalsIgnoreCase(name)) {
+                return component;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public abstract CloseableIterable<ValueMetaData> getValues();
+
+    @Override
+    public ValueMetaData getValue(String propertyName, String valueName) {
+        for (ValueMetaData value : getValues()) {
+            if (value.getProperty().getName().equalsIgnoreCase(propertyName) &&
+                value.getName().equalsIgnoreCase(valueName)) {
+                return value;
+            }
+        }
+        return null;
+    }
+}
