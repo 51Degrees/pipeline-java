@@ -47,6 +47,11 @@ stages:
         targetType: 'inline'
         script: 'echo $(gpg_passphrase) | gpg --import --batch --yes --passphrase-fd 0 "$(CodeSigningCert.secureFilePath)"'
 
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: 'cp $(stagingsettings.secureFilePath) /tmp/settings.xml'
+
     - task: Maven@2
       displayName: 'Maven version set'
       inputs:
@@ -69,11 +74,27 @@ stages:
         artifactsFeeds: 'pipeline-insider'
 
     - task: Maven@1
-      displayName: 'Maven deploy'
+      displayName: 'Maven deploy internal'
       inputs:
         mavenPomFile: 'pom.xml'
         goals: deploy
         options: '-Pbuild -Dhttps.protocols=TLSv1.2 -Dbuildversion=$(GitVersion.SemVer) -Dfetchrepository.id=$(fetchrepository.id) -Dfetchrepository.url=$(fetchrepository.url) -Dpublishrepository.id=$(publishrepository.id) -Dpublishrepository.url=$(publishrepository.url) -Dgpg.passphrase=$(gpg_passphrase)'
+        publishJUnitResults: false
+        javaHomeOption: Path
+        jdkDirectory: '/usr/lib/jvm/java-7-openjdk-amd64/'
+
+    - task: DownloadSecureFile@1
+      displayName: 'Download Staging settings.xml'
+      name: stagingsettings
+      inputs:
+        secureFile: 'stagingsettings.xml'
+
+    - task: Maven@1
+      displayName: 'Maven deploy staging'
+      inputs:
+        mavenPomFile: 'pom.xml'
+        goals: deploy
+        options: '-Pbuild -Dhttps.protocols=TLSv1.2 -Dbuildversion=$(GitVersion.SemVer) -Dfetchrepository.id=$(fetchrepository.id) -Dfetchrepository.url=$(fetchrepository.url) -Dgpg.passphrase=$(gpg_passphrase)'
         publishJUnitResults: false
         javaHomeOption: Path
         jdkDirectory: '/usr/lib/jvm/java-7-openjdk-amd64/'
