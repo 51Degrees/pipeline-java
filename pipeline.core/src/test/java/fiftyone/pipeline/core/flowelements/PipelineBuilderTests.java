@@ -28,10 +28,13 @@ import fiftyone.pipeline.core.configuration.ElementOptions;
 import fiftyone.pipeline.core.configuration.PipelineOptions;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
+import fiftyone.pipeline.core.services.PipelineService;
+import fiftyone.pipeline.core.testclasses.flowelements.ElementRequiringService;
 import fiftyone.pipeline.core.testclasses.flowelements.ListSplitterElement;
 import fiftyone.pipeline.core.testclasses.data.ListSplitterElementData;
 import fiftyone.pipeline.core.testclasses.flowelements.MultiplyByElement;
 import fiftyone.pipeline.core.testclasses.data.TestElementData;
+import fiftyone.pipeline.core.testclasses.services.TestService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,6 +45,7 @@ import static fiftyone.common.testhelpers.ClassPath.addToClassPath;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class PipelineBuilderTests {
@@ -267,6 +271,54 @@ public class PipelineBuilderTests {
         maxErrors = 1;
 
         VerifyListSplitterElementPipeline(opts, SplitOption.Comma);
+    }
+
+    @Test
+    public void PipelineBuilder_BuildFromConfiguration_ServiceConstructor() throws Exception {
+        // Create the configuration object.
+        PipelineOptions opts = new PipelineOptions();
+        ElementOptions elOpts = new ElementOptions();
+        elOpts.builderName = "ElementRequiringService";
+        opts.elements.add(elOpts);
+
+        TestService service = new TestService();
+
+        builder.addService(service);
+        Pipeline pipeline = builder.buildFromConfiguration(opts);
+
+        assertEquals(
+            service,
+            pipeline.getElement(ElementRequiringService.class).getService());
+    }
+
+    @Test(expected = PipelineConfigurationException.class)
+    public void PipelineBuilder_BuildFromConfiguration_MissingService() throws Exception {
+        // Create the configuration object.
+        PipelineOptions opts = new PipelineOptions();
+        ElementOptions elOpts = new ElementOptions();
+        elOpts.builderName = "ElementRequiringService";
+        opts.elements.add(elOpts);
+
+        maxErrors = 1;
+        Pipeline pipeline = builder.buildFromConfiguration(opts);
+    }
+
+    public class WrongService implements PipelineService {}
+
+    @Test(expected = PipelineConfigurationException.class)
+    public void PipelineBuilder_BuildFromConfiguration_WrongService() throws Exception {
+        // Create the configuration object.
+        PipelineOptions opts = new PipelineOptions();
+        ElementOptions elOpts = new ElementOptions();
+        elOpts.builderName = "ElementRequiringService";
+        opts.elements.add(elOpts);
+
+        WrongService service = new WrongService();
+        builder.addService(service);
+
+        maxErrors = 1;
+
+        Pipeline pipeline = builder.buildFromConfiguration(opts);
     }
 
     @Test

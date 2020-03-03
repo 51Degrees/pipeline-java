@@ -22,6 +22,7 @@
 
 package fiftyone.pipeline.engines.services;
 
+import fiftyone.pipeline.core.services.PipelineService;
 import fiftyone.pipeline.engines.data.AspectEngineDataFile;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 import fiftyone.pipeline.engines.flowelements.OnPremiseAspectEngine;
@@ -35,7 +36,7 @@ import java.io.Closeable;
  * the data files will all be downloaded and updated automatically for engines
  * that register themselves with the service.
  */
-public interface DataUpdateService extends Closeable {
+public interface DataUpdateService extends Closeable, PipelineService {
 
     /**
      * Check for an available download of a new data file, or a local data file

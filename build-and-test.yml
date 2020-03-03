@@ -13,8 +13,7 @@ stages:
   jobs:
   - job: Build
     pool:
-      name: Default
-      demands: msbuild
+      vmImage: 'windows-latest'
 
     steps:
 
@@ -29,8 +28,8 @@ stages:
         mavenPomFile: 'pom.xml'
         goals: 'clean test'
         options: '-Dhttps.protocols=TLSv1.2 -DfailIfNoTests=false -DXmx2048m'
-        javaHomeOption: Path
-        jdkDirectory: 'C:\\Program Files\\Java\\jdk1.7.0_80'
+        jdkVersionOption: '1.7'
+        testRunTitle: 'Windows'
 
     - task: CopyFiles@2
       displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
@@ -49,7 +48,7 @@ stages:
   jobs:
   - job: Build
     pool:
-      vmImage: 'macOS-10.14'
+      vmImage: 'macOS-latest'
 
     steps:
 
@@ -62,7 +61,9 @@ stages:
       inputs:
         mavenPomFile: 'pom.xml'
         goals: 'clean test'
-        options: '-Dhttps.protocols=TLSv1.2 -DfailIfNoTests=false'
+        options: '-Dhttps.protocols=TLSv1.2 -DfailIfNoTests=false -DXmx2048m'
+        jdkVersionOption: '1.7'
+        testRunTitle: 'Mac'
 
     - task: CopyFiles@2
       displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
@@ -81,8 +82,7 @@ stages:
   jobs:
   - job: Build
     pool:
-      name: Linux
-      demands: maven
+      vmImage: 'ubuntu-latest'
 
     steps:
 
@@ -95,9 +95,9 @@ stages:
       inputs:
         mavenPomFile: 'pom.xml'
         goals: 'clean test'
-        options: '-Dhttps.protocols=TLSv1.2 -DfailIfNoTests=false'
-        javaHomeOption: Path
-        jdkDirectory: '/usr/lib/jvm/java-7-openjdk-amd64'
+        options: '-Dhttps.protocols=TLSv1.2 -DfailIfNoTests=false -DXmx2048m'
+        jdkVersionOption: '1.7'
+        testRunTitle: 'Linux'
 
     - task: CopyFiles@2
       displayName: 'Copy Files to: $(build.artifactstagingdirectory)'

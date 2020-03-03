@@ -22,6 +22,7 @@
 
 package fiftyone.pipeline.engines.services;
 
+import fiftyone.pipeline.core.services.PipelineService;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 
@@ -31,7 +32,7 @@ import java.util.List;
  * Service used by {@link AspectEngine}s to report the reason for a property
  * not being present in the results.
  */
-public interface MissingPropertyService {
+public interface MissingPropertyService extends PipelineService {
 
     /**
      * Get the reason for the property not being found. If the property can be

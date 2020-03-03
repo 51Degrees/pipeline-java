@@ -25,7 +25,11 @@ package fiftyone.pipeline.web;
 import fiftyone.pipeline.core.configuration.PipelineOptions;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.flowelements.PipelineBuilder;
+import fiftyone.pipeline.engines.services.DataUpdateService;
+import fiftyone.pipeline.engines.services.DataUpdateServiceDefault;
+import fiftyone.pipeline.engines.services.HttpClientDefault;
 import fiftyone.pipeline.web.services.*;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
@@ -72,7 +76,11 @@ public class PipelineFilter implements Filter {
 
         File configFile = new File(config.getServletContext()
             .getRealPath(configFileName));
-        PipelineBuilder builder = new PipelineBuilder();
+        PipelineBuilder builder = new PipelineBuilder()
+            .addService(new DataUpdateServiceDefault(
+                LoggerFactory.getLogger(DataUpdateService.class.getSimpleName()),
+                new HttpClientDefault()));
+
         try {
             JAXBContext jaxbContext = JAXBContext.newInstance(PipelineOptions.class);
             Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
