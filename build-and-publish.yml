@@ -106,7 +106,6 @@ stages:
       inputs:
         tagUser: 'Azure DevOps'
         tagEmail: 'CIUser@51Degrees.com'
-        tag: 'v$(GitVersion.SemVer)'
       # Only create the tag if we also published a package as defined in
       # the previous task.
       condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/master'), or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), or(startsWith(variables['Build.SourceBranch'], 'refs/heads/release/'), eq('true', variables['ForcePushMaven'])))))

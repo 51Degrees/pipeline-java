@@ -24,41 +24,29 @@ package pipeline.developerexamples.cloudengine.flowelements;
 
 import pipeline.developerexamples.cloudengine.data.StarSignData;
 import fiftyone.pipeline.cloudrequestengine.data.CloudRequestData;
+import fiftyone.pipeline.cloudrequestengine.flowelements.CloudAspectEngineBase;
 import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngine;
-import fiftyone.pipeline.core.data.AccessiblePropertyMetaData;
 import fiftyone.pipeline.core.data.EvidenceKeyFilter;
 import fiftyone.pipeline.core.data.EvidenceKeyFilterWhitelist;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
-import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
-import fiftyone.pipeline.engines.data.AspectPropertyMetaDataDefault;
-import fiftyone.pipeline.engines.flowelements.CloudAspectEngineBase;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 //! [class]
 //! [constructor]
-public class SimpleCloudEngine extends CloudAspectEngineBase<StarSignData, AspectPropertyMetaData> {
+public class SimpleCloudEngine extends CloudAspectEngineBase<StarSignData> {
     private List<AspectPropertyMetaData> aspectProperties;
     private String dataSourceTier;
-    private CloudRequestEngine engine;
 
     public SimpleCloudEngine(
         Logger logger,
-        ElementDataFactory<StarSignData> dataFactory,
-        CloudRequestEngine engine) {
+        ElementDataFactory<StarSignData> dataFactory) {
         super(logger, dataFactory);
-        this.engine = engine;
-        if (this.engine != null) {
-            if (loadAspectProperties(engine) == false) {
-                logger.error("Failed to load aspect properties");
-            }
-        }
     }
 //! [constructor]
 
@@ -93,65 +81,24 @@ public class SimpleCloudEngine extends CloudAspectEngineBase<StarSignData, Aspec
         StarSignDataInternal starSignData = (StarSignDataInternal)aspectData;
 
         if (checkedForCloudEngine == false) {
-            cloudRequestEngine = data.getPipeline().getElement(CloudRequestEngine.class);
+            cloudRequestEngine = getRequestEngine().getInstance();
             checkedForCloudEngine = true;
         }
 
-        if (cloudRequestEngine == null) {
-            throw new PipelineConfigurationException(
-                "The '" + getClass().getName() + "' requires a " +
-                    "'CloudRequestEngine' before it in the Pipeline. This " +
-                    "engine will be unable to produce results until this is " +
-                    "corrected.");
-        }
-        else {
-            CloudRequestData requestData = data.getFromElement(cloudRequestEngine);
-            String json = "";
-            json = requestData.getJsonResponse();
+        CloudRequestData requestData = data.getFromElement(cloudRequestEngine);
+        String json = "";
+        json = requestData.getJsonResponse();
 
-            // Extract data from json to the aspectData instance.
-            JSONObject jsonObj = new JSONObject(json);
-            JSONObject deviceObj = jsonObj.getJSONObject("starsign");
+        // Extract data from json to the aspectData instance.
+        JSONObject jsonObj = new JSONObject(json);
+        JSONObject deviceObj = jsonObj.getJSONObject("starsign");
 
-            starSignData.setStarSign(deviceObj.getString("starsign"));
-        }
+        starSignData.setStarSign(deviceObj.getString("starsign"));
     }
 
     @Override
     protected void unmanagedResourcesCleanup() {
         // Nothing to clean up here.
     }
-
-//! [loadaspectproperties]
-    private boolean loadAspectProperties(CloudRequestEngine engine) {
-        Map<String, AccessiblePropertyMetaData.ProductMetaData> map =
-            engine.getPublicProperties();
-
-        if (map != null &&
-            map.size() > 0 &&
-            map.containsKey(getElementDataKey())) {
-            aspectProperties = new ArrayList<>();
-            dataSourceTier = map.get(getElementDataKey()).dataTier;
-
-            for (AccessiblePropertyMetaData.PropertyMetaData item :
-                map.get(getElementDataKey()).properties) {
-                AspectPropertyMetaData property = new AspectPropertyMetaDataDefault(
-                    item.name,
-                    this,
-                    item.category,
-                    item.getPropertyType(),
-                    new ArrayList<String>(),
-                    true);
-                aspectProperties.add(property);
-            }
-            return true;
-        }
-        else {
-            logger.error("Aspect properties could not be loaded for" +
-                " the cloud engine", this);
-            return false;
-        }
-    }
-//! [loadaspectproperties]
 }
 //! [class]
