@@ -15,14 +15,12 @@ stages:
   jobs:
   - job: Build
     pool:
-      name: Linux
-      demands: maven
+      vmImage: 'ubuntu-latest'
 
     steps:
-
     - checkout: self
       submodules: recursive
-      lfs: true
+      lfs: false
       # The line below are needed to allow the pipeline access to the
       # OAuth access token that controls write access to the git repository.
       # (Required for GitTag task)
@@ -67,8 +65,7 @@ stages:
         mavenPomFile: 'pom.xml'
         goals: 'clean install'
         options: '-Pbuild -Dhttps.protocols=TLSv1.2 -Dbuildversion=$(GitVersion.SemVer) -Dgpg.passphrase=$(gpg_passphrase)'
-        javaHomeOption: Path
-        jdkDirectory: '/usr/lib/jvm/java-8-openjdk-amd64/'
+        jdkVersionOption: '1.8'
 
     - task: MavenAuthenticate@0
       inputs:
@@ -81,8 +78,7 @@ stages:
         goals: deploy
         options: '-Pbuild -Dhttps.protocols=TLSv1.2 -Dbuildversion=$(GitVersion.SemVer) -Dfetchrepository.id=$(fetchrepository.id) -Dfetchrepository.url=$(fetchrepository.url) -Dpublishrepository.id=$(publishrepository.id) -Dpublishrepository.url=$(publishrepository.url) -Dgpg.passphrase=$(gpg_passphrase)'
         publishJUnitResults: false
-        javaHomeOption: Path
-        jdkDirectory: '/usr/lib/jvm/java-8-openjdk-amd64/'
+        jdkVersionOption: '1.8'
 
     - task: DownloadSecureFile@1
       displayName: 'Download Staging settings.xml'
@@ -97,8 +93,7 @@ stages:
         goals: deploy
         options: '-Pbuild -Dhttps.protocols=TLSv1.2 -Dbuildversion=$(GitVersion.SemVer) -Dfetchrepository.id=$(fetchrepository.id) -Dfetchrepository.url=$(fetchrepository.url) -Dgpg.passphrase=$(gpg_passphrase)'
         publishJUnitResults: false
-        javaHomeOption: Path
-        jdkDirectory: '/usr/lib/jvm/java-8-openjdk-amd64/'
+        jdkVersionOption: '1.8'
 
     # Add a tag to the git repository with the version number of
     # the package that has just been published
