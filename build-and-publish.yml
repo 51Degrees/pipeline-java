@@ -27,6 +27,7 @@ stages:
       # OAuth access token that controls write access to the git repository.
       # (Required for GitTag task)
       persistCredentials: true
+      clean: true
 
     - task: gittools.gitversion.gitversion-task.GitVersion@5
       displayName: GitVersion
