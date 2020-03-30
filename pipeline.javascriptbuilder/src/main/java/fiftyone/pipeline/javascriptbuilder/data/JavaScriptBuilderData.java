@@ -20,37 +20,10 @@
  * such notice(s) shall fulfill the requirements of that article.
  * ********************************************************************* */
 
-package fiftyone.pipeline.web.shared.flowelements;
+package fiftyone.pipeline.javascriptbuilder.data;
 
-import fiftyone.pipeline.annotations.ElementBuilder;
-import fiftyone.pipeline.core.data.FlowData;
-import fiftyone.pipeline.core.data.factories.ElementDataFactory;
-import fiftyone.pipeline.core.flowelements.FlowElement;
-import fiftyone.pipeline.web.shared.data.JavaScriptData;
-import org.slf4j.ILoggerFactory;
+import fiftyone.pipeline.core.data.ElementData;
 
-@ElementBuilder
-public class JavaScriptBundlerElementBuilder {
-
-    private ILoggerFactory loggerFactory;
-
-    public JavaScriptBundlerElementBuilder(ILoggerFactory loggerFactory) {
-        this.loggerFactory = loggerFactory;
-    }
-
-    public JavaScriptBundlerElement build() {
-        return new JavaScriptBundlerElement(
-            loggerFactory.getLogger(JavaScriptBundlerElement.class.getName()),
-            new JavaScriptDataFactory());
-    }
-
-    private class JavaScriptDataFactory implements ElementDataFactory<JavaScriptData> {
-
-        @Override
-        public JavaScriptData create(FlowData flowData, FlowElement<JavaScriptData, ?> flowElement) {
-            return new JavaScriptData(
-                loggerFactory.getLogger(JavaScriptData.class.getName()),
-                flowData);
-        }
-    }
+public interface JavaScriptBuilderData extends ElementData{
+    String getJavaScript();
 }

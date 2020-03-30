@@ -304,20 +304,6 @@ public abstract class ShareUsageBase
             }
         }
 
-        // If the evidence does not contain a session id then create a new one.
-        if (evidence.containsKey(Constants.EVIDENCE_SESSIONID) == false) {
-            flowData.addEvidence(Constants.EVIDENCE_SESSIONID, getNewSessionId());
-        }
-
-        // If the evidence does not have a sequence then add one.
-        if (evidence.containsKey(Constants.EVIDENCE_SEQUENCE) == false) {
-            flowData.addEvidence(Constants.EVIDENCE_SEQUENCE, 1);
-        } else {
-            Object sequence = evidence.get(Constants.EVIDENCE_SEQUENCE);
-            int seq = (int) sequence;
-            flowData.addEvidence(Constants.EVIDENCE_SEQUENCE, seq + 1);
-        }
-
         if (isCanceled() == false && ignoreData == false) {
             processData(flowData);
         }
@@ -562,11 +548,6 @@ public abstract class ShareUsageBase
         if (flagBadSchema) {
             builder.writeElement("BadSchema", "true");
         }
-    }
-
-    private String getNewSessionId() {
-        UUID u = UUID.randomUUID();
-        return u.toString();
     }
 
     /**

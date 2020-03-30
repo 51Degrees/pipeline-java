@@ -20,24 +20,10 @@
  * such notice(s) shall fulfill the requirements of that article.
  * ********************************************************************* */
 
-package fiftyone.pipeline.web.shared.data;
+package fiftyone.pipeline.jsonbuilder;
 
-import fiftyone.pipeline.core.data.ElementDataBase;
-import fiftyone.pipeline.core.data.FlowData;
-import fiftyone.pipeline.web.shared.Constants;
-import org.slf4j.Logger;
+public class Constants {
 
-public class JavaScriptData extends ElementDataBase {
-
-    public JavaScriptData(Logger logger, FlowData flowData) {
-        super(logger, flowData);
-    }
-
-    public String getJavaScript() {
-        return get(Constants.CLIENTSIDE_JAVASCRIPT_PROPERTY_NAME).toString();
-    }
-
-    public void setJavaScript(String javaScript) {
-        put(Constants.CLIENTSIDE_JAVASCRIPT_PROPERTY_NAME, javaScript);
-    }
+    public static final Integer MAX_JAVASCRIPT_ITERATIONS = 10;
+    
 }

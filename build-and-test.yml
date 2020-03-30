@@ -28,7 +28,7 @@ stages:
         mavenPomFile: 'pom.xml'
         goals: 'clean test'
         options: '-Dhttps.protocols=TLSv1.2 -DfailIfNoTests=false -DXmx2048m'
-        jdkVersionOption: '1.7'
+        jdkVersionOption: '1.8'
         testRunTitle: 'Windows'
 
     - task: CopyFiles@2
@@ -62,7 +62,7 @@ stages:
         mavenPomFile: 'pom.xml'
         goals: 'clean test'
         options: '-Dhttps.protocols=TLSv1.2 -DfailIfNoTests=false -DXmx2048m'
-        jdkVersionOption: '1.7'
+        jdkVersionOption: '1.8'
         testRunTitle: 'Mac'
 
     - task: CopyFiles@2
@@ -96,7 +96,7 @@ stages:
         mavenPomFile: 'pom.xml'
         goals: 'clean test'
         options: '-Dhttps.protocols=TLSv1.2 -DfailIfNoTests=false -DXmx2048m'
-        jdkVersionOption: '1.7'
+        jdkVersionOption: '1.8'
         testRunTitle: 'Linux'
 
     - task: CopyFiles@2

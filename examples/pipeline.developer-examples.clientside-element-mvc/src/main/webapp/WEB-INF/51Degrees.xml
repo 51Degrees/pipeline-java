@@ -26,10 +26,19 @@
 <PipelineOptions>
     <Elements>
         <Element>
+            <BuilderName>SequenceElement</BuilderName>
+        </Element>
+        <Element>
             <BuilderName>SimpleClientSideElementBuilder</BuilderName>
         </Element>
         <Element>
-            <BuilderName>JavaScriptBundlerElement</BuilderName>
+            <BuilderName>JsonBuilderElement</BuilderName>
+        </Element>
+        <Element>
+            <BuilderName>JavaScriptBuilderElement</BuilderName>
+            <BuildParameters>
+                <EnableCookies>True</EnableCookies>
+            </BuildParameters>
         </Element>
     </Elements>
 </PipelineOptions>

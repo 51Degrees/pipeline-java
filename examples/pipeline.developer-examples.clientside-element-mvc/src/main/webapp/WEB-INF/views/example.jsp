@@ -5,9 +5,9 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
 <title>Example page</title>
-<script src="/simple-clientside-element-mvc/51Degrees.core.js"></script>
+<script src="/pipeline.developer-examples.clientside-element-mvc/51Degrees.core.js"></script>
 </head>
 <body>
-    <p>Star Sign : ${starsign}</p>
+    <p>Star Sign : ${message}</p>
 </body>
 </html>
