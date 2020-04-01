@@ -327,7 +327,7 @@ fiftyoneDegreesManager = function() {
 
     // Update this instance with the initial JSON payload.
     update.call(this, json);
-    process();
+    this.complete(json);
 }
 
 var {{_objName}} = new fiftyoneDegreesManager();
