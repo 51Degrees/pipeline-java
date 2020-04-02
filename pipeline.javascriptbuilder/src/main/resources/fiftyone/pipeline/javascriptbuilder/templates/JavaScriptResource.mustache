@@ -155,8 +155,13 @@ fiftyoneDegreesManager = function() {
 {{#_updateEnabled}}
     // Standard method to create a CORS HTTP request ready to send data.
     var createCORSRequest = function(method, url) {
-        var xhr = new XMLHttpRequest();
-        if ("withCredentials" in xhr) {
+        var xhr;
+        try {
+            xhr = new XMLHttpRequest();
+        } catch(err){
+            xhr = null;
+        }
+        if (xhr !== null && "withCredentials" in xhr) {
 
             // Check if the XMLHttpRequest object has a "withCredentials"
             // property.
@@ -207,8 +212,8 @@ fiftyoneDegreesManager = function() {
         // If there is no support for HTTP requests then call reject and throw
         // a no CORS support error.
         if (!xhr) {
-            reject(Error(xhr.statusText));
-            throw new Error('CORS not supported');
+            reject(new Error('CORS not supported'));
+            return;
         }
 
         // Add the HTTP header for POST form data.
@@ -260,7 +265,7 @@ fiftyoneDegreesManager = function() {
 
     // Function logs errors, used to 'reject' a promise or for error callbacks.
     var catchError = function(value) {
-        console.log(value);
+        console.log(value.message || value);
     }
 
     // Populate this instance of the FOD object with getters to access the
