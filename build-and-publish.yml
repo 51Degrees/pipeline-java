@@ -113,6 +113,18 @@ stages:
         Contents: '**/*.jar'
         TargetFolder: '$(build.artifactstagingdirectory)'
 
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: 'echo $(GitVersion.SemVer) >> version.txt'
+
+    - task: CopyFiles@2
+      displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
+      inputs:
+        SourceFolder: '$(build.sourcesdirectory)'
+        Contents: 'version.txt'
+        TargetFolder: '$(build.artifactstagingdirectory)'
+
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifact: drop'
       inputs:
