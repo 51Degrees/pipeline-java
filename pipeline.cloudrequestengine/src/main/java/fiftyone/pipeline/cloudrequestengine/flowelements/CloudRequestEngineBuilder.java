@@ -70,7 +70,7 @@ public class CloudRequestEngineBuilder extends
                     "key obtained from https://configure.51degrees.com");
         }
 
-        return new CloudRequestEngine(
+        return new CloudRequestEngineDefault(
             loggerFactory.getLogger(CloudRequestEngine.class.getName()),
             new CloudRequestDataFactory(loggerFactory),
             httpClient,

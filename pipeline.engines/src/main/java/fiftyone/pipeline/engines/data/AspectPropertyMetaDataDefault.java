@@ -22,6 +22,7 @@
 
 package fiftyone.pipeline.engines.data;
 
+import fiftyone.pipeline.core.data.ElementPropertyMetaData;
 import fiftyone.pipeline.core.data.ElementPropertyMetaDataDefault;
 import fiftyone.pipeline.core.flowelements.FlowElement;
 
@@ -45,6 +46,18 @@ public class AspectPropertyMetaDataDefault extends ElementPropertyMetaDataDefaul
         List<String> dataTiersWherePresent,
         boolean available) {
         super(name, element, category, type, available);
+        this.dataTiersWherePresent = dataTiersWherePresent;
+}
+
+    public AspectPropertyMetaDataDefault(
+        String name,
+        FlowElement element,
+        String category,
+        Class type,
+        List<String> dataTiersWherePresent,
+        boolean available,
+        List<ElementPropertyMetaData> itemProperties) {
+        super(name, element, category, type, available, itemProperties);
         this.dataTiersWherePresent = dataTiersWherePresent;
     }
 

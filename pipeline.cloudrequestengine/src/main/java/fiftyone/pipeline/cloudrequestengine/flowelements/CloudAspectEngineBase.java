@@ -23,6 +23,8 @@
 package fiftyone.pipeline.cloudrequestengine.flowelements;
 
 import fiftyone.pipeline.core.data.AccessiblePropertyMetaData;
+import fiftyone.pipeline.core.data.ElementPropertyMetaData;
+import fiftyone.pipeline.core.data.ElementPropertyMetaDataDefault;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.typed.TypedKey;
@@ -127,7 +129,7 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
             synchronized (this) {
                 localRef = aspectProperties;
                 if (localRef == null) {
-                    if(LoadAspectProperties() == false) {
+                    if(loadAspectProperties() == false) {
                         aspectProperties = null;
                     }
                 }
@@ -167,7 +169,7 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
      * with the relevant property meta-data.
      * False if something has gone wrong.
      */
-    private boolean LoadAspectProperties() {
+    private boolean loadAspectProperties() {
         CloudRequestEngine requestEngine = getRequestEngine().getInstance();
         Map<String, AccessiblePropertyMetaData.ProductMetaData> map = 
             requestEngine.getPublicProperties();
@@ -178,15 +180,16 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
                 List<AspectPropertyMetaData> properties = new ArrayList<>();
                 dataSourceTier = map.get(this.getElementDataKey()).dataTier;
 
-                for (AccessiblePropertyMetaData.PropertyMetaData item : 
+                for (AccessiblePropertyMetaData.PropertyMetaData item :
                     map.get(this.getElementDataKey()).properties) {
                     AspectPropertyMetaData property = new AspectPropertyMetaDataDefault(
-                        item.name, 
-                        this, 
-                        item.category, 
+                        item.name,
+                        this,
+                        item.category,
                         item.getPropertyType(),
-                        new ArrayList<String>(), 
-                        true);
+                        new ArrayList<String>(),
+                        true,
+                        loadElementProperties(item.itemProperties));
                     properties.add(property);
                 }
                 aspectProperties = properties;
@@ -196,5 +199,23 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
                 this.getClass().getName(), this);
             return false;
         }
+    }
+
+    private List<ElementPropertyMetaData> loadElementProperties(
+        List<AccessiblePropertyMetaData.PropertyMetaData> itemProperties) {
+        List<ElementPropertyMetaData> result = null;
+        if (itemProperties != null) {
+            result = new ArrayList<>();
+            for (AccessiblePropertyMetaData.PropertyMetaData item : itemProperties) {
+                result.add(new ElementPropertyMetaDataDefault(
+                    item.name,
+                    this,
+                    item.category,
+                    item.getPropertyType(),
+                    true,
+                    loadElementProperties(item.itemProperties)));
+            }
+        }
+        return result;
     }
 }
