@@ -37,6 +37,7 @@ import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.core.flowelements.FlowElementBase;
 import fiftyone.pipeline.engines.data.AspectData;
 import fiftyone.pipeline.engines.data.AspectPropertyValue;
+import fiftyone.pipeline.engines.exceptions.NoValueException;
 import fiftyone.pipeline.jsonbuilder.Constants;
 import fiftyone.pipeline.jsonbuilder.data.JsonBuilderData;
 import java.util.ArrayList;
@@ -123,8 +124,6 @@ public class JsonBuilderElement extends FlowElementBase<JsonBuilderData, Element
             AddJavaScriptProperties(data, allProperties);
         }
         
-        AddNullValueReasons(data, allProperties);
-        
         AddErrors(data, allProperties);
         
         return BuildJson(allProperties);
@@ -140,15 +139,41 @@ public class JsonBuilderElement extends FlowElementBase<JsonBuilderData, Element
         return sequence.getValue();
     }
     
-    private Map<String, Object> GetAllProperties(FlowData data){
+    private Map<String, Object> GetAllProperties(FlowData data) throws NoValueException {
         Map<String, Object> allProperties = new HashMap<>();
 
         for (Map.Entry<String, Object> element : data.elementDataAsMap().entrySet())
         {
             if (allProperties.containsKey(element.getKey()) == false)
             {
-                allProperties.put(element.getKey(), 
-                    ((ElementData)element.getValue()).asKeyMap());
+                Map<String, Object> elementProperties = new HashMap<>();
+                ElementData datum = (ElementData)(element.getValue());
+                for (Map.Entry<String, Object> elementProperty : datum.asKeyMap().entrySet())
+                {
+                    Object value = elementProperty.getValue();
+                    Object nullReason = "Unknown";
+
+                    if(elementProperty.getValue() instanceof AspectPropertyValue)
+                    {
+                        AspectPropertyValue apv = (AspectPropertyValue)elementProperty.getValue();
+                        if(apv.hasValue())
+                        {
+                            value = apv.getValue();
+                        }
+                        else 
+                        {
+                            value = null;
+                            nullReason = apv.getNoValueMessage();
+                        }
+                    }
+                                        
+                    elementProperties.put(elementProperty.getKey(), value);
+                    if(value == null) 
+                    {
+                        elementProperties.put(elementProperty.getKey() + "nullreason", nullReason);
+                    }
+                }
+                allProperties.put(element.getKey(), elementProperties);
             }
         }
 
@@ -191,29 +216,6 @@ public class JsonBuilderElement extends FlowElementBase<JsonBuilderData, Element
         }
 
         return new ArrayList<>(javascriptPropertiesMap.keySet());
-    }
-
-    private void AddNullValueReasons(FlowData data, Map<String, Object> allProperties) {
-        Map<String, String> nullValueReasons = new HashMap<>();
-
-        for (Map.Entry<String, Object> values : data.elementDataAsMap().entrySet())
-        {
-            if (values instanceof AspectData)
-            {
-                AspectData aspectData = (AspectData)values;
-                for (Map.Entry<String, Object> value : aspectData.asKeyMap().entrySet())
-                {
-                    if (value.getValue() instanceof AspectPropertyValue)
-                    {
-                        AspectPropertyValue val = (AspectPropertyValue)value.getValue();
-                        if (val.hasValue() == false)
-                            nullValueReasons.put(aspectData.getEngines().get(0).getElementDataKey() + "." + value.getKey(), val.getNoValueMessage());
-                    }
-                }
-            }
-        }
-
-        allProperties.put("nullValueReasons", nullValueReasons);
     }
 
     private void AddErrors(FlowData data, Map<String, Object> allProperties) {

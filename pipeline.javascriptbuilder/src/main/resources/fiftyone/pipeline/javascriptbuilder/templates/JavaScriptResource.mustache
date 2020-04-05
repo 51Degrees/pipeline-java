@@ -6,12 +6,7 @@ fiftyoneDegreesManager = function() {
     if(json.error !== undefined){
         console.log(json.error);
     }
-{{#_supportsPromises}}
 
-    // Set to true when process is called.
-    var started = false;
-
-{{/_supportsPromises}}
     // Set to true when the JSON object is complete.
     var completed = false;
 
@@ -22,9 +17,8 @@ fiftyoneDegreesManager = function() {
 
     // Counter is used to count how many pieces of callbacks are expected. Every
     // time the completedCallback method is called, the counter is decremented
-    // by 1. The counter's initial value is 1 as the method is always called
-    // once to continue execution.
-    var callbackCounter = 1;
+    // by 1.
+    var callbackCounter = 0;
 
     // startsWith polyfill.
     var startsWith = function(source, searchValue){
@@ -102,54 +96,62 @@ fiftyoneDegreesManager = function() {
     // Executes any Javascript contained in the json data. Sets the processedJs
     // flag to true when there is no further Javascript to be processed.
     var processJSproperties = function(resolve, reject) {
-        if (json.javascriptProperties !== undefined){
-            if (json.javascriptProperties.length > 0) {
+        var executeCallback = true;
 
-                // Execute each of the Javascript property code snippets using the
-                // index of the value to access the value to avoid problems with
-                // JavaScript returning erroneous values.
-                for(var index = 0;
-                    index < json.javascriptProperties.length;
-                    index++) {
+        if (json.javascriptProperties !== undefined &&
+            json.javascriptProperties.length > 0) {
 
-                    var name = json.javascriptProperties[index];
+            // Execute each of the Javascript property code snippets using the
+            // index of the value to access the value to avoid problems with
+            // JavaScript returning erroneous values.
+            for(var index = 0;
+                index < json.javascriptProperties.length;
+                index++) {
 
-                    // Create new function bound to this instance and execute it.
-                    // This is needed to ensure the scope of the function is
-                    // associated with this instance if any members are altered or
-                    // added. Avoids global scoped variables.
-                    var body = getFromJson(name);
+                var name = json.javascriptProperties[index];
 
-                    if (body !== undefined) {
-                        var func = undefined;
-                        var searchString = '// 51D replace this comment with callback function.';
+                // Create new function bound to this instance and execute it.
+                // This is needed to ensure the scope of the function is
+                // associated with this instance if any members are altered or
+                // added. Avoids global scoped variables.
+                var body = getFromJson(name);
 
-                        if(body.indexOf(searchString) !== -1){
-                            callbackCounter++;
-                            body = body.replace(/\/\/ 51D replace this comment with callback function./g, 'callbackFunc(resolveFunc, rejectFunc);');
-                            func = new Function('callbackFunc', 'resolveFunc', 'rejectFunc',
-							    "try {\n" +
-							    body + "\n" +
-							    "} catch (err) {\n" +
-							    "console.log(err);" +
-							    "}"
-						    );
-                            func(completedCallback, resolve, reject);
-                        } else {
-                            func = new Function(
-							    "try {\n" +
-							    body + "\n" +
-							    "} catch (err) {\n" +
-							    "console.log(err);" +
-							    "}"
-						    );
-                            func();
-                        }
+                if (body !== undefined) {
+                    var func = undefined;
+                    var searchString = '// 51D replace this comment with callback function.';
+
+                    if(body.indexOf(searchString) !== -1){
+                        callbackCounter++;
+                        body = body.replace(/\/\/ 51D replace this comment with callback function./g, 'callbackFunc(resolveFunc, rejectFunc);');
+                        func = new Function('callbackFunc', 'resolveFunc', 'rejectFunc',
+                            "try {\n" +
+                            body + "\n" +
+                            "} catch (err) {\n" +
+                            "console.log(err);" +
+                            "}"
+                        );
+                        func(completedCallback, resolve, reject);
+                        executeCallback = false;
+                    } else {
+                        func = new Function(
+                            "try {\n" +
+                            body + "\n" +
+                            "} catch (err) {\n" +
+                            "console.log(err);" +
+                            "}"
+                        );
+                        func();
                     }
                 }
             }
+        } else {
+            executeCallback = false;
+            completed = true;
         }
-        completedCallback(resolve, reject);
+        if(executeCallback) {
+            callbackCounter = 1;
+            completedCallback(resolve, reject);
+        }
     };
 
 {{#_updateEnabled}}
@@ -199,6 +201,15 @@ fiftyoneDegreesManager = function() {
         processJSproperties(resolve, reject);
     }
 
+    var fireChangeFuncs = function(json) {
+        for (var i = 0; i < changeFuncs.length; i++) {
+            if (typeof changeFuncs[i] === 'function' &&
+                changeFuncs[i].length === 1) {
+                changeFuncs[i](json);
+            }
+        }
+    }
+
 {{#_updateEnabled}}
     // Sends the cookie parameters that have been set by the executed Javascript
     // in the POST body of a new request to refresh the json data. Resolve is
@@ -207,7 +218,7 @@ fiftyoneDegreesManager = function() {
     // request so that encoding and data length issues are minimised.
     var processRequest = function(resolve, reject){
         // Request URL with a license key and User-Agent if provided.
-        var xhr = createCORSRequest('POST', '{{_url}}');
+        var xhr = createCORSRequest('POST', '{{{_url}}}');
 
         // If there is no support for HTTP requests then call reject and throw
         // a no CORS support error.
@@ -226,16 +237,20 @@ fiftyoneDegreesManager = function() {
 
             // Process the response as json and call the resolve method.
             json = JSON.parse(responseText);
-            for (var i = 0; i < changeFuncs.length; i++) {
-                if (typeof changeFuncs[i] === 'function' &&
-                    changeFuncs[i].length === 1) {
-                    changeFuncs[i](json);
-                }
-            }
+
             if (hasJSFunctions()) {
+                // json updated so fire 'on change' functions
+                // before executing any new JS properties that
+                // have come back.
+                fireChangeFuncs(json);
                 process(resolve, reject);
             }
             else {
+                completed = true;
+                // json updated so fire 'on change' functions
+                // This must happen after completed = true in order
+                // for 'complete' functions to fire.
+                fireChangeFuncs(json);
                 resolve(json);
 {{^_enableCookies}}
                 var fodCookies = getFodCookies();
@@ -246,6 +261,7 @@ fiftyoneDegreesManager = function() {
                 }
 {{/_enableCookies}}
             }
+
         };
 
         xhr.onerror = function () {
@@ -280,8 +296,8 @@ fiftyoneDegreesManager = function() {
                 (function(i) {
                     Object.defineProperty(obj, i, {
                         get: function (){
-                            if(data[key][i] === null && (i !== "javascriptProperties" || i !== "nullValueReasons")){
-                                return data.nullValueReasons[key+'.'+i];
+                            if(data[key][i] === null && (i !== "javascriptProperties")){
+                                return data[key][i + "nullreason"];
                             } else {
                                 return data[key][i];
                             }
@@ -296,43 +312,38 @@ fiftyoneDegreesManager = function() {
     this.promise = new Promise(function(resolve, reject) {
         process(resolve,reject);
     });
+{{/_supportsPromises}}
 
 	this.onChange = function(resolve) {
 		changeFuncs.push(resolve);
 	}
-{{/_supportsPromises}}
-{{^_supportsPromises}}
-	this.onChange = function(resolve) {
-		changeFuncs.push(resolve);
-        if(started === false){
-            process(resolve, catchError);
-            started = true;
-        }
-	}
-{{/_supportsPromises}}
 
     this.complete = function(resolve) {
         if(completed){
-            resolve(this);
+            resolve(json);
         }else{
-            var parent = this;
-{{#_supportsPromises}}
-            this.promise.then(function(value) {
-                // JSON has been updated so replace the current instance.
-                update.call(parent, value);
-                resolve(parent);
-                completed = true;
-            }).catch(catchError);
-{{/_supportsPromises}}
-{{^_supportsPromises}}
-            process(resolve, catchError);
-{{/_supportsPromises}}
+            this.onChange(function(data) {
+                if(completed){
+                    resolve(data);
+                }
+            })
         }
     };
 
     // Update this instance with the initial JSON payload.
     update.call(this, json);
-    this.complete(json);
+{{#_supportsPromises}}
+    var parent = this;
+    this.promise.then(function(value) {
+        // JSON has been updated so replace the current instance.
+        update.call(parent, value);
+        resolve(parent);
+        completed = true;
+    }).catch(catchError);
+{{/_supportsPromises}}
+{{^_supportsPromises}}
+    process(function(json) {}, catchError);
+{{/_supportsPromises}}
 }
 
 var {{_objName}} = new fiftyoneDegreesManager();
