@@ -44,10 +44,8 @@ public class JavaScriptBuilderElementBuilder {
     private final Logger logger;
     
     protected String host = "";
-    protected boolean overrideHost = false;
     protected String endpoint = "";
     protected String protocol = "";
-    protected boolean overrideProtocol = false;
     protected String objName = "";
     private boolean enableCookies = false;
 
@@ -58,23 +56,13 @@ public class JavaScriptBuilderElementBuilder {
     
     /**
      * Set the host that the client JavaScript should query for updates.
+     * By default, the host from the request will be used.
      * @param host the hostname.
      * @return JavaScriptBuilderElementBuilder
      */
     public JavaScriptBuilderElementBuilder setHost(String host)
     {
         this.host = host;
-        return this;
-    }
-
-    /**
-     * Set whether host should be determined from the origin or referer header.
-     * @param overrideHost Should override host?
-     * @return JavaScriptBuilderElementBuilder
-     */
-    public JavaScriptBuilderElementBuilder setOverrideHost(boolean overrideHost)
-    {
-        this.overrideHost = overrideHost;
         return this;
     }
 
@@ -90,39 +78,24 @@ public class JavaScriptBuilderElementBuilder {
     }
 
     /**
-     * The default protocol that the client JavaScript will use when querying
-     * for updates.
+     * The protocol that the client JavaScript will use when querying
+     * for updates. By default, the protocol from the request will be
+     * used.
      * @param protocol The protocol to use (http / https)
      * @return JavaScriptBuilderElementBuilder
      */
-    public JavaScriptBuilderElementBuilder setDefaultProtocol(String protocol)
+    public JavaScriptBuilderElementBuilder setProtocol(String protocol)
     {
-        boolean empty = protocol.isEmpty();
-        boolean http = protocol.equals("http");
-        boolean https = protocol.equals("https");
-
-        if ((http || https) && empty == false)
-        {
+        if (protocol.equalsIgnoreCase("http") ||
+            protocol.equalsIgnoreCase("https")) {
             this.protocol = protocol;
         }
-        else
-        {
-            this.protocol = Constants.DEFAULT_PROTOCOL;
-            logger.warn("No/Invalid protocol in configuration," +
-                " JavaScriptBuilderElement is using the default protocol: " +
-                Constants.DEFAULT_PROTOCOL);
-        }
-        return this;
-    }
+        else {
+            throw new PipelineConfigurationException(
+                "Invalid protocol in configuration (" + protocol +
+                "), must be 'http' or https'");
 
-    /**
-     * Set whether the host should be overridden by evidence, e.g when the
-     * host can be determined from the incoming request.
-     * @param overrideProto Should override the protocol?
-     * @return JavaScriptBuilderElementBuilder
-     */
-    public JavaScriptBuilderElementBuilder setOverrideDefaultProtocol(boolean overrideProto){
-        overrideProtocol = overrideProto;
+        }
         return this;
     }
 
@@ -182,13 +155,11 @@ public class JavaScriptBuilderElementBuilder {
                         flowData);
                 }
             },
-            host,
-            overrideHost,
             endpoint,
-            protocol,
-            overrideProtocol,
             objName,
-            enableCookies);
+            enableCookies,
+            host,
+            protocol);
     } 
 }
 //! [class]

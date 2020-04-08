@@ -49,10 +49,8 @@ import java.util.*;
 public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderData, ElementPropertyMetaData>{
 
     protected String host;
-    protected boolean overrideHost;
     protected String endpoint;
     protected String protocol;
-    protected boolean overrideProtocol;
     protected String objName;
     protected boolean enableCookies;
     
@@ -64,30 +62,26 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
      * Default constructor.
      * @param logger The logger.
      * @param elementDataFactory The element data factory.
-     * @param host The host that the client JavaScript should query for updates.
-     * @param overrideHost Set whether host should be determined from the origin 
-     * or referer header.
-     * @param endpoint Set the endpoint which will be queried on the host. 
-     * e.g /api/v4/json
-     * @param protocol The protocol (HTTP or HTTPS) that the client JavaScript 
-     * will use when querying for updates.
-     * @param overrideProtocol Set whether the host should be overridden by 
-     * evidence, e.g when the host can be determined from the incoming request.
-     * @param objName The default name of the object instantiated by the client 
-     * JavaScript.
+     * @param endpoint Set the endpoint which will be queried on the host.
+     *                 e.g /api/v4/json
+     * @param objName The default name of the object instantiated by the client
+     *                JavaScript.
      * @param enableCookes Set whether the client JavaScript stored results of 
      * client side processing in cookies.
+     * @param host The host that the client JavaScript should query for updates.
+     * If null or blank then the host from the request will be used
+     * @param protocol The protocol (HTTP or HTTPS) that the client JavaScript
+     *                 will use when querying for updates. If null or blank
+     *                 then the protocol from the request will be used
      */
     public JavaScriptBuilderElement(
             Logger logger,
             ElementDataFactory<JavaScriptBuilderData> elementDataFactory,
-            String host,
-            boolean overrideHost,
             String endpoint,
-            String protocol,
-            boolean overrideProtocol,
             String objName,
-            boolean enableCookes) {
+            boolean enableCookes,
+            String host,
+            String protocol) {
         super(logger, elementDataFactory);
         
         MustacheFactory mf = new DefaultMustacheFactory();
@@ -96,10 +90,8 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
         mustache = mf.compile(reader, "template");
         
         this.host = host;
-        this.overrideHost = overrideHost;
         this.endpoint = endpoint;
-        this.protocol = protocol.isEmpty() ? Constants.DEFAULT_PROTOCOL : protocol;
-        this.overrideProtocol = overrideProtocol;
+        this.protocol = protocol;
         this.objName = objName.isEmpty() ? "fod" : objName;
         enableCookies = enableCookes;
     }
@@ -107,36 +99,31 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
     
     @Override
     protected void processInternal(FlowData data) throws Exception {
-        String host = "";
-        String protocol = "";
+        String reqHost = this.host;
+        String reqProtocol = this.protocol;
         boolean supportsPromises;
 
         // Try and get the request host name so it can be used to request
         // the Json refresh in the JavaScript code.
-        if (overrideHost == true) {
+        if (reqHost == null || reqHost.isEmpty()) {
             TryGetResult<String> hostEvidence = data.tryGetEvidence(Constants.EVIDENCE_HOST_KEY, String.class);
-            if (hostEvidence.hasValue() == false)
-            {
-                host = this.host;
-            } else {
+            if (hostEvidence.hasValue()) {
                 host = hostEvidence.getValue();
             }
-        } else {
-            host = this.host;
         }
 
         // Try and get the request protocol so it can be used to request
         // the JSON refresh in the JavaScript code.
-        if (overrideProtocol) {
+        if (reqProtocol == null || reqProtocol.isEmpty()) {
             TryGetResult<String> protocolEvidence = data.tryGetEvidence(Constants.EVIDENCE_PROTOCOL, String.class);
-            if (protocolEvidence.hasValue() == false)
-            {
-                protocol = this.protocol;
-            } else {
+            if (protocolEvidence.hasValue()) {
                 protocol = protocolEvidence.getValue();
             }
-        } else {
-            protocol = this.protocol;
+        }
+
+        // Couldn't get protocol from anywhere
+        if (reqProtocol == null || reqProtocol.isEmpty()) {
+            reqProtocol = Constants.DEFAULT_PROTOCOL;
         }
 
         // If device detection is enabled then try and get whether the
@@ -185,11 +172,22 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
         String queryParams = sb.toString();
         
         String url = null;
-        if(protocol.isEmpty() == false &&
-                host.isEmpty() == false &&
-                endpoint.isEmpty() == false) {
-            url = protocol + "://" + host + "/" + endpoint +
+        if(reqProtocol != null && reqProtocol.isEmpty() == false &&
+            reqHost != null && reqHost.isEmpty() == false &&
+            endpoint != null && endpoint.isEmpty() == false) {
+            boolean endpointHasSlash = endpoint.charAt(0) == '/';
+            boolean hostHasSlash = reqHost.charAt(reqHost.length() - 1) == '/';
+            // if there is no slash between host and endpoint then add one.
+            if (endpointHasSlash == false && hostHasSlash == false) {
+                endpoint = "/" + endpoint;
+            }
+            // if there are two slashes between host and endpoint then remove one.
+            else if (endpointHasSlash == true && hostHasSlash == true) {
+                endpoint = endpoint.substring(1);
+            }
+            url = reqProtocol + "://" + reqHost + endpoint +
                 (queryParams.isEmpty() ? "" : "?" + queryParams);
+
         }
 
         // With the gathered resources, build a new JavaScriptResource.
