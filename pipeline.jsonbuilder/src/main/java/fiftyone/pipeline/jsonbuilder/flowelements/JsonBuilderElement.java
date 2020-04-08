@@ -45,6 +45,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 
@@ -203,15 +204,28 @@ public class JsonBuilderElement extends FlowElementBase<JsonBuilderData, Element
         return GetJavaScriptProperties(data, props);
     }
 
+    private boolean containsIgnoreCase(List<String> list, String key) {
+        for (String item : list) {
+            if (item.equalsIgnoreCase(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     private List<String> GetJavaScriptProperties(FlowData data, List<String> props) {
         // Get a list of all the JavaScript properties which are available.
         Map<String, String> javascriptPropertiesMap =
             data.getWhere(new JsPropertyMatcher());
-                
-        for(Map.Entry<String, String> entry : javascriptPropertiesMap.entrySet()){
-            if(props.contains(entry.getKey()) == false)
-            {
-                javascriptPropertiesMap.remove(entry.getKey());
+        
+        // Copy the keys to an array, otherwise we are removing from the same
+        // Map we are iterating over, which causes a concurrent modification
+        // exception.
+        String[] keys = new String[0];
+        keys = javascriptPropertiesMap.keySet().toArray(keys);
+        for(String key : keys){
+            if(containsIgnoreCase(props, key) == false) {
+                javascriptPropertiesMap.remove(key);
             }
         }
 

@@ -86,7 +86,7 @@ public class PipelineFilter implements Filter {
             Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
             // Bind the configuration to a pipeline options instance
             PipelineOptions options = (PipelineOptions) unmarshaller.unmarshal(configFile);
-            pipeline = builder.buildFromConfiguration(options);
+            pipeline = StartupHelpers.buildFromConfiguration(builder, options, clientsideEnabled);
         } catch (JAXBException e) {
             throw new ServletException(e);
         } catch (Exception e) {

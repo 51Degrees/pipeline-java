@@ -29,6 +29,7 @@ import fiftyone.pipeline.engines.services.DataUpdateService;
 import fiftyone.pipeline.engines.services.DataUpdateServiceDefault;
 import fiftyone.pipeline.engines.services.HttpClientDefault;
 import fiftyone.pipeline.web.Constants;
+import fiftyone.pipeline.web.StartupHelpers;
 import fiftyone.pipeline.web.mvc.configuration.FiftyOneInterceptorConfig;
 import fiftyone.pipeline.web.mvc.services.ClientsidePropertyService;
 import fiftyone.pipeline.web.mvc.services.FiftyOneJSService;
@@ -92,7 +93,7 @@ public class FiftyOneInterceptor extends HandlerInterceptorAdapter {
             Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
             // Bind the configuration to a pipeline options instance
             PipelineOptions options = (PipelineOptions) unmarshaller.unmarshal(configFile);
-            pipeline = builder.buildFromConfiguration(options);
+            pipeline = StartupHelpers.buildFromConfiguration(builder, options, config.getClientsidePropertiesEnabled());
         } catch (JAXBException e) {
             throw new RuntimeException(e);
         } catch (Exception e) {

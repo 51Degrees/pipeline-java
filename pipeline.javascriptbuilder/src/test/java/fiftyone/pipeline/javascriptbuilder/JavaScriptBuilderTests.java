@@ -32,6 +32,8 @@ import fiftyone.pipeline.core.data.TryGetResult;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.core.exceptions.PipelineDataException;
 import fiftyone.pipeline.core.flowelements.FlowElement;
+import fiftyone.pipeline.engines.data.AspectPropertyValue;
+import fiftyone.pipeline.engines.data.AspectPropertyValueDefault;
 import fiftyone.pipeline.javascriptbuilder.data.JavaScriptBuilderData;
 import fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElement;
 import fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElementBuilder;
@@ -116,8 +118,8 @@ public class JavaScriptBuilderTests {
             }
         }).when(flowData).get(JsonBuilderData.class);
         
-        when(flowData.getAsString(anyString())).thenReturn("None");
-        
+        when(flowData.getAs(anyString(), any(Class.class))).thenReturn(new AspectPropertyValueDefault<>("None"));
+
         final Map<String, Object> evidence = new HashMap<>(); 
         evidence.put( fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_HOST_KEY, "localhost" );
         evidence.put(fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_PROTOCOL, "https" );
@@ -167,8 +169,8 @@ public class JavaScriptBuilderTests {
                 return result;
             }
         }).when(flowData).get(JsonBuilderData.class);
-        
-        when(flowData.getAsString(anyString())).thenReturn("None");
+
+        when(flowData.getAs(anyString(), any(Class.class))).thenReturn(new AspectPropertyValueDefault<>("None"));
         
         final Map<String, Object> evidence = new HashMap<>(); 
         evidence.put( fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_HOST_KEY, "localhost" );

@@ -31,6 +31,7 @@ import fiftyone.pipeline.core.data.factories.ElementDataFactory;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.core.exceptions.PipelineDataException;
 import fiftyone.pipeline.core.flowelements.FlowElementBase;
+import fiftyone.pipeline.engines.data.AspectPropertyValue;
 import fiftyone.pipeline.javascriptbuilder.Constants;
 import fiftyone.pipeline.javascriptbuilder.data.*;
 import fiftyone.pipeline.javascriptbuilder.templates.*;
@@ -141,7 +142,10 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
         // If device detection is enabled then try and get whether the
         // requesting browser supports promises. If not then default to false.
         try {
-            supportsPromises = data.getAsString("Promise") == "Full";
+            AspectPropertyValue<String> supportsPromisesValue =
+                data.getAs("Promise", AspectPropertyValue.class);
+            supportsPromises = supportsPromisesValue.hasValue() &&
+                supportsPromisesValue.getValue() == "Full";
         }
         catch (PipelineDataException e) {
             supportsPromises = false;
