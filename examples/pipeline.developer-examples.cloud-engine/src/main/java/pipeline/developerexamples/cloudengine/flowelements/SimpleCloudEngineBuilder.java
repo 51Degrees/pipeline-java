@@ -39,13 +39,10 @@ public class SimpleCloudEngineBuilder
     extends CloudAspectEngineBuilderBase<
             SimpleCloudEngineBuilder,
             SimpleCloudEngine> {
-    private CloudRequestEngine cloudRequestEngine;
 
     public SimpleCloudEngineBuilder(
-        ILoggerFactory loggerFactory,
-        CloudRequestEngine engine) {
+        ILoggerFactory loggerFactory) {
         super(loggerFactory);
-        this.cloudRequestEngine = engine;
     }
 
     @Override
@@ -63,8 +60,7 @@ public class SimpleCloudEngineBuilder
                         (SimpleCloudEngine)flowElement,
                         MissingPropertyServiceDefault.getInstance());
                 }
-            },
-            cloudRequestEngine);
+            });
         return engine;
     }
 

@@ -127,12 +127,12 @@ public class ShareUsageOverheadTests {
     }
 
     @Test
-    public void ShareUsageOverhead_ThousandEvidence() {
+    public void ShareUsageOverhead_HundredEvidence() {
         int iterations = 1000;
         List<FlowData> data = new ArrayList<>();
         for (int i = 0; i < iterations; i++) {
             FlowData flowData = pipeline.createFlowData();
-            for (int j = 0; j < 1000; j++) {
+            for (int j = 0; j < 100; j++) {
                 flowData.addEvidence("header." + Integer.toString(j), j);
             }
             flowData.addEvidence("header.user-agent", "Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7B405");

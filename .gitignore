@@ -8,3 +8,6 @@ nb-configuration.xml
 pom.xml.versionsBackup
 *.log
 /target/
+.project
+.settings/
+*.classpath

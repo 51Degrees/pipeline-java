@@ -182,7 +182,27 @@ class PipelineDefault implements PipelineInternal {
 
     }
 
-    @Override
+    private <T extends FlowElement> boolean anyAssignableFrom(Map<Class, List<FlowElement>> elements, Class<T> type) {
+        for (Class element : elements.keySet()) {
+            if (type.isAssignableFrom(element)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private <T extends FlowElement> List<List<FlowElement>> getElementsWhereAssignableFrom(
+        Map<Class, List<FlowElement>> elements,
+        Class<T> type) {
+        List<List<FlowElement>> result = new ArrayList<>();
+        for (Map.Entry<Class, List<FlowElement>> element : elements.entrySet()) {
+            if (type.isAssignableFrom(element.getKey())) {
+                result.add(element.getValue());
+            }
+        }
+        return result;
+    }
+
     public <T extends FlowElement> T getElement(Class<T> type) {
         T result = null;
         if (elementsByType.containsKey(type)) {
@@ -192,6 +212,14 @@ class PipelineDefault implements PipelineInternal {
                 result = null;
             }
         }
+        else if (anyAssignableFrom(elementsByType, type)) {
+            List<List<FlowElement>> matches = getElementsWhereAssignableFrom(elementsByType, type);
+            if (matches.size() == 1 &&
+                matches.get(0).size() == 1) {
+                result = (T)matches.get(0).get(0);
+            }
+        }
+
         return result;
     }
 

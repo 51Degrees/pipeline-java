@@ -29,8 +29,7 @@ import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.types.JavaScript;
 import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.core.flowelements.Pipeline;
-import fiftyone.pipeline.web.shared.data.JavaScriptData;
-import fiftyone.pipeline.web.shared.flowelements.JavaScriptBundlerElement;
+import fiftyone.pipeline.javascriptbuilder.flowelements.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -41,6 +40,7 @@ import java.util.List;
 
 import static fiftyone.pipeline.core.Constants.EVIDENCE_HTTPHEADER_PREFIX;
 import static fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR;
+import fiftyone.pipeline.javascriptbuilder.data.JavaScriptBuilderData;
 import static fiftyone.pipeline.util.StringManipulation.stringJoin;
 
 public interface ClientsidePropertyServiceCore {
@@ -122,13 +122,13 @@ public interface ClientsidePropertyServiceCore {
                 // The response hasn't changed so respond with a 304.
                 response.setStatus(304);
             } else {
-                JavaScriptBundlerElement bundler = flowData.getPipeline().getElement(JavaScriptBundlerElement.class);
-                JavaScriptData bundlerData = flowData.getFromElement(bundler);
+                JavaScriptBuilderElement builder = flowData.getPipeline().getElement(JavaScriptBuilderElement.class);
+                JavaScriptBuilderData builderData = flowData.getFromElement(builder);
 
                 // Otherwise, return the minified script to the client.
-                response.getWriter().write(bundlerData.getJavaScript());
+                response.getWriter().write(builderData.getJavaScript());
 
-                setHeaders(response, hash, bundlerData.getJavaScript().length());
+                setHeaders(response, hash, builderData.getJavaScript().length());
             }
 
         }

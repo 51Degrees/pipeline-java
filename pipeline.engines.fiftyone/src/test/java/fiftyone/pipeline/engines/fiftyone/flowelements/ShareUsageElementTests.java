@@ -74,6 +74,7 @@ public class ShareUsageElementTests {
 
     // Test instance data.
     private List<String> xmlContent = new ArrayList<>();
+    private SequenceElement sequenceElement;
 
     @Before
     public void Init() throws IOException {
@@ -115,6 +116,8 @@ public class ShareUsageElementTests {
         List<String> blockedHeaders,
         List<String> includedQueryStringParams,
         List<Entry<String, String>> ignoreDataEvidenceFiler) {
+        sequenceElement = new SequenceElement(mock(Logger.class));
+        sequenceElement.addPipeline(pipeline);
         shareUsageElement = new ShareUsageElement(
             mock(Logger.class),
             httpClient,
@@ -593,6 +596,7 @@ public class ShareUsageElementTests {
         FlowData data = MockFlowData.createFromEvidence(evidenceData, false);
 
         // Act
+        sequenceElement.process(data);
         shareUsageElement.process(data);
         // Wait for the consumer task to finish.
         assertNotNull(shareUsageElement.getSendDataFuture());
@@ -645,6 +649,7 @@ public class ShareUsageElementTests {
         FlowData data = MockFlowData.createFromEvidence(evidenceData, false);
 
         // Act
+        sequenceElement.process(data);
         shareUsageElement.process(data);
         // Wait for the consumer task to finish.
         assertNotNull(shareUsageElement.getSendDataFuture());

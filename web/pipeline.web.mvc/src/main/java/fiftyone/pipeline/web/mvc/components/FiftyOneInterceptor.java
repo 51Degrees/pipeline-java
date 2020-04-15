@@ -25,11 +25,16 @@ package fiftyone.pipeline.web.mvc.components;
 import fiftyone.pipeline.core.configuration.PipelineOptions;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.flowelements.PipelineBuilder;
+import fiftyone.pipeline.engines.services.DataUpdateService;
+import fiftyone.pipeline.engines.services.DataUpdateServiceDefault;
+import fiftyone.pipeline.engines.services.HttpClientDefault;
 import fiftyone.pipeline.web.Constants;
+import fiftyone.pipeline.web.StartupHelpers;
 import fiftyone.pipeline.web.mvc.configuration.FiftyOneInterceptorConfig;
 import fiftyone.pipeline.web.mvc.services.ClientsidePropertyService;
 import fiftyone.pipeline.web.mvc.services.FiftyOneJSService;
 import fiftyone.pipeline.web.mvc.services.PipelineResultService;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.ModelAndView;
@@ -79,13 +84,16 @@ public class FiftyOneInterceptor extends HandlerInterceptorAdapter {
         }
 
         File configFile = new File(configFileName);
-        PipelineBuilder builder = new PipelineBuilder();
+        PipelineBuilder builder = new PipelineBuilder()
+            .addService(new DataUpdateServiceDefault(
+                LoggerFactory.getLogger(DataUpdateService.class.getSimpleName()),
+                new HttpClientDefault()));
         try {
             JAXBContext jaxbContext = JAXBContext.newInstance(PipelineOptions.class);
             Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
             // Bind the configuration to a pipeline options instance
             PipelineOptions options = (PipelineOptions) unmarshaller.unmarshal(configFile);
-            pipeline = builder.buildFromConfiguration(options);
+            pipeline = StartupHelpers.buildFromConfiguration(builder, options, config.getClientsidePropertiesEnabled());
         } catch (JAXBException e) {
             throw new RuntimeException(e);
         } catch (Exception e) {

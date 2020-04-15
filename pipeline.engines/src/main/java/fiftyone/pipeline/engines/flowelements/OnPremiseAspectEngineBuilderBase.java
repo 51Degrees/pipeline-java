@@ -27,6 +27,7 @@ import fiftyone.pipeline.engines.configuration.DataFileConfiguration;
 import fiftyone.pipeline.engines.data.AspectEngineDataFile;
 import fiftyone.pipeline.engines.data.AspectEngineDataFileDefault;
 import fiftyone.pipeline.engines.services.DataUpdateService;
+import fiftyone.pipeline.engines.services.DataUpdateServiceDefault;
 import org.slf4j.ILoggerFactory;
 
 import java.util.ArrayList;

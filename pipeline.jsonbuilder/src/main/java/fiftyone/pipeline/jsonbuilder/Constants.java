@@ -20,31 +20,10 @@
  * such notice(s) shall fulfill the requirements of that article.
  * ********************************************************************* */
 
-package fiftyone.pipeline.engines.flowelements;
+package fiftyone.pipeline.jsonbuilder;
 
-import fiftyone.pipeline.core.data.factories.ElementDataFactory;
-import fiftyone.pipeline.core.typed.TypedKey;
-import fiftyone.pipeline.core.typed.TypedKeyDefault;
-import fiftyone.pipeline.engines.data.AspectData;
-import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
-import fiftyone.pipeline.util.Types;
-import org.slf4j.Logger;
+public class Constants {
 
-public abstract class CloudAspectEngineBase<
-    TData extends AspectData,
-    TProperty extends AspectPropertyMetaData>
-    extends AspectEngineBase<TData, TProperty>
-    implements CloudAspectEngine<TData, TProperty> {
-    public CloudAspectEngineBase(
-        Logger logger,
-        ElementDataFactory<TData> aspectDataFactory) {
-        super(logger, aspectDataFactory);
-    }
-
-    public TypedKey<TData> getTypedDataKey() {
-        if (typedKey == null) {
-            typedKey = new TypedKeyDefault<>(getElementDataKey(), Types.findSubClassParameterType(this, CloudAspectEngineBase.class, 0));
-        }
-        return typedKey;
-    }
+    public static final Integer MAX_JAVASCRIPT_ITERATIONS = 10;
+    
 }

@@ -49,8 +49,7 @@ public class Main {
 
             SimpleCloudEngine ageElement =
                 new SimpleCloudEngineBuilder(
-                    loggerFactory,
-                    cloudRequestEngine)
+                    loggerFactory)
                     .build();
 
             Pipeline pipeline = new PipelineBuilder(loggerFactory)

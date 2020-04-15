@@ -53,6 +53,16 @@
             <artifactId>pipeline.web.shared</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>pipeline.jsonbuilder</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>pipeline.javascriptbuilder</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <licenses>

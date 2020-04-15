@@ -1,0 +1,349 @@
+fiftyoneDegreesManager = function() {
+    'use-strict';
+    var json = {{&_jsonObject}};
+
+    // Log any errors returned in the JSON object.
+    if(json.error !== undefined){
+        console.log(json.error);
+    }
+
+    // Set to true when the JSON object is complete.
+    var completed = false;
+
+    // changeFuncs is an array of functions. When onChange is called and passed
+    // a function, the function is registered and is called when processing is
+    // complete.
+    var changeFuncs = [];
+
+    // Counter is used to count how many pieces of callbacks are expected. Every
+    // time the completedCallback method is called, the counter is decremented
+    // by 1.
+    var callbackCounter = 0;
+
+    // startsWith polyfill.
+    var startsWith = function(source, searchValue){
+        return source.lastIndexOf(searchValue, 0) === 0;
+    }
+
+    // Get cookies with the '51D_' prefix that have been added to the request
+    // and return the data as key value pairs. This method is needed to extract
+    // cookie values for inclusion in the GET or POST request for situations
+    // where CORS will prevent cookies being sent to third parties.
+    var getFodCookies = function(){
+        var keyValuePairs = document.cookie.split(/; */);
+        var fodCookies = [];
+        for(var i = 0; i < keyValuePairs.length; i++) {
+            var name = keyValuePairs[i].substring(0, keyValuePairs[i].indexOf('='));
+            if(startsWith(name, "51D_")){
+                var value = keyValuePairs[i].substring(keyValuePairs[i].indexOf('=')+1);
+                fodCookies[name] = value;
+            }
+        }
+        return fodCookies;
+    };
+
+    // Extract key value pairs from the '51D_' prefixed cookies and concatenates
+    // them to form a query string for the subsequent json refresh.
+    var getParametersFromCookies = function(){
+        var fodCookies = getFodCookies();
+        var keyValuePairs = [];
+        for (var key in fodCookies) {
+            if (fodCookies.hasOwnProperty(key)) {
+                keyValuePairs.push(key+"="+fodCookies[key]);
+            }
+        }
+        return keyValuePairs;
+    };
+
+    // Delete a cookie.
+    function deleteCookie(name) {
+        document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    }
+
+    // Fetch a value safely from the json object. If a key somewhere down the
+    // '.' separated hierarchy of keys is not present then 'undefined' is
+    // returned rather than letting an exception occur.
+    var getFromJson = function(key) {
+        var result = undefined;
+        if (typeof(key) === 'string') {
+            var functions = json;
+            var segments = key.split('.');
+            var i = 0;
+            while (functions !== undefined && i < segments.length) {
+                functions = functions[segments[i++]];
+            }
+            if (typeof(functions) === "string") {
+                result = functions;
+            }
+        }
+        return result;
+    }
+
+    // Executed at the end of the processJSproperties method or for each piece
+    // of JavaScript which has 51D code injected. When there are 0 pieces of
+    // JavaScript left to process then reload the JSON object.
+    var completedCallback = function(resolve, reject){
+        callbackCounter--;
+        if (callbackCounter === 0){
+{{#_updateEnabled}}
+            processRequest(resolve, reject);
+{{/_updateEnabled}}
+        } else if (callbackCounter < 0){
+            reject('Too many callbacks.');
+        }
+    }
+
+    // Executes any Javascript contained in the json data. Sets the processedJs
+    // flag to true when there is no further Javascript to be processed.
+    var processJSproperties = function(resolve, reject) {
+        var executeCallback = true;
+
+        if (json.javascriptProperties !== undefined &&
+            json.javascriptProperties.length > 0) {
+
+            // Execute each of the Javascript property code snippets using the
+            // index of the value to access the value to avoid problems with
+            // JavaScript returning erroneous values.
+            for(var index = 0;
+                index < json.javascriptProperties.length;
+                index++) {
+
+                var name = json.javascriptProperties[index];
+
+                // Create new function bound to this instance and execute it.
+                // This is needed to ensure the scope of the function is
+                // associated with this instance if any members are altered or
+                // added. Avoids global scoped variables.
+                var body = getFromJson(name);
+
+                if (body !== undefined) {
+                    var func = undefined;
+                    var searchString = '// 51D replace this comment with callback function.';
+
+                    if(body.indexOf(searchString) !== -1){
+                        callbackCounter++;
+                        body = body.replace(/\/\/ 51D replace this comment with callback function./g, 'callbackFunc(resolveFunc, rejectFunc);');
+                        func = new Function('callbackFunc', 'resolveFunc', 'rejectFunc',
+                            "try {\n" +
+                            body + "\n" +
+                            "} catch (err) {\n" +
+                            "console.log(err);" +
+                            "}"
+                        );
+                        func(completedCallback, resolve, reject);
+                        executeCallback = false;
+                    } else {
+                        func = new Function(
+                            "try {\n" +
+                            body + "\n" +
+                            "} catch (err) {\n" +
+                            "console.log(err);" +
+                            "}"
+                        );
+                        func();
+                    }
+                }
+            }
+        } else {
+            executeCallback = false;
+            completed = true;
+        }
+        if(executeCallback) {
+            callbackCounter = 1;
+            completedCallback(resolve, reject);
+        }
+    };
+
+{{#_updateEnabled}}
+    // Standard method to create a CORS HTTP request ready to send data.
+    var createCORSRequest = function(method, url) {
+        var xhr;
+        try {
+            xhr = new XMLHttpRequest();
+        } catch(err){
+            xhr = null;
+        }
+        if (xhr !== null && "withCredentials" in xhr) {
+
+            // Check if the XMLHttpRequest object has a "withCredentials"
+            // property.
+            // "withCredentials" only exists on XMLHTTPRequest2 objects.
+            xhr.open(method, url, true);
+        } else if (typeof XDomainRequest != "undefined") {
+
+            // Otherwise, check if XDomainRequest.
+            // XDomainRequest only exists in IE, and is IE's way of making CORS
+            // requests.
+            xhr = new XDomainRequest();
+            xhr.open(method, url);
+        } else {
+
+            // Otherwise, CORS is not supported by the browser.
+            xhr = null;
+        }
+        return xhr;
+    };
+{{/_updateEnabled}}
+
+    // Check if the JSON object still has any JavaScript snippets to run.
+    var hasJSFunctions = function() {
+        for (var i = i; i < json.javascriptProperties; i++) {
+            var body = getFromJson(json.javascriptProperties[i]);
+            if (body !== undefined && body.length > 0) {
+                return true;
+                }
+        }
+        return false;
+    }
+
+    // Process the JavaScript properties.
+    var process = function(resolve, reject){
+        processJSproperties(resolve, reject);
+    }
+
+    var fireChangeFuncs = function(json) {
+        for (var i = 0; i < changeFuncs.length; i++) {
+            if (typeof changeFuncs[i] === 'function' &&
+                changeFuncs[i].length === 1) {
+                changeFuncs[i](json);
+            }
+        }
+    }
+
+{{#_updateEnabled}}
+    // Sends the cookie parameters that have been set by the executed Javascript
+    // in the POST body of a new request to refresh the json data. Resolve is
+    // called with the new json if the request is processed as expected. Reject
+    // is called if there was a problem. The parameters are send as a POST
+    // request so that encoding and data length issues are minimised.
+    var processRequest = function(resolve, reject){
+        // Request URL with a license key and User-Agent if provided.
+        var xhr = createCORSRequest('POST', '{{{_url}}}');
+
+        // If there is no support for HTTP requests then call reject and throw
+        // a no CORS support error.
+        if (!xhr) {
+            reject(new Error('CORS not supported'));
+            return;
+        }
+
+        // Add the HTTP header for POST form data.
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+        xhr.onload = function () {
+
+            // Get the response body from the request.
+            var responseText = xhr.responseText;
+
+            // Process the response as json and call the resolve method.
+            json = JSON.parse(responseText);
+
+            if (hasJSFunctions()) {
+                // json updated so fire 'on change' functions
+                // before executing any new JS properties that
+                // have come back.
+                fireChangeFuncs(json);
+                process(resolve, reject);
+            }
+            else {
+                completed = true;
+                // json updated so fire 'on change' functions
+                // This must happen after completed = true in order
+                // for 'complete' functions to fire.
+                fireChangeFuncs(json);
+                resolve(json);
+{{^_enableCookies}}
+                var fodCookies = getFodCookies();
+                for (var key in fodCookies) {
+                    if (fodCookies.hasOwnProperty(key)) {
+                        deleteCookie(key);
+                    }
+                }
+{{/_enableCookies}}
+            }
+
+        };
+
+        xhr.onerror = function () {
+            // An error occurred with the request. Return the details in the
+            // call to reject method.
+            reject(Error(xhr.statusText));
+        };
+
+        // Get additional parameters from cookies in case they are not sent
+        // by the browser.
+		var params = getParametersFromCookies();
+
+        // Send the cookie parameters as the POST body.
+		xhr.send(params.join('&').replace(/%20/g, '+'));
+    }
+{{/_updateEnabled}}
+
+    // Function logs errors, used to 'reject' a promise or for error callbacks.
+    var catchError = function(value) {
+        console.log(value.message || value);
+    }
+
+    // Populate this instance of the FOD object with getters to access the
+	// properties. If the value is null then get the noValueMessage from the
+	// JSON object corresponding to the property.
+    var update = function(data){
+        var self = this;
+        Object.getOwnPropertyNames(data).forEach(function(key) {
+            self[key] = {};
+            for(var i in data[key]){
+                var obj = self[key];
+                (function(i) {
+                    Object.defineProperty(obj, i, {
+                        get: function (){
+                            if(data[key][i] === null && (i !== "javascriptProperties")){
+                                return data[key][i + "nullreason"];
+                            } else {
+                                return data[key][i];
+                            }
+                        }
+                    })
+                })(i);
+            }
+        });
+    }
+
+{{#_supportsPromises}}
+    this.promise = new Promise(function(resolve, reject) {
+        process(resolve,reject);
+    });
+{{/_supportsPromises}}
+
+	this.onChange = function(resolve) {
+		changeFuncs.push(resolve);
+	}
+
+    this.complete = function(resolve) {
+        if(completed){
+            resolve(json);
+        }else{
+            this.onChange(function(data) {
+                if(completed){
+                    resolve(data);
+                }
+            })
+        }
+    };
+
+    // Update this instance with the initial JSON payload.
+    update.call(this, json);
+{{#_supportsPromises}}
+    var parent = this;
+    this.promise.then(function(value) {
+        // JSON has been updated so replace the current instance.
+        update.call(parent, value);
+        resolve(parent);
+        completed = true;
+    }).catch(catchError);
+{{/_supportsPromises}}
+{{^_supportsPromises}}
+    process(function(json) {}, catchError);
+{{/_supportsPromises}}
+}
+
+var {{_objName}} = new fiftyoneDegreesManager();

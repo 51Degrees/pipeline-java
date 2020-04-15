@@ -20,37 +20,48 @@
  * such notice(s) shall fulfill the requirements of that article.
  * ********************************************************************* */
 
-package fiftyone.pipeline.web.shared.flowelements;
+package fiftyone.pipeline.jsonbuilder.flowelements;
 
 import fiftyone.pipeline.annotations.ElementBuilder;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
 import fiftyone.pipeline.core.flowelements.FlowElement;
-import fiftyone.pipeline.web.shared.data.JavaScriptData;
+import fiftyone.pipeline.jsonbuilder.data.JsonBuilderData;
 import org.slf4j.ILoggerFactory;
 
+//! [class]
+/**
+ * Builder for the @see JsonBuilderElement
+ */
 @ElementBuilder
-public class JavaScriptBundlerElementBuilder {
-
-    private ILoggerFactory loggerFactory;
-
-    public JavaScriptBundlerElementBuilder(ILoggerFactory loggerFactory) {
+public class JsonBuilderElementBuilder {
+    private final ILoggerFactory loggerFactory;
+    
+    /**
+     * Constructor
+     * @param loggerFactory The logger factory to use.
+     */
+    public JsonBuilderElementBuilder(ILoggerFactory loggerFactory) {
         this.loggerFactory = loggerFactory;
     }
-
-    public JavaScriptBundlerElement build() {
-        return new JavaScriptBundlerElement(
-            loggerFactory.getLogger(JavaScriptBundlerElement.class.getName()),
-            new JavaScriptDataFactory());
-    }
-
-    private class JavaScriptDataFactory implements ElementDataFactory<JavaScriptData> {
-
-        @Override
-        public JavaScriptData create(FlowData flowData, FlowElement<JavaScriptData, ?> flowElement) {
-            return new JavaScriptData(
-                loggerFactory.getLogger(JavaScriptData.class.getName()),
-                flowData);
-        }
+    
+    /**
+     * Build the @see JsonBuilderElement
+     * @return 
+     */
+    public JsonBuilderElement build() {
+        return new JsonBuilderElement(
+            loggerFactory.getLogger(JsonBuilderElement.class.getName()),
+            new ElementDataFactory<JsonBuilderData>() {
+                @Override
+                public JsonBuilderData create(
+                    FlowData flowData,
+                    FlowElement<JsonBuilderData, ?> flowElement) {
+                    return new JsonBuilderDataInternal(
+                        loggerFactory.getLogger(JsonBuilderDataInternal.class.getName()),
+                        flowData);
+                }
+            });
     }
 }
+//! [class]
