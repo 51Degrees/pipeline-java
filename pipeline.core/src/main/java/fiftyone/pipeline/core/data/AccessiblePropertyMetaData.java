@@ -25,6 +25,7 @@ package fiftyone.pipeline.core.data;
 import fiftyone.pipeline.core.data.types.JavaScript;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.Property;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,6 +45,10 @@ public class AccessiblePropertyMetaData {
     }
 
     public static class ProductMetaData {
+        public ProductMetaData() {
+            this.properties = null;
+            this.dataTier = null;
+        }
         public ProductMetaData(JSONObject json) {
             this.properties = new ArrayList<>();
             dataTier = json.getString("DataTier");
@@ -58,10 +63,28 @@ public class AccessiblePropertyMetaData {
     }
 
     public static class PropertyMetaData {
+        public PropertyMetaData(
+            String name,
+            String type,
+            String category,
+            List<PropertyMetaData> itemProperties) {
+            this.name = name;
+            this.type = type;
+            this.category = category;
+            this.itemProperties = itemProperties;
+        }
+
         public PropertyMetaData(JSONObject json) {
             this.name = json.getString("Name");
             this.type = json.getString("Type");
             this.category = json.getString("Category");
+            if (json.has("ItemProperties")) {
+                JSONArray array = json.getJSONArray("ItemProperties");
+                this.itemProperties = new ArrayList<>();
+                for (int i = 0; i < array.length(); i++) {
+                    this.itemProperties.add(new PropertyMetaData(array.getJSONObject(i)));
+                }
+            }
         }
 
         public String name;
@@ -69,6 +92,8 @@ public class AccessiblePropertyMetaData {
         public String type;
 
         public String category;
+
+        public List<PropertyMetaData> itemProperties;
 
         public Class getPropertyType()
         {
@@ -78,9 +103,7 @@ public class AccessiblePropertyMetaData {
                     return String.class;
                 case "Int32":
                     return int.class;
-                case "IList`1":
-                    return List.class;
-                case "IReadOnlyList`1":
+                case "Array":
                     return List.class;
                 case "Boolean":
                     return boolean.class;

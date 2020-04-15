@@ -47,6 +47,24 @@ public class FiftyOnePipelineBuilder extends PipelineBuilder {
 
     @Override
     protected void onPreBuild() {
+        
+        // Add the sequence element if it does not exist
+        boolean containsSequence = false;
+        for (FlowElement element : getFlowElements()) {
+            if (element instanceof SequenceElement) {
+                containsSequence = true;
+                break;
+            }
+        }
+        if (containsSequence == false) {
+            try {
+                flowElements.add(0, new SequenceElementBuilder(loggerFactory).build());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        
+        
         // Add the share usage element if it does not exist in the list.
         if (shareUsageEnabled) {
             boolean containsShareUsage = false;

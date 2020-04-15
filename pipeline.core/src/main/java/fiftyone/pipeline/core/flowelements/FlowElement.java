@@ -90,6 +90,7 @@ public interface FlowElement<
     /**
      * Get details of the properties that this element can populate.
      * @return this element's properties as a list
+     * @throws Exception
      */
     List<TProperty> getProperties();
 
@@ -98,6 +99,7 @@ public interface FlowElement<
      * its name.
      * @param name the name of the property
      * @return the property or null if it is not found
+     * @throws Exception
      */
     TProperty getProperty(String name);
 

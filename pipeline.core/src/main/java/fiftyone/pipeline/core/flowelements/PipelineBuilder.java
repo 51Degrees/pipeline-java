@@ -29,6 +29,7 @@ import fiftyone.pipeline.annotations.ElementBuilder;
 import fiftyone.pipeline.core.configuration.ElementOptions;
 import fiftyone.pipeline.core.configuration.PipelineOptions;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
+import fiftyone.pipeline.core.services.PipelineService;
 import org.reflections.Reflections;
 import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.ILoggerFactory;
@@ -56,6 +57,7 @@ public class PipelineBuilder
     implements PipelineBuilderFromConfiguration {
 
     private final Map<Class<?>, Class<?>> primativeTypes = getPrimativeTypeMap();
+    private List<PipelineService> services = new ArrayList<>();
     private Set<Class<?>> elementBuilders;
 
     public PipelineBuilder() {
@@ -338,28 +340,143 @@ public class PipelineBuilder
         flowElements.add(parallelInstance);
     }
 
-    private Object getBuilder(Class<?> builderType) throws IllegalAccessException, InvocationTargetException, InstantiationException {
+    /**
+     * Determines whether the parameters of the constructor are requirements
+     * which can be met by the builder. This does not check that the services
+     * are available, only that they are either services or a logger factory.
+     * @param constructor the constructor to check the parameters of
+     * @return true if all parameters are services or logger factory
+     */
+    private boolean paramsAreServices(Constructor constructor) {
+        for (Class type : constructor.getParameterTypes()) {
+            if (type.equals(ILoggerFactory.class) == false &&
+                PipelineService.class.isAssignableFrom(type) == false) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Add a service to the builder which will be needed by any of the
+     * elements being added to the pipeline. This should be used when
+     * calling {@link #buildFromConfiguration(PipelineOptions)}.
+     *
+     * See {@link PipelineService} for more details.
+     * @param service the service instance to add
+     * @return this builder
+     */
+    public PipelineBuilder addService(PipelineService service) {
+        services.add(service);
+        return this;
+    }
+
+    /**
+     * Get the service from the service collection if it exists, otherwise
+     * return null.
+     *
+     * Note that if more than one instance implementing the same service is
+     * added to the services, the first will be returned.
+     * @param serviceType the service class to be returned
+     * @param <T> the service class to be returned
+     * @return service of type {@link T}, or null
+     */
+    private <T extends PipelineService> T getService(Class<T> serviceType) {
+        for (PipelineService service : services) {
+            if (serviceType.isAssignableFrom(service.getClass())) {
+                return (T)service;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get the best constructor for the list of constructors. Best meaning
+     * the constructor with the most parameters which can be fulfilled.
+     * @param constructors constructors to get the best of
+     * @return best constructor or null if none have parameters that can be
+     * fulfilled
+     */
+    private Constructor getBestConstructor(List<Constructor> constructors) {
+        Constructor bestConstructor = null;
+        for (Constructor constructor : constructors) {
+            if (bestConstructor == null ||
+                    constructor.getParameterTypes().length >
+                        bestConstructor.getParameterTypes().length) {
+                boolean hasServices = true;
+                for (Class type : constructor.getParameterTypes()) {
+                    if (type.equals(ILoggerFactory.class) == false &&
+                        getService(type) == null) {
+                        // The parameter is not a logger factory, and the
+                        // service cannot be found, so this cannot be used.
+                        hasServices = false;
+                        break;
+                    }
+                }
+                if (hasServices == true) {
+                    bestConstructor = constructor;
+                }
+            }
+        }
+        return bestConstructor;
+    }
+
+    /**
+     * Get the services required for the constructor, and call it with them.
+     * @param constructor the constructor to call
+     * @return instance returned by the constructor
+     * @throws IllegalAccessException
+     * @throws InvocationTargetException
+     * @throws InstantiationException
+     */
+    private Object callConstructorWithServices(Constructor constructor)
+        throws IllegalAccessException, InvocationTargetException, InstantiationException {
+        Class[] types = constructor.getParameterTypes();
+        Object[] services = new Object[types.length];
+        for (int i = 0; i < types.length; i++) {
+            if (types[i].equals(ILoggerFactory.class)) {
+                services[i] = loggerFactory;
+            }
+            else {
+                services[i] = getService(types[i]);
+            }
+        }
+        return constructor.newInstance(services);
+    }
+
+    private Object getBuilder(Class<?> builderType)
+        throws IllegalAccessException, InvocationTargetException, InstantiationException {
         // Get the valid constructors. This means either a default
         // constructor, or a constructor taking a logger factory as an
         // argument.
         List<Constructor> defaultConstructors = new ArrayList<>();
         List<Constructor> loggerConstructors = new ArrayList<>();
+        List<Constructor> serviceConstructors = new ArrayList<>();
         for (Constructor constructor : builderType.getConstructors()) {
             if (constructor.getParameterTypes().length == 0) {
                 defaultConstructors.add(constructor);
             } else if (constructor.getParameterTypes().length == 1 &&
                 constructor.getParameterTypes()[0].equals(ILoggerFactory.class)) {
                 loggerConstructors.add(constructor);
+            } else if (constructor.getParameterTypes().length > 1 &&
+                paramsAreServices(constructor)){
+                serviceConstructors.add(constructor);
             }
         }
         if (defaultConstructors.size() == 0 &&
-            loggerConstructors.size() == 0) {
+            loggerConstructors.size() == 0 &&
+            serviceConstructors.size() == 0) {
             return null;
         }
 
         // Create the builder instance using the constructor with a logger
         // factory, or the default constructor if one taking a logger
         // factory is not available.
+        if (serviceConstructors.size() != 0 &&
+            getBestConstructor(serviceConstructors) != null) {
+            return callConstructorWithServices(
+                getBestConstructor(serviceConstructors));
+        }
         if (loggerConstructors.size() != 0) {
             return loggerConstructors.get(0).newInstance(loggerFactory);
         } else {

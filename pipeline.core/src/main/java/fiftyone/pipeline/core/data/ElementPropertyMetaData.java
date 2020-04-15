@@ -24,6 +24,8 @@ package fiftyone.pipeline.core.data;
 
 import fiftyone.pipeline.core.flowelements.FlowElement;
 
+import java.util.List;
+
 /**
  * Defines a property that can be returned by a {@link FlowElement}. This is
  * stored in the element itself, so if a property is not included for some reason
@@ -61,4 +63,15 @@ public interface ElementPropertyMetaData {
     Class getType();
 
     boolean isAvailable();
+    /**
+     * This is only relevant where Type is a collection of complex
+     * objects.
+     * It contains a list of the property meta-data for the
+     * items in the value for this property.
+     * For example, if this meta-data instance represents a list of
+     * hardware devices, ItemProperties will contain a list of the
+     * meta-data for properties available on each hardware device
+     * element within that list.
+     */
+    List<ElementPropertyMetaData> getItemProperties();
 }

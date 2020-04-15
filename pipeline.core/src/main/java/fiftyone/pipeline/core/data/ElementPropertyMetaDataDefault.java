@@ -24,6 +24,8 @@ package fiftyone.pipeline.core.data;
 
 import fiftyone.pipeline.core.flowelements.FlowElement;
 
+import java.util.List;
+
 public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
 
     private final String name;
@@ -31,6 +33,7 @@ public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
     private final String category;
     private final Class type;
     private final boolean available;
+    private final List<ElementPropertyMetaData> itemProperties;
 
     public ElementPropertyMetaDataDefault(
         String name,
@@ -38,11 +41,28 @@ public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
         String category,
         Class type,
         boolean available) {
+        this(
+            name,
+            element,
+            category,
+            type,
+            available,
+            null);
+    }
+
+    public ElementPropertyMetaDataDefault(
+        String name,
+        FlowElement element,
+        String category,
+        Class type,
+        boolean available,
+        List<ElementPropertyMetaData> itemProperties) {
         this.name = name;
         this.element = element;
         this.category = category;
         this.type = type;
         this.available = available;
+        this.itemProperties = itemProperties;
     }
 
     @Override
@@ -68,5 +88,10 @@ public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
     @Override
     public boolean isAvailable() {
         return available;
+    }
+
+    @Override
+    public List<ElementPropertyMetaData> getItemProperties() {
+        return itemProperties;
     }
 }
