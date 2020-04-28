@@ -23,11 +23,16 @@ package fiftyone.caching;
 
 /**
  * A cache that supports a thread safe put method for inserting to cache.
- * <p>
- * By contrast, for example, {@link LruCache} is a loading cache, it
+
+ * By contrast, for example, {@link LruLoadingCache} is a loading cache, it
  * automatically updates itself by being provided with a data loader.
  */
 public interface PutCache<K, V> extends Cache<K, V> {
 
+    /**
+     * Add an item to the cache.
+     * @param key the key for the item
+     * @param value the value to add
+     */
     void put(K key, V value);
 }

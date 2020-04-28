@@ -26,6 +26,9 @@ import fiftyone.pipeline.web.services.FiftyOneJSServiceCore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+/**
+ * Spring framework service for the {@link FiftyOneJSServiceCore}.
+ */
 @Service
 public interface FiftyOneJSService extends FiftyOneJSServiceCore {
 

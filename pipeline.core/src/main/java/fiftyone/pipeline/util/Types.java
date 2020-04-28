@@ -22,6 +22,7 @@
 
 package fiftyone.pipeline.util;
 
+import fiftyone.pipeline.core.data.ElementData;
 import fiftyone.pipeline.core.flowelements.FlowElementBase;
 
 import java.lang.reflect.ParameterizedType;
@@ -29,9 +30,16 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Static type methods.
+ */
 public class Types {
 
-    public static Map<Class<?>, Class<?>> getPrimativeTypeMap() {
+    /**
+     * Get a map of primitive types to their boxed type e.g. boolean and Boolean
+     * @return primitive type map
+     */
+    public static Map<Class<?>, Class<?>> getPrimitiveTypeMap() {
         Map<Class<?>, Class<?>> map = new HashMap<>();
         map.put(boolean.class, Boolean.class);
         map.put(int.class, Integer.class);
@@ -41,7 +49,19 @@ public class Types {
         return map;
     }
 
-    public static Class<?> findSubClassParameterType(Object instance, Class<?> classOfInterest, int parameterIndex) {
+    /**
+     * Get the type parameter of a class in relation to a parent class.
+     * @param instance to get the type parameter of
+     * @param classOfInterest a class above instance in the the inheritance
+     *                        hierarchy which the type of instance defines a
+     *                        generic type parameter of
+     * @param parameterIndex index in the list of type parameters
+     * @return the parameter type, or null if it could not be determined
+     */
+    public static Class<?> findSubClassParameterType(
+        Object instance,
+        Class<?> classOfInterest,
+        int parameterIndex) {
         Class<?> instanceClass = instance.getClass();
         while (classOfInterest != instanceClass.getSuperclass()) {
             instanceClass = instanceClass.getSuperclass();
@@ -54,6 +74,12 @@ public class Types {
         return (Class<?>) actualType;
     }
 
+    /**
+     * Get the type of {@link ElementData} which be the result of an instance's
+     * processing
+     * @param instance an instance extending {@link FlowElementBase}
+     * @return element data type or null
+     */
     public static Class<?> getDataTypeFromElement(Object instance) {
         return findSubClassParameterType(instance, FlowElementBase.class, 0);
     }

@@ -86,8 +86,7 @@ public class SimpleCloudEngine extends CloudAspectEngineBase<StarSignData> {
         }
 
         CloudRequestData requestData = data.getFromElement(cloudRequestEngine);
-        String json = "";
-        json = requestData.getJsonResponse();
+        String json = requestData.getJsonResponse();
 
         // Extract data from json to the aspectData instance.
         JSONObject jsonObj = new JSONObject(json);

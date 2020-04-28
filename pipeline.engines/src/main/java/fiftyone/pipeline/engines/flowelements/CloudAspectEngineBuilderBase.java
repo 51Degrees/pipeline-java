@@ -23,15 +23,31 @@
 package fiftyone.pipeline.engines.flowelements;
 
 import org.slf4j.ILoggerFactory;
+import org.slf4j.LoggerFactory;
 
+/**
+ * Abstract base class for all cloud engine builders.
+ * @param <TBuilder> the specific builder type to use as the return type from
+ *                  the fluent builder methods
+ * @param <TEngine> the type of the engine that this builder will build
+ */
 public abstract class CloudAspectEngineBuilderBase<
     TBuilder extends CloudAspectEngineBuilderBase<TBuilder, TEngine>,
-    TEngine extends AspectEngine>
+    TEngine extends CloudAspectEngine>
     extends AspectEngineBuilderBase<TBuilder, TEngine> {
+
+    /**
+     * Default constructor which uses the {@link ILoggerFactory} implementation
+     * returned by {@link LoggerFactory#getILoggerFactory()}.
+     */
     public CloudAspectEngineBuilderBase() {
         super();
     }
 
+    /**
+     * Construct a new instance using the {@link ILoggerFactory} supplied.
+     * @param loggerFactory the logger factory to use
+     */
     public CloudAspectEngineBuilderBase(ILoggerFactory loggerFactory) {
         super(loggerFactory);
     }

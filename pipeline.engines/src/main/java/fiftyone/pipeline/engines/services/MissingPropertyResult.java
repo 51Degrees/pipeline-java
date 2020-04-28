@@ -38,7 +38,9 @@ public class MissingPropertyResult {
      * @param reason      reason for the missing property
      * @param description explanation for the missing property
      */
-    public MissingPropertyResult(final MissingPropertyReason reason, final String description) {
+    public MissingPropertyResult(
+        final MissingPropertyReason reason,
+        final String description) {
         this.reason = reason;
         this.description = description;
     }

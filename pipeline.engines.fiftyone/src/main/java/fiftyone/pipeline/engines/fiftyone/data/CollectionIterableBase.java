@@ -26,7 +26,7 @@ import java.util.Iterator;
 
 public abstract class CollectionIterableBase<T> implements CloseableIterable<T> {
 
-    private long size;
+    private final long size;
 
     public CollectionIterableBase(long size) {
         this.size = size;

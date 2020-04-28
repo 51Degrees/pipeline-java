@@ -31,11 +31,11 @@ import java.util.List;
  * stored in the element itself, so if a property is not included for some reason
  * (e.g. not in a data file, or excluded from config) then the engine still has
  * knowledge of its existence.
- * <p>
- * An ElementPropertyMetaData is a property of an Element of a request. E.g. ‘HardwareModel’
- * is a property of the ‘Device’ aspect. They define meta-data such as property
- * name, data type, the data file types the property is present in and a flag
- * indicating if the property is disabled.
+ *
+ * An ElementPropertyMetaData is a property of an Element of a request. E.g.
+ * ‘HardwareModel’ is a property of the ‘Device’ aspect. They define meta-data
+ * such as property name, data type, the data file types the property is present
+ * in and a flag indicating if the property is disabled.
  */
 public interface ElementPropertyMetaData {
 
@@ -53,16 +53,24 @@ public interface ElementPropertyMetaData {
      */
     FlowElement getElement();
 
+    /**
+     * The category the property belongs to.
+     * @return property category
+     */
     String getCategory();
 
     /**
      * Get the type of data which the property refers to e.g. {@link String}.
-     *
      * @return variable type class
      */
     Class getType();
 
+    /**
+     * Get whether or not the property is available in the results // todo
+     * @return true if the property is available
+     */
     boolean isAvailable();
+
     /**
      * This is only relevant where Type is a collection of complex
      * objects.

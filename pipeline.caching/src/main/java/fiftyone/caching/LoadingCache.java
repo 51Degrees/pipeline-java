@@ -25,14 +25,21 @@ package fiftyone.caching;
 import java.io.IOException;
 
 /**
- * Extension of general cache contract to provide for getting a value with a particular
- * value loaded. Primarily used to allow the value loader to be an already instantiated value of the
- * type V to avoid construction costs of that value. (In other words the loader has the signature
+ * Extension of general cache contract to provide for getting a value with a
+ * particular value loaded. Primarily used to allow the value loader to be an
+ * already instantiated value of the type {@link <V>} to avoid construction
+ * costs of that value. (In other words the loader has the signature
  * "extends V implements IValueLoader").
- * <p>
- * Used only in UA Matching.
  */
 public interface LoadingCache<K, V> extends Cache<K, V> {
 
+    /**
+     * Get the value using the specified key and calling the specified loader if
+     * needed.
+     * @param key the key of the value to load
+     * @param loader the loader to use when getting the value
+     * @return the value from the cache, or loader if not available
+     * @throws IOException if there was an error from the loader
+     */
     V get(K key, ValueLoader<K, V> loader) throws IOException;
 }

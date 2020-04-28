@@ -24,6 +24,9 @@ package fiftyone.pipeline.core.data;
 
 import java.util.Map;
 
+/**
+ * Represents a collection of property values.
+ */
 public interface Data {
     /**
      * Get the value stored using the specified key.

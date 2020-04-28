@@ -29,15 +29,13 @@ import org.slf4j.Logger;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
- * Default implementation of the {@link Evidence} interface. This extends
- * {@link DataBase} but overrides the {@link #asKeyMap()} method so
- * that the internal map cannot be modified.
+ * Default implementation of the {@link Evidence} interface.
  */
 class EvidenceDefault extends DataBase implements Evidence {
 
     /**
-     * Construct a new instance of the internal Evidence class using a
-     * concurrent hash map as the backing map.
+     * Construct a new instance of the internal {@link Evidence} class using a
+     * case insensitive {@link ConcurrentSkipListMap} as the backing map.
      */
     EvidenceDefault(Logger logger) {
         super(logger, new ConcurrentSkipListMap<>(String.CASE_INSENSITIVE_ORDER));

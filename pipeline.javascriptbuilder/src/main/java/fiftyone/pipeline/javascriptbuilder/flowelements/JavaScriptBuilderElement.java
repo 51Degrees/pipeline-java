@@ -45,14 +45,24 @@ import org.slf4j.Logger;
 
 import java.util.*;
 
+import static fiftyone.pipeline.core.Constants.EVIDENCE_QUERY_PREFIX;
+import static fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR;
+import static fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_OBJECT_NAME;
+
 //! [class]
-public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderData, ElementPropertyMetaData>{
+
+/**
+ * JavaScript Builder Element generates a JavaScript include to be run on the
+ * client device.
+ */
+public class JavaScriptBuilderElement
+    extends FlowElementBase<JavaScriptBuilderData, ElementPropertyMetaData> {
 
     protected String host;
     protected String endpoint;
     protected String protocol;
-    protected String objName;
-    protected boolean enableCookies;
+    protected final String objName;
+    protected final boolean enableCookies;
     
     private boolean lastRequestWasError;
     private final Mustache mustache;
@@ -66,7 +76,7 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
      *                 e.g /api/v4/json
      * @param objName The default name of the object instantiated by the client
      *                JavaScript.
-     * @param enableCookes Set whether the client JavaScript stored results of 
+     * @param enableCookies Set whether the client JavaScript stored results of
      * client side processing in cookies.
      * @param host The host that the client JavaScript should query for updates.
      * If null or blank then the host from the request will be used
@@ -79,7 +89,7 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
             ElementDataFactory<JavaScriptBuilderData> elementDataFactory,
             String endpoint,
             String objName,
-            boolean enableCookes,
+            boolean enableCookies,
             String host,
             String protocol) {
         super(logger, elementDataFactory);
@@ -93,7 +103,7 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
         this.endpoint = endpoint;
         this.protocol = protocol;
         this.objName = objName.isEmpty() ? "fod" : objName;
-        enableCookies = enableCookes;
+        this.enableCookies = enableCookies;
     }
     //! [constructor]
     
@@ -106,7 +116,9 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
         // Try and get the request host name so it can be used to request
         // the Json refresh in the JavaScript code.
         if (reqHost == null || reqHost.isEmpty()) {
-            TryGetResult<String> hostEvidence = data.tryGetEvidence(Constants.EVIDENCE_HOST_KEY, String.class);
+            TryGetResult<String> hostEvidence = data.tryGetEvidence(
+                Constants.EVIDENCE_HOST_KEY,
+                String.class);
             if (hostEvidence.hasValue()) {
                 host = hostEvidence.getValue();
             }
@@ -115,7 +127,9 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
         // Try and get the request protocol so it can be used to request
         // the JSON refresh in the JavaScript code.
         if (reqProtocol == null || reqProtocol.isEmpty()) {
-            TryGetResult<String> protocolEvidence = data.tryGetEvidence(Constants.EVIDENCE_PROTOCOL, String.class);
+            TryGetResult<String> protocolEvidence = data.tryGetEvidence(
+                Constants.EVIDENCE_PROTOCOL,
+                String.class);
             if (protocolEvidence.hasValue()) {
                 protocol = protocolEvidence.getValue();
             }
@@ -129,7 +143,7 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
         // If device detection is enabled then try and get whether the
         // requesting browser supports promises. If not then default to false.
         try {
-            AspectPropertyValue<String> supportsPromisesValue =
+            AspectPropertyValue supportsPromisesValue =
                 data.getAs("Promise", AspectPropertyValue.class);
             supportsPromises = supportsPromisesValue.hasValue() &&
                 supportsPromisesValue.getValue() == "Full";
@@ -156,8 +170,10 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
             .asKeyMap();
         
         for(Map.Entry<String, Object> entry : queryEvidence.entrySet()){
-            if(entry.getKey().startsWith(fiftyone.pipeline.core.Constants.EVIDENCE_QUERY_PREFIX)){
-                parameters.add(entry.getKey().substring(entry.getKey().indexOf(fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR) + 1) + "=" + entry.getValue());
+            if(entry.getKey().startsWith(EVIDENCE_QUERY_PREFIX)){
+                parameters.add(entry.getKey().substring(
+                    entry.getKey().indexOf(EVIDENCE_SEPERATOR) + 1) +
+                    "=" + entry.getValue());
             }
         }
 
@@ -191,7 +207,7 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
         }
 
         // With the gathered resources, build a new JavaScriptResource.
-        BuildJavaScript(data, jsonObject, supportsPromises, url);
+        buildJavaScript(data, jsonObject, supportsPromises, url);
     }
 
     @Override
@@ -204,14 +220,14 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
         return new EvidenceKeyFilterWhitelist(Arrays.asList(
                 Constants.EVIDENCE_HOST_KEY,
                 Constants.EVIDENCE_PROTOCOL,
-                Constants.EVIDENCE_OBJECT_NAME),
+                EVIDENCE_OBJECT_NAME),
             String.CASE_INSENSITIVE_ORDER);
     }
 
     @Override
     public List<ElementPropertyMetaData> getProperties() {
-        return Arrays.asList(
-            (ElementPropertyMetaData)new ElementPropertyMetaDataDefault(
+        return Collections.singletonList(
+            (ElementPropertyMetaData) new ElementPropertyMetaDataDefault(
                 "javascript",
                 this,
                 "javascript",
@@ -229,12 +245,21 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
         // Nothing to clean up here.
     }
 
-    private void BuildJavaScript(FlowData data, String jsonObject, boolean supportsPromises, String url) {
-        JavaScriptBuilderDataInternal elementData = (JavaScriptBuilderDataInternal)data.getOrAdd(getElementDataKey(),getDataFactory());
+    private void buildJavaScript(
+        FlowData data,
+        String jsonObject,
+        boolean supportsPromises,
+        String url) {
+        JavaScriptBuilderDataInternal elementData =
+            (JavaScriptBuilderDataInternal)data.getOrAdd(
+                getElementDataKey(),
+                getDataFactory());
 
         String objectName;
         // Try and get the requested object name from evidence.
-        TryGetResult<String> res = data.tryGetEvidence(Constants.EVIDENCE_OBJECT_NAME, String.class );
+        TryGetResult<String> res = data.tryGetEvidence(
+            EVIDENCE_OBJECT_NAME,
+            String.class );
         if (res.hasValue() == false ||
             res.getValue().isEmpty()) {
             objectName = objName;

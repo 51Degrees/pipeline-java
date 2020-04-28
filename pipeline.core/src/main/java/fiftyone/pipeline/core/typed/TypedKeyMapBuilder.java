@@ -26,15 +26,23 @@ import fiftyone.pipeline.core.data.TryGetResult;
 import fiftyone.pipeline.core.exceptions.PipelineDataException;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Public builder for instances of {@link TypedKeyMap}. This follows the fluent
+ * builder pattern.
+ */
 public class TypedKeyMapBuilder {
 
     private final TypedKeyMap _map;
 
+    /**
+     * Construct a new instance.
+     * @param isConcurrent true if the resulting {@link TypedKeyMap} should be
+     *                     thread-safe to handle concurrent access
+     */
     public TypedKeyMapBuilder(boolean isConcurrent) {
         if (isConcurrent) {
             _map = new TypedKeyMapConcurrent();
@@ -43,15 +51,30 @@ public class TypedKeyMapBuilder {
         }
     }
 
+    /**
+     * Add an item to the map which will be built.
+     * @param typedKey key to add the value with
+     * @param value value to add
+     * @param <T> type of value
+     * @return this builder
+     */
     public <T> TypedKeyMapBuilder put(TypedKey<T> typedKey, T value) {
         _map.put(typedKey, value);
         return this;
     }
 
+    /**
+     * Build the {@link TypedKeyMap} instance.
+     * @return map instance
+     */
     public TypedKeyMap build() {
         return this._map;
     }
 
+    /**
+     * Extends the internal implementation to add thread-safety to the
+     * {@link #get(Object)} and {@link #put(String, Object)} methods.
+     */
     private static class TypedKeyMapConcurrent extends TypedKeyMapInternal {
         @Override
         public <T> void put(TypedKey<T> typedKey, T value) {
@@ -102,8 +125,7 @@ public class TypedKeyMapBuilder {
             Entry current = find(typedKey.getName());
             if (current != null) {
                 // Note - can throw java equivalent of invalid cast exception.
-                T result = typedKey.getType().cast(current._value);
-                return result;
+                return typedKey.getType().cast(current._value);
             }
             throw new NoSuchElementException();
         }
@@ -155,6 +177,7 @@ public class TypedKeyMapBuilder {
                     result.setValue(value);
                 }
             } catch (ClassCastException e) {
+                // Don't do anything here.
             }
 
             return result;
@@ -170,6 +193,7 @@ public class TypedKeyMapBuilder {
                 if (current[1] == _head) {
                     _head = current[1]._next;
                 }
+                @SuppressWarnings("unchecked")
                 T value = (T) current[1]._value;
                 current[1].closeValue();
                 current[1]._value = null;
@@ -191,7 +215,7 @@ public class TypedKeyMapBuilder {
             } else {
                 // The key does not exist so add it to the head of the linked
                 // list.
-                Entry first = new Entry(typedKey, value);
+                Entry<T> first = new Entry<>(typedKey, value);
                 first._next = _head;
                 _head = first;
             }
@@ -241,7 +265,7 @@ public class TypedKeyMapBuilder {
         }
 
         @Override
-        public void putAll(Map<? extends String, ? extends Object> m) {
+        public void putAll(Map<? extends String, ?> m) {
             for (Map.Entry<? extends String, ?> entry : m.entrySet()) {
                 this.put(new TypedKeyDefault<>(entry.getKey(), Object.class), entry.getValue());
             }
@@ -313,13 +337,9 @@ public class TypedKeyMapBuilder {
         public <T> boolean containsKey(TypedKey<T> typedKey) {
             boolean result = false;
             Entry value = find(typedKey.getName());
-            if (value != null) {
-                try {
-                    T typedValue = (T) value;
-                    result = true;
-                } catch (ClassCastException e) {
-                    // do nothing.
-                }
+            if (value != null &&
+                typedKey.getType().isAssignableFrom(value._value.getClass())) {
+                result = true;
             }
             return result;
         }
@@ -350,8 +370,6 @@ public class TypedKeyMapBuilder {
                     } else if (_value instanceof AutoCloseable) {
                         ((AutoCloseable) _value).close();
                     }
-                } catch (IOException ex) {
-                    Logger.getLogger(TypedKeyMapBuilder.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (Exception ex) {
                     Logger.getLogger(TypedKeyMapBuilder.class.getName()).log(Level.SEVERE, null, ex);
                 }

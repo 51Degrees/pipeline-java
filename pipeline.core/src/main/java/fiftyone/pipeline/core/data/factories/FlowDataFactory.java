@@ -23,9 +23,21 @@
 package fiftyone.pipeline.core.data.factories;
 
 import fiftyone.pipeline.core.data.FlowData;
+import fiftyone.pipeline.core.flowelements.FlowDataFactoryDefault;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 
+/**
+ * Factory class used to create a {@link FlowData} instance for a
+ * {@link Pipeline}. A {@link Pipeline} must contain a FlowDataFactory, and by
+ * default this is the {@link FlowDataFactoryDefault} implementation.
+ */
 public interface FlowDataFactory {
 
+    /**
+     * Creates a new instance of {@link FlowData} linked to the {@link Pipeline}
+     * provided.
+     * @param pipeline to link the {@link FlowData} to
+     * @return a new {@link FlowData} instance
+     */
     FlowData create(Pipeline pipeline);
 }

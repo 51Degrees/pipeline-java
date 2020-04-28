@@ -27,6 +27,11 @@ import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.factories.FlowDataFactory;
 import org.slf4j.ILoggerFactory;
 
+/**
+ * Default implementation of the {@link FlowDataFactory} interface. This is the
+ * implementation used by {@link Pipeline}s built using the
+ * {@link PipelineBuilder}.
+ */
 public class FlowDataFactoryDefault implements FlowDataFactory {
 
     private final ILoggerFactory loggerFactory;

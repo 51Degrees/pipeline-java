@@ -22,6 +22,8 @@
 
 package fiftyone.pipeline.web.services;
 
+import fiftyone.pipeline.core.data.Evidence;
+import fiftyone.pipeline.core.data.EvidenceKeyFilter;
 import fiftyone.pipeline.core.data.FlowData;
 
 import javax.servlet.http.Cookie;
@@ -31,20 +33,42 @@ import java.util.Enumeration;
 
 import static fiftyone.pipeline.core.Constants.*;
 
+/**
+ * Service used to populate the {@link Evidence} from a
+ * {@link HttpServletRequest} ready for it to be processed by the Pipeline.
+ * The Pipeline's {@link EvidenceKeyFilter} is used to determine what should be
+ * collected from the request.
+ */
 public interface WebRequestEvidenceServiceCore {
+
+    /**
+     * Collect all the evidence needed from the request and add to the
+     * {@link FlowData} instance.
+     * @param flowData to get the {@link FlowData#getEvidenceKeyFilter()} from
+     *                 and add the evidence to
+     * @param request the {@link HttpServletRequest} to get the evidence from
+     */
     void addEvidenceFromRequest(FlowData flowData, HttpServletRequest request);
 
+    /**
+     * Default implementation of the {@link WebRequestEvidenceServiceCore}
+     * service.
+     */
     class Default implements WebRequestEvidenceServiceCore {
 
         @Override
-        public void addEvidenceFromRequest(FlowData flowData, HttpServletRequest request) {
+        public void addEvidenceFromRequest(
+            FlowData flowData,
+            HttpServletRequest request) {
 
             Enumeration<String> headerNames = request.getHeaderNames();
             if (headerNames != null) {
                 while (headerNames.hasMoreElements()) {
                     String headerName = headerNames.nextElement();
                     String headerValue = request.getHeader(headerName);
-                    String evidenceKey = EVIDENCE_HTTPHEADER_PREFIX + EVIDENCE_SEPERATOR + headerName;
+                    String evidenceKey = EVIDENCE_HTTPHEADER_PREFIX +
+                        EVIDENCE_SEPERATOR +
+                        headerName;
                     checkAndAdd(flowData, evidenceKey, headerValue);
                 }
 
@@ -52,7 +76,9 @@ public interface WebRequestEvidenceServiceCore {
             Cookie[] cookies = request.getCookies();
             if (cookies != null) {
                 for (Cookie cookie : cookies) {
-                    String evidenceKey = EVIDENCE_COOKIE_PREFIX + EVIDENCE_SEPERATOR + cookie.getName();
+                    String evidenceKey = EVIDENCE_COOKIE_PREFIX +
+                        EVIDENCE_SEPERATOR +
+                        cookie.getName();
                     checkAndAdd(flowData, evidenceKey, cookie.getValue());
                 }
             }
@@ -60,8 +86,13 @@ public interface WebRequestEvidenceServiceCore {
             if (parameterNames != null) {
                 while (parameterNames.hasMoreElements()) {
                     String parameterName = parameterNames.nextElement();
-                    String evidenceKey = EVIDENCE_QUERY_PREFIX + EVIDENCE_SEPERATOR + parameterName;
-                    checkAndAdd(flowData, evidenceKey, request.getParameter(parameterName));
+                    String evidenceKey = EVIDENCE_QUERY_PREFIX +
+                        EVIDENCE_SEPERATOR +
+                        parameterName;
+                    checkAndAdd(
+                        flowData,
+                        evidenceKey,
+                        request.getParameter(parameterName));
                 }
             }
 
@@ -71,14 +102,26 @@ public interface WebRequestEvidenceServiceCore {
                 Enumeration<String> sessionNames = session.getAttributeNames();
                 while (sessionNames.hasMoreElements()) {
                     String sessionName = sessionNames.nextElement();
-                    String sessionKey = EVIDENCE_SESSION_PREFIX + EVIDENCE_SEPERATOR + sessionName;
-                    checkAndAdd(flowData, sessionKey, session.getAttribute(sessionName));
+                    String sessionKey = EVIDENCE_SESSION_PREFIX +
+                        EVIDENCE_SEPERATOR +
+                        sessionName;
+                    checkAndAdd(
+                        flowData,
+                        sessionKey,
+                        session.getAttribute(sessionName));
                 }
             }
 
             checkAndAdd(flowData, EVIDENCE_CLIENTIP_KEY, request.getLocalAddr());
         }
 
+        /**
+         * Check if the {@link FlowData} requires this item of evidence, and add
+         * it if it does.
+         * @param flowData to check and add to
+         * @param key the key to check and add
+         * @param value the value to add if the check passes
+         */
         private void checkAndAdd(FlowData flowData, String key, Object value) {
             if (flowData.getEvidenceKeyFilter().include(key)) {
                 flowData.addEvidence(key, value);

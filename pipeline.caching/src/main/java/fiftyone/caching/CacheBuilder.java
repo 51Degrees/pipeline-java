@@ -22,7 +22,19 @@
 
 package fiftyone.caching;
 
+/**
+ * Builder interface used to build caches. The builder is type agnostic, and
+ * will build a cache with the types provided.
+ */
 public interface CacheBuilder {
 
+    /**
+     * Build a new instance of the cache.
+     * @param c a cache to get the key and value types from
+     * @param cacheSize size of the cache
+     * @param <K> type of key to store in the cache
+     * @param <V> type of value to store in the cache
+     * @return a new cache instance
+     */
     <K, V> Cache<K, V> build(Cache<K, V> c, int cacheSize);
 }

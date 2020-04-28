@@ -42,36 +42,45 @@ import java.util.*;
 
 import static fiftyone.pipeline.util.CheckArgument.checkNotNull;
 import static fiftyone.pipeline.util.StringManipulation.stringJoin;
-import static fiftyone.pipeline.util.Types.getPrimativeTypeMap;
+import static fiftyone.pipeline.util.Types.getPrimitiveTypeMap;
 
 /**
  * The PipelineBuilder follows the fluent builder pattern. It is used to
  * construct instances of the {@link Pipeline}. {@link FlowElement}s can be
  * added individually to be run in series, or as an array to be run in parallel.
- * <p>
- * <p>A PipelineBuilder is intended to be used once only and once {@link #build()} has
- * been called it cannot be used further.
+
+ * A PipelineBuilder is intended to be used once only and once {@link #build()}
+ * has been called it cannot be used further.
  */
 public class PipelineBuilder
     extends PipelineBuilderBase<PipelineBuilder>
     implements PipelineBuilderFromConfiguration {
 
-    private final Map<Class<?>, Class<?>> primativeTypes = getPrimativeTypeMap();
-    private List<PipelineService> services = new ArrayList<>();
+    private final Map<Class<?>, Class<?>> primitiveTypes = getPrimitiveTypeMap();
+    private final List<PipelineService> services = new ArrayList<>();
     private Set<Class<?>> elementBuilders;
 
+    /**
+     * Construct a new builder.
+     */
     public PipelineBuilder() {
         super();
         getAvailableElementBuilders();
     }
 
+    /**
+     * Construct a new instance
+     * @param loggerFactory logger factory to use when passing loggers to any
+     *                      instances created by the builder
+     */
     public PipelineBuilder(ILoggerFactory loggerFactory) {
         super(loggerFactory);
         getAvailableElementBuilders();
     }
 
     @Override
-    public Pipeline buildFromConfiguration(PipelineOptions options) throws Exception {
+    public Pipeline buildFromConfiguration(PipelineOptions options)
+        throws Exception {
 
         checkNotNull(options, "Options cannot be null");
 
@@ -86,7 +95,10 @@ public class PipelineBuilder
                     elementOptions.subElements.size() > 0) {
                     // The configuration has sub elements so create
                     // a ParallelElements instance.
-                    addParallelElementsToList(flowElements, elementOptions, counter);
+                    addParallelElementsToList(
+                        flowElements,
+                        elementOptions,
+                        counter);
                 } else {
                     // The configuration has no sub elements so create
                     // a flow element.
@@ -118,12 +130,16 @@ public class PipelineBuilder
         return build();
     }
 
+    /**
+     * Uses reflection to populate {@link #elementBuilders} with all classes
+     * which are annotated with the {@link ElementBuilder} annotation.
+     */
     private void getAvailableElementBuilders() {
         // Disable logging for Reflections otherwise it will log all the missing
         // classes on construction.
         Reflections.log = null;
 
-        ConfigurationBuilder config = new ConfigurationBuilder().build();
+        ConfigurationBuilder config = ConfigurationBuilder.build();
 
         config.setInputsFilter(new Predicate<String>() {
             @Override
@@ -139,6 +155,15 @@ public class PipelineBuilder
         elementBuilders = reflections.getTypesAnnotatedWith(ElementBuilder.class);
     }
 
+    /**
+     * Create a new {@link FlowElement} using the specified
+     * {@link ElementOptions} and add it to the supplied list of elements.
+     * @param elements the list to add the new {@link FlowElement} to
+     * @param elementOptions  instance to use when creating the
+     *                        {@link FlowElement}
+     * @param elementLocation the string description of the element's location
+     *                        within the {@link PipelineOptions} instance
+     */
     private void addElementToList(
         List<FlowElement> elements,
         ElementOptions elementOptions,
@@ -241,31 +266,31 @@ public class PipelineBuilder
         Annotation[][] annotations = buildMethod.getParameterAnnotations();
         for (int i = 0; i < types.length; i++) {
             Map<String, Object> caseInsensitiveParameters =
-                new TreeMap(String.CASE_INSENSITIVE_ORDER);
+                new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
             caseInsensitiveParameters.putAll(elementOptions.buildParameters);
-            Object paramValue = null;
+            Object paramValue;
             Class<?> paramType = types[i];
             Annotation[] paramAnnotations = annotations.length > i ?
                 annotations[i] : new Annotation[0];
-            BuildArg paramAnnotaion = null;
+            BuildArg paramAnnotation = null;
             for (Annotation annotation : paramAnnotations) {
                 if (annotation instanceof BuildArg) {
-                    paramAnnotaion = (BuildArg) annotation;
+                    paramAnnotation = (BuildArg) annotation;
                     break;
                 }
             }
-            if (paramAnnotaion == null) {
+            if (paramAnnotation == null) {
                 throw new PipelineConfigurationException(
                     "Method 'build' on builder '" + builderType.getName() +
                         "' for " + elementLocation + " is not annotated with " +
                         "the name of the parameter.");
             }
             if (paramType.equals(String.class)) {
-                paramValue = caseInsensitiveParameters.get(paramAnnotaion.value());
+                paramValue = caseInsensitiveParameters.get(paramAnnotation.value());
             } else {
                 paramValue = parseToType(
                     paramType,
-                    caseInsensitiveParameters.get(paramAnnotaion.value()).toString(),
+                    caseInsensitiveParameters.get(paramAnnotation.value()).toString(),
                     "Method 'build' on builder '" +
                         builderType.getName() + "' for " +
                         elementLocation + " expects a parameter of type " +
@@ -275,7 +300,7 @@ public class PipelineBuilder
         }
 
         // Call the build method with the parameters we set up above.
-        Object result = null;
+        Object result;
         try {
             result = buildMethod.invoke(builderInstance, parameters.toArray());
         } catch (Exception e) {
@@ -289,17 +314,29 @@ public class PipelineBuilder
                 "Failed to build " + elementLocation + " using " +
                     "'" + builderType.getName() + "', reason unknown.");
         }
-        FlowElement element = (FlowElement) result;
-        if (element == null) {
-            throw new PipelineConfigurationException(
-                "Failed to cast '" + result.getClass().getName() + "' to " +
-                    "'FlowElement' for " + elementLocation);
-        }
 
-        // Add the element to the list.
-        elements.add(element);
+        try {
+            FlowElement element = FlowElement.class.cast(result);
+            // Add the element to the list.
+            elements.add(element);
+        }
+        catch (ClassCastException e){
+            String message = "Failed to cast '" + result.getClass().getName() +
+                "' to 'FlowElement' for " + elementLocation;
+            logger.error(message);
+            throw new PipelineConfigurationException(message, e);
+        }
     }
 
+    /**
+     * Create a {@link ParallelElements} from the specified configuration and
+     * add it to the {@link #flowElements} list.
+     * @param elements the list to add the new {@link ParallelElements} to
+     * @param elementOptions the {@link ElementOptions} instance to use when
+     *                       creating the {@link ParallelElements}
+     * @param elementIndex the index of the element within the
+     *                     {@link PipelineOptions}
+     */
     private void addParallelElementsToList(
         List<FlowElement> elements,
         ElementOptions elementOptions,
@@ -381,6 +418,7 @@ public class PipelineBuilder
      * @param <T> the service class to be returned
      * @return service of type {@link T}, or null
      */
+    @SuppressWarnings("unchecked")
     private <T extends PipelineService> T getService(Class<T> serviceType) {
         for (PipelineService service : services) {
             if (serviceType.isAssignableFrom(service.getClass())) {
@@ -444,6 +482,17 @@ public class PipelineBuilder
         return constructor.newInstance(services);
     }
 
+    /**
+     * Get a new instance of the builder type provided. This tries to call the
+     * constructor with the most arguments which can be fulfilled. Potential
+     * constructor parameters are {@link ILoggerFactory} and anything
+     * implementing {@link PipelineService}.
+     * @param builderType type of builder to get an instance of
+     * @return new builder instance
+     * @throws IllegalAccessException
+     * @throws InvocationTargetException
+     * @throws InstantiationException
+     */
     private Object getBuilder(Class<?> builderType)
         throws IllegalAccessException, InvocationTargetException, InstantiationException {
         // Get the valid constructors. This means either a default
@@ -484,6 +533,27 @@ public class PipelineBuilder
         }
     }
 
+    /**
+     * Call the non-build methods on the builder that configuration options have
+     * been supplied for.
+     *
+     * Each method must take only one parameter and the parameter type
+     * must either be a string or have a 'parse' method available.
+     * @param buildParameters a map containing the names of the methods to call
+     *                        and the value to pass as a parameters
+     * @param builderType the {@link Class} of the builder that is being used to
+     *                   create the {@link FlowElement}
+     * @param builderInstance the instance of the builder that is being used to
+     *                        create the
+     * @param elementConfigLocation a string containing a description of the
+     *                              location of the configuration for this
+     *                              element. This will be added to error
+     *                              messages to help the user identify any
+     *                              problems
+     * @return a list of the names of the entries from buildParameters that are
+     * to be used as mandatory parameters to the Build method rather than
+     * optional builder methods
+     */
     private List<String> processBuildParameters(
         Map<String, Object> buildParameters,
         Class<?> builderType,
@@ -496,7 +566,9 @@ public class PipelineBuilder
         for (Map.Entry<String, Object> parameter : buildParameters.entrySet()) {
             // Check if the build parameter corresponds to a method
             // on the builder.
-            List<Method> methods = getMethods(parameter.getKey(), builderType.getMethods());
+            List<Method> methods = getMethods(
+                parameter.getKey(),
+                builderType.getMethods());
             if (methods.size() == 0) {
                 // If not then add the parameter to the list of parameters
                 // to pass to the Build method instead.
@@ -555,6 +627,21 @@ public class PipelineBuilder
         return buildParameterList;
     }
 
+    /**
+     * Attempt to call a method on the builder using the parameter value
+     * provided. The value can be parsed to basic types (e.g. string or int) but
+     * complex types are not supported.
+     * @param paramValue value of the parameter to call the method with
+     * @param method method to attempt to cal
+     * @param builderType the {@link Class} of the builder that is being used to
+     *                   create the {@link FlowElement}
+     * @param builderInstance the instance of the builder that is being used to
+     *                        create the {@link FlowElement}
+     * @param elementConfigLocation a string containing a description of the
+     *                              configuration for this element. This will be
+     *                              added to error messages to help the user
+     *                              identify any problems
+     */
     private void tryParseAndCallMethod(
         Object paramValue,
         Method method,
@@ -587,6 +674,19 @@ public class PipelineBuilder
         }
     }
 
+    /**
+     * Get the method associated with the given name.
+     * @param methodName The name of the method to get. This is case insensitive
+     *                   and can be:
+     *                   1. The exact method name
+     *                   2. The method name with the text 'set' removed from
+     *                   the start.
+     *                   3. An alternate name, as defined by an
+     *                   {@link AlternateName}
+     * @param methods the list of methods to try and find a match in
+     * @return the {@link Method} of the matching method or null if no match
+     * could be found
+     */
     private List<Method> getMethods(
         String methodName,
         Method[] methods) {
@@ -623,13 +723,20 @@ public class PipelineBuilder
                     List<Method> tempMethods = new ArrayList<>();
                     for (Method method : methods) {
                         try {
-                            AlternateName alternateName = method.getAnnotation(AlternateName.class);
-                            if (alternateName.value().toLowerCase().equals(lowerMethodName)) {
+                            AlternateName alternateName =
+                                method.getAnnotation(AlternateName.class);
+                            if (alternateName.value().toLowerCase().equals(
+                                lowerMethodName)) {
                                 tempMethods.add(method);
-                            } else if (alternateName.value().toLowerCase().equals("set" + lowerMethodName)) {
+                            } else if (alternateName.value().toLowerCase().equals(
+                                "set" + lowerMethodName)) {
                                 tempMethods.add(method);
                             }
                         } catch (Exception e) {
+                            logger.debug("Exception while attempting to get" +
+                                "a set method with an alternate name annotation." +
+                                "Name was '" + lowerMethodName + "'",
+                                e);
                         }
                     }
                     potentialMethods = tempMethods;
@@ -648,6 +755,18 @@ public class PipelineBuilder
         return matchingMethods;
     }
 
+    /**
+     * Get the element builder associated with the given name.
+     * @param builderName the name of the builder to get. This is case
+     *                    insensitive and can be:
+     *                    1. The builder type name
+     *                    2. The builder type name with the text 'builder'
+     *                    removed from the end.
+     *                    3. An alternate name, as defined by an
+     *                    {@link ElementBuilder}
+     * @return the {@link Class} of the element builder or null if no match
+     * could be found
+     */
     private Class<?> getBuilderType(String builderName) {
         int tries = 0;
         Class<?> builderType = null;
@@ -722,19 +841,29 @@ public class PipelineBuilder
         return builderType;
     }
 
+    /**
+     * Parse a string value to the target type using the 'parse' method on the
+     * {@link Class} of the target type. For primitive types, the
+     * {@link #primitiveTypes} map is used to get the class with a suitable
+     * parse method.
+     * @param targetType the type to parse the value to
+     * @param value the value to parse
+     * @param errorTextPrefix the text to prefix any errors that are thrown with
+     * @return the parsed value
+     */
     private Object parseToType(
         Class<?> targetType,
         String value,
         String errorTextPrefix) {
         // Check for a TryParse method on the type
         Method parse = null;
-        Class<?> nonPrimativeType;
+        Class<?> nonPrimitiveType;
         if (targetType.isPrimitive()) {
-            nonPrimativeType = primativeTypes.get(targetType);
+            nonPrimitiveType = primitiveTypes.get(targetType);
         } else {
-            nonPrimativeType = targetType;
+            nonPrimitiveType = targetType;
         }
-        for (Method method : nonPrimativeType.getMethods()) {
+        for (Method method : nonPrimitiveType.getMethods()) {
             if (method.getName().startsWith("parse") &&
                 method.getParameterTypes().length == 1 &&
                 method.getParameterTypes()[0].equals(String.class)) {

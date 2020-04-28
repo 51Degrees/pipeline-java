@@ -27,6 +27,10 @@ import fiftyone.pipeline.core.data.EvidenceKeyFilter;
 import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.engines.configuration.CacheConfiguration;
 
+/**
+ * Default implementation of {@link FlowCache} using the
+ * {@link DataKeyedCacheBase}.
+ */
 public class FlowCacheDefault
     extends DataKeyedCacheBase<ElementData>
     implements FlowCache {

@@ -43,7 +43,7 @@ import java.util.List;
  * element
  * @param <TData> the type of element data that the flow element will write to
  * @param <TProperty> the type of meta data that the flow element will supply
- *                    about the properties it populates.
+ *                    about the properties it populates
  */
 public interface FlowElement<
     TData extends ElementData,
@@ -90,7 +90,6 @@ public interface FlowElement<
     /**
      * Get details of the properties that this element can populate.
      * @return this element's properties as a list
-     * @throws Exception
      */
     List<TProperty> getProperties();
 
@@ -99,7 +98,6 @@ public interface FlowElement<
      * its name.
      * @param name the name of the property
      * @return the property or null if it is not found
-     * @throws Exception
      */
     TProperty getProperty(String name);
 

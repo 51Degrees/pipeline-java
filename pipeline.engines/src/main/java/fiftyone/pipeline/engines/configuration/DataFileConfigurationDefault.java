@@ -28,6 +28,10 @@ import fiftyone.pipeline.engines.data.DataUpdateUrlFormatter;
 import java.nio.file.WatchKey;
 import java.util.List;
 
+/**
+ * This class contains the automatic update configuration parameters that can be
+ * supplied to an engine for a particular data file that the engine uses.
+ */
 public class DataFileConfigurationDefault implements DataFileConfiguration {
     private String identifier = "Default";
     private String dataFilePath;

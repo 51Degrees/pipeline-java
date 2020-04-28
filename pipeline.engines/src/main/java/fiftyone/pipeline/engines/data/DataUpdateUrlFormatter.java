@@ -22,6 +22,16 @@
 
 package fiftyone.pipeline.engines.data;
 
+/**
+ * Interface defining a URL formatter which is used by the
+ * {@link AspectEngineDataFile#getFormattedUrl()} method to get the data update
+ * URL.
+ */
 public interface DataUpdateUrlFormatter {
+    /**
+     * Get the formatted URL.
+     * @param dataFile file to get the update URL for
+     * @return formatted URL
+     */
     String getFormattedDataUpdateUrl(AspectEngineDataFile dataFile);
 }

@@ -25,5 +25,10 @@ package fiftyone.pipeline.engines.caching;
 import fiftyone.caching.PutCache;
 import fiftyone.pipeline.core.data.FlowData;
 
+/**
+ * Represents a put cache where the key is a {@link FlowData} instance.
+ * @param <V> the type of data to store in the cache associated with the
+ *           {@link FlowData} key
+ */
 public interface DataKeyedCache<V> extends PutCache<FlowData, V> {
 }

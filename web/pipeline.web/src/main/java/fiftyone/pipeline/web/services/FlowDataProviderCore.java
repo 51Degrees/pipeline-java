@@ -28,10 +28,24 @@ import javax.servlet.http.HttpServletRequest;
 
 import static fiftyone.pipeline.web.Constants.HTTPCONTEXT_FLOWDATA;
 
+/**
+ * Provider to be injected into controllers to get the pre-processed
+ * {@link FlowData} for the request being serviced.
+ */
 public interface FlowDataProviderCore {
 
+    /**
+     * Get the {@link FlowData} associated with the HTTP request.
+     * @param request the {@link HttpServletRequest} to get the {@link FlowData}
+     *                from
+     * @return a {@link FlowData} object containing the data values that have
+     * been populated by the configured Pipeline
+     */
     FlowData getFlowData(HttpServletRequest request);
-    
+
+    /**
+     * Default implementation of the {@link FlowDataProviderCore} service.
+     */
     class Default implements FlowDataProviderCore {
 
         @Override

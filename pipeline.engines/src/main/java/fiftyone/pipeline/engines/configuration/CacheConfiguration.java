@@ -25,31 +25,56 @@ package fiftyone.pipeline.engines.configuration;
 import fiftyone.caching.CacheBuilder;
 import fiftyone.caching.LruPutCache;
 
+/**
+ * Contains everything needed to build a cache.
+ * Currently, a {@link CacheBuilder} and an integer size parameter.
+ */
 public class CacheConfiguration {
 
     private static final int defaultSize = 1000;
 
-    private CacheBuilder builder;
+    private final CacheBuilder builder;
 
-    private int size;
+    private final int size;
 
+    /**
+     * Construct a new builder with the builder and size specified.
+     * @param builder the builder to use to create caches
+     * @param size the maximum size of the cache
+     */
     public CacheConfiguration(CacheBuilder builder, int size) {
         this.builder = builder;
         this.size = size;
     }
 
+    /**
+     * Construct a new builder using the {@link LruPutCache} with the size
+     * specified.
+     * @param size maximum size of the cache
+     */
     public CacheConfiguration(int size) {
         this(new LruPutCache.Builder(), defaultSize);
     }
 
+    /**
+     * Default constructor uses the {@link LruPutCache} with a size of 1000.
+     */
     public CacheConfiguration() {
         this(new LruPutCache.Builder(), defaultSize);
     }
 
+    /**
+     * Get the builder to use when building a cache.
+     * @return cache builder
+     */
     public CacheBuilder getCacheBuilder() {
         return builder;
     }
 
+    /**
+     * Get the maximum size parameter to use when building a cache.
+     * @return cache size
+     */
     public int getSize() {
         return size;
     }

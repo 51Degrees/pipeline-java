@@ -30,10 +30,24 @@ import fiftyone.pipeline.engines.configuration.CacheConfiguration;
 
 import java.io.IOException;
 
+/**
+ * Abstract base class for caches that use {@link FlowData} as the key.
+ * Internally, the cache actually uses a {@link DataKey} instance derived from
+ * {@link FlowData}.
+ * @param <V> the type of data to store in the cache
+ */
 public abstract class DataKeyedCacheBase<V> implements DataKeyedCache<V> {
 
+    /**
+     * The cache that is actually used to store the data internally.
+     */
     private PutCache<DataKey, V> internalCache;
 
+    /**
+     * Construct a new instance.
+     * @param configuration the cache configuration to use when creating the
+     *                      internal cache
+     */
     public DataKeyedCacheBase(CacheConfiguration configuration) {
         try {
             internalCache = (PutCache<DataKey, V>) configuration
@@ -47,6 +61,14 @@ public abstract class DataKeyedCacheBase<V> implements DataKeyedCache<V> {
         }
     }
 
+    /**
+     * Returns the {@link EvidenceKeyFilter} to use when generating a key from
+     * {@link FlowData} instances. Only evidence values that the filter includes
+     * will be used to create the key.
+     * @return an {@link EvidenceKeyFilter} instance
+     */
+    protected abstract EvidenceKeyFilter getFilter();
+
     @Override
     public V get(FlowData flowData) {
         return internalCache.get(flowData.generateKey(getFilter()));
@@ -56,8 +78,6 @@ public abstract class DataKeyedCacheBase<V> implements DataKeyedCache<V> {
     public void put(FlowData flowData, V value) {
         internalCache.put(flowData.generateKey(getFilter()), value);
     }
-
-    protected abstract EvidenceKeyFilter getFilter();
 
     @Override
     public void close() throws IOException {

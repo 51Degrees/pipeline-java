@@ -22,6 +22,11 @@
 
 package fiftyone.pipeline.core.configuration;
 
+import fiftyone.pipeline.annotations.AlternateName;
+import fiftyone.pipeline.core.flowelements.FlowElement;
+import fiftyone.pipeline.core.flowelements.Pipeline;
+import fiftyone.pipeline.core.flowelements.PipelineBuilder;
+
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -31,13 +36,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Configuration object that describes how to build a  {@link Pipeline}using a
+ * {@link PipelineBuilder}.
+ */
 @XmlRootElement(name = "PipelineOptions")
 public class PipelineOptions {
 
+    /**
+     * Configuration information for the {@link FlowElement}s that the Pipeline
+     * will contain.
+     * The order of elements is important as the pipeline will execute them
+     * sequentially in the order they are supplied. To execute elements in
+     * parallel, the {@link ElementOptions#subElements} property should be used.
+     */
     @XmlElementWrapper(name = "Elements")
     @XmlElement(name = "Element")
     public List<ElementOptions> elements = new ArrayList<>();
 
+    /**
+     * A map where the keys are method names and the values are parameter values.
+     * The method names can be exact matches, 'set' + name or match an
+     * {@link AlternateName} annotation.
+     */
     @XmlElement(name = "BuildParameters")
     @XmlJavaTypeAdapter(MapAdapter.class)
     public Map<String, Object> pipelineBuilderParameters = new HashMap<>();

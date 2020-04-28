@@ -46,17 +46,17 @@ public class LibLoader {
         String os = System.getProperty("os.name").toLowerCase();
 
         // Check for Windows
-        if (os.indexOf("win") >= 0) {
+        if (os.contains("win")) {
             return OS.WINDOWS;
         }
 
         // Check for Linux or Unix
-        if (os.indexOf("nux") >= 0 || os.indexOf("nix") >= 0) {
+        if (os.contains("nux") || os.contains("nix")) {
             return OS.UNIX;
         }
 
         // Check for OSx
-        if (os.indexOf("mac") >= 0) {
+        if (os.contains("mac")) {
             return OS.MAC;
         }
 
@@ -78,12 +78,12 @@ public class LibLoader {
         String arch = System.getProperty("os.arch").toLowerCase();
 
         // Check for 64 bit
-        if (arch.indexOf("64") >= 0) {
+        if (arch.contains("64")) {
             return "x64";
         }
 
         // Check for 32 bit
-        if (arch.indexOf("32") >= 0 || arch.indexOf("86") >= 0) {
+        if (arch.contains("32") || arch.contains("86")) {
             return "x86";
         }
 
@@ -115,17 +115,18 @@ public class LibLoader {
      *
      * @throws UnsupportedOperationException if the package does not contain
      *                                       a native library for the environment
-     * @throws IOException                   thrown if there is a problem copying the resource
+     * @throws IOException                   thrown if there is a problem
+     * copying the resource
      */
     public static void load(Class engineClass)
         throws IOException, UnsupportedOperationException {
-        File nativeLibaryFile = copyResource(
+        File nativeLibraryFile = copyResource(
             engineClass,
             getLibName(engineClass));
         try {
-            System.load(nativeLibaryFile.getAbsolutePath());
+            System.load(nativeLibraryFile.getAbsolutePath());
         } finally {
-            nativeLibaryFile.delete();
+            nativeLibraryFile.delete();
         }
     }
 
@@ -165,7 +166,7 @@ public class LibLoader {
                 "Could not copy resource '%s' to file '%s'. " +
                     "Check file system permissions.",
                 libName,
-                temp != null ? temp.getAbsolutePath() : "none"), ex);
+                temp.getAbsolutePath()), ex);
         }
         return temp;
     }
@@ -176,7 +177,7 @@ public class LibLoader {
      * library.
      */
     enum OS {
-        WINDOWS, /* Any windows OS containging "win" in the name. */
+        WINDOWS, /* Any windows OS containing "win" in the name. */
         UNIX, /* Any Linux/Unix OS containing "nix" or "nux" in the name. */
         MAC, /* Any OS X OS containing "mac" in the name. */
         OTHER; /* Any other OS which is not supported by LibLoader. */

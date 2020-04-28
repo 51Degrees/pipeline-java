@@ -22,12 +22,8 @@
 
 package fiftyone.pipeline.engines.fiftyone.flowelements;
 
-import fiftyone.pipeline.core.data.ElementData;
-import fiftyone.pipeline.core.data.ElementPropertyMetaData;
-import fiftyone.pipeline.core.data.EvidenceKeyFilter;
-import fiftyone.pipeline.core.data.EvidenceKeyFilterWhitelist;
-import fiftyone.pipeline.core.data.FlowData;
-import fiftyone.pipeline.core.data.factories.ElementDataFactory;
+import fiftyone.pipeline.core.data.*;
+import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.core.flowelements.FlowElementBase;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,9 +31,17 @@ import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 
+/**
+ * Sequence element establishes session and sequence evidence in the pipeline.
+ * If a session id is already in the evidence then the sequence is incremented.
+ */
 public class SequenceElement 
     extends FlowElementBase<ElementData, ElementPropertyMetaData> {
 
+    /**
+     * Construct a new instance of the {@link FlowElement}.
+     * @param logger logger instance to use for logging
+     */
     public SequenceElement(Logger logger) {
         super(logger, null);
     }
@@ -83,7 +87,11 @@ public class SequenceElement
     @Override
     protected void unmanagedResourcesCleanup() {
     }
-    
+
+    /**
+     * Get a unique id to use as the session id.
+     * @return new session id
+     */
     private String getNewSessionId() {
         UUID u = UUID.randomUUID();
         return u.toString();

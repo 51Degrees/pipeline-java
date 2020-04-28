@@ -29,6 +29,9 @@ import java.util.List;
 
 import static fiftyone.pipeline.util.StringManipulation.stringJoin;
 
+/**
+ * Default implementation of the {@link MissingPropertyService} interface.
+ */
 public class MissingPropertyServiceDefault implements MissingPropertyService {
 
     /**
@@ -36,7 +39,7 @@ public class MissingPropertyServiceDefault implements MissingPropertyService {
      */
     private static MissingPropertyServiceDefault missingPropertyService = null;
 
-    private static volatile Object lock = new Object();
+    private static final Object lock = new Object();
 
     /**
      * Private constructor to prevent new copies
@@ -69,7 +72,12 @@ public class MissingPropertyServiceDefault implements MissingPropertyService {
 
         AspectPropertyMetaData property = null;
 
-        for (AspectPropertyMetaData currentProperty : (List<AspectPropertyMetaData>) engine.getProperties()) {
+        // We know the property has extends AspectPropertyMetaData as it
+        // is a constraint of the AspectEngine interface, so don't check this
+        // cast
+        for (Object currentPropertyObject : engine.getProperties()) {
+            AspectPropertyMetaData currentProperty =
+                (AspectPropertyMetaData)currentPropertyObject;
             if (currentProperty.getName().equalsIgnoreCase(propertyName)) {
                 property = currentProperty;
                 break;
@@ -92,22 +100,27 @@ public class MissingPropertyServiceDefault implements MissingPropertyService {
             }
             // Check if the property is excluded from the results.
             else if (property.isAvailable() == false) {
-                reason = MissingPropertyReason.PropertyExculdedFromEngineConfiguration;
+                reason = MissingPropertyReason.PropertyExcludedFromEngineConfiguration;
             }
         }
 
         // Build the message string to return to the caller.
         StringBuilder message = new StringBuilder();
-        message.append("Property '" + propertyName + "' is not present in the results.\n");
+        message.append("Property '")
+            .append(propertyName)
+            .append("' is not present in the results.\n");
         switch (reason) {
             case DataFileUpgradeRequired:
                 message.append("This is because your license and/or data file " +
-                    "does not include this property. The property is available ");
-                message.append("with the ");
-                message.append(stringJoin(property.getDataTiersWherePresent(), ","));
-                message.append(" license/data for the " + engine.getClass().getSimpleName());
+                    "does not include this property. The property is available " +
+                    "with the ")
+                    .append(stringJoin(
+                        property.getDataTiersWherePresent(),
+                        ","))
+                    .append(" license/data for the ")
+                    .append(engine.getClass().getSimpleName());
                 break;
-            case PropertyExculdedFromEngineConfiguration:
+            case PropertyExcludedFromEngineConfiguration:
                 message.append("This is because the property has been " +
                     "excluded when configuring the engine.");
                 break;
@@ -123,7 +136,9 @@ public class MissingPropertyServiceDefault implements MissingPropertyService {
     }
 
     @Override
-    public MissingPropertyResult getMissingPropertyReason(String propertyName, List<AspectEngine> engines) {
+    public MissingPropertyResult getMissingPropertyReason(
+        String propertyName,
+        List<AspectEngine> engines) {
         MissingPropertyResult result = null;
         for (AspectEngine engine : engines) {
             result = getMissingPropertyReason(propertyName, engine);

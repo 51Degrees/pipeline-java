@@ -22,24 +22,57 @@
 
 package fiftyone.pipeline.core.exceptions;
 
+/**
+ * Exception that can be thrown when the available data does not match that
+ * which is expected.
+ */
 public class PipelineDataException extends RuntimeException {
+    /**
+     * Constructor.
+     */
     public PipelineDataException() {
         super();
     }
 
+    /**
+     * Constructor
+     * @param message the exception message
+     */
     public PipelineDataException(String message) {
         super(message);
     }
 
+    /**
+     * Constructor
+     * @param message the exception message
+     * @param cause the exception which triggered this exception
+     */
     public PipelineDataException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * Constructor
+     * @param cause the exception which triggered this exception
+     */
     public PipelineDataException(Throwable cause) {
         super(cause);
     }
 
-    protected PipelineDataException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    /**
+     * Constructor
+     * @param message the exception message
+     * @param cause the exception which triggered this exception
+     * @param enableSuppression whether or not suppression is enabled
+     *                          or disabled
+     * @param writableStackTrace whether or not the stack trace should
+     *                           be writable
+     */
+    protected PipelineDataException(
+        String message,
+        Throwable cause,
+        boolean enableSuppression,
+        boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

@@ -24,6 +24,11 @@ package fiftyone.pipeline.engines.fiftyone.data;
 
 import java.util.Iterator;
 
+/**
+ * Default implementation of {@link CloseableIterable}. The close method here
+ * does nothing and is left up to extending classes to handle.
+ * @param <T> the type being iterated over
+ */
 public class CloseableIterableDefault<T> implements CloseableIterable<T> {
 
     private final Iterable<T> iterable;

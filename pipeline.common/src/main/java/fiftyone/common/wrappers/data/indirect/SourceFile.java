@@ -33,13 +33,11 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 public class SourceFile implements Source {
-    private final FileInputStream fileInputStream;
     private final FileChannel channel;
 
     public SourceFile(String fileName)
         throws FileNotFoundException {
-        fileInputStream = new FileInputStream(fileName);
-        channel = fileInputStream.getChannel();
+        channel = new FileInputStream(fileName).getChannel();
     }
 
     /**

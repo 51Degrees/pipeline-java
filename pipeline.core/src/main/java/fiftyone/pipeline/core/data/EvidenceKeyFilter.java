@@ -22,9 +22,25 @@
 
 package fiftyone.pipeline.core.data;
 
+/**
+ * Represents an object that filters evidence key names based on some criteria.
+ * For example, a filter that only included evidence items relating to HTTP
+ * headers might use key.startsWith("header.").
+ */
 public interface EvidenceKeyFilter {
 
+    /**
+     * Check if the specified evidence key is included by this filter.
+     * @param key the key to check
+     * @return true if the key is included and false if not
+     */
     boolean include(String key);
 
+    /**
+     * Get the order of precedence of the specified key.
+     * @param key the key to check
+     * @return the order, where lower values indicate a higher order of
+     * precedence. Null if the key is not in the white list
+     */
     Integer order(String key);
 }

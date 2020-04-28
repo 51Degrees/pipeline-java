@@ -26,13 +26,12 @@ import fiftyone.pipeline.core.data.AccessiblePropertyMetaData;
 import fiftyone.pipeline.core.data.ElementPropertyMetaData;
 import fiftyone.pipeline.core.data.ElementPropertyMetaDataDefault;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
+import fiftyone.pipeline.core.data.types.JavaScript;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.typed.TypedKey;
 import fiftyone.pipeline.core.typed.TypedKeyDefault;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
-import fiftyone.pipeline.engines.data.AspectData;
-import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
-import fiftyone.pipeline.engines.data.AspectPropertyMetaDataDefault;
+import fiftyone.pipeline.engines.data.*;
 import fiftyone.pipeline.engines.flowelements.AspectEngineBase;
 import fiftyone.pipeline.engines.flowelements.CloudAspectEngine;
 import fiftyone.pipeline.util.Types;
@@ -40,6 +39,7 @@ import fiftyone.pipeline.util.Types;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -57,7 +57,7 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
      * that will be making requests of behalf of this engine. 
      */
     protected class RequestEngineAccessor {
-        private List<Pipeline> pipelines;
+        private final List<Pipeline> pipelines;
         private volatile CloudRequestEngine cloudRequestEngine;
 
         public RequestEngineAccessor(List<Pipeline> pipelines) {
@@ -72,11 +72,9 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
          * CloudRequestEngine could not be determined for some reason.
          */
         public CloudRequestEngine getInstance() throws PipelineConfigurationException {
-            CloudRequestEngine localRef = cloudRequestEngine;
-            if(localRef == null) {
+            if(cloudRequestEngine == null) {
                 synchronized(this) {
-                    localRef = cloudRequestEngine;
-                    if(localRef == null){
+                    if(cloudRequestEngine == null){
                         if(pipelines.size() > 1) {
                             throw new PipelineConfigurationException("'" + this.getClass().getName() +
                                     "' does not support being added to multiple pipelines");
@@ -85,9 +83,9 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
                                     "' has not yet been added to a Pipeline.");
                         }
 
-                        cloudRequestEngine = localRef = pipelines.get(0).getElement(CloudRequestEngine.class);
+                        cloudRequestEngine = pipelines.get(0).getElement(CloudRequestEngine.class);
 
-                        if(cloudRequestEngine == null){
+                        if (cloudRequestEngine == null) {
                             throw new PipelineConfigurationException("'" + this.getClass().getName() +
                                     "' requires a 'CloudRequestEngine' before it in the Pipeline." +
                                     "This engine will be unable to produce results until this" +
@@ -102,12 +100,25 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
 
     private volatile List<AspectPropertyMetaData> aspectProperties;
     private String dataSourceTier;
+    private RequestEngineAccessor requestEngine;
 
+    /**
+     * Construct a new instance of the {@link CloudAspectEngineBase}.
+     * @param logger logger instance to use for logging
+     * @param aspectDataFactory the factory to use when creating a {@link TData}
+     *                          instance
+     */
+    public CloudAspectEngineBase(
+        Logger logger,
+        ElementDataFactory<TData> aspectDataFactory) {
+        super(logger, aspectDataFactory);
+        this.setRequestEngine(new RequestEngineAccessor(this.getPipelines()));
+    }
+
+    @Override
     public String getDataSourceTier() {
         return dataSourceTier;
     }
-
-    private RequestEngineAccessor requestEngine;
     /**
      * Used to access the CloudRequestEngine that will be making HTTP
      * requests on behalf of this engine. 
@@ -116,13 +127,12 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
     protected RequestEngineAccessor getRequestEngine() {
         return requestEngine;
     }
+
     protected void setRequestEngine(RequestEngineAccessor requestEngine) {
         this.requestEngine = requestEngine;
     }
 
-    /**
-     * Get property meta-data for properties populated by this engine.
-     */
+    @Override
     public List<AspectPropertyMetaData> getProperties() {
         List<AspectPropertyMetaData> localRef = aspectProperties;
         if(localRef == null) {
@@ -138,16 +148,14 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
         return aspectProperties;
     }
 
+    @Override
     public TypedKey<TData> getTypedDataKey() {
         if (typedKey == null) {
-            typedKey = new TypedKeyDefault<>(getElementDataKey(), Types.findSubClassParameterType(this, CloudAspectEngineBase.class, 0));
+            typedKey = new TypedKeyDefault<>(
+                getElementDataKey(),
+                Types.findSubClassParameterType(this, CloudAspectEngineBase.class, 0));
         }
         return typedKey;
-    }
-    
-    public CloudAspectEngineBase(Logger logger, ElementDataFactory<TData> aspectDataFactory) {
-        super(logger, aspectDataFactory);
-        this.setRequestEngine(new RequestEngineAccessor(this.getPipelines()));
     }
 
     /**
@@ -165,9 +173,8 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
      * This method enables the cloud aspect engine to extract the 
      * properties relevant to them from the meta-data for all properties 
      * that the CloudRequestEngine exposes.
-     * @return True if the aspectProperties has been successfully populated
-     * with the relevant property meta-data.
-     * False if something has gone wrong.
+     * @return true if the aspectProperties has been successfully populated
+     * with the relevant property meta-data. False if something has gone wrong
      */
     private boolean loadAspectProperties() {
         CloudRequestEngine requestEngine = getRequestEngine().getInstance();
@@ -218,4 +225,86 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
         }
         return result;
     }
+
+    private Map<String, ElementPropertyMetaData> buildMetaDataMap(
+        List<ElementPropertyMetaData> properties) {
+        Map<String, ElementPropertyMetaData> result = new HashMap<>();
+        for (ElementPropertyMetaData property : properties) {
+            result.put(property.getName().toLowerCase(), property);
+        }
+        return result;
+    }
+
+    /**
+     * Use the supplied cloud data to create a map of {@link AspectPropertyValue}
+     * instances.
+     * A new instance of {@link AspectPropertyValue} will be created for each
+     * value and the value from the cloud data assigned to it.
+     * If the value is null, then the code will look for a property in the cloud
+     * data with the same name suffixed with 'nullreason'. If it exists, then
+     * its value will be used to set the no value message in the new
+     * {@link AspectPropertyValue}.
+     * @param cloudData the cloud data to be processed. Keys are flat property
+     *                  names (i.e. no '.' separators)
+     * @param propertyMetaData the meta data for the properties in the data.
+     *                         This will usually be the list from
+     *                         {@link #getProperties()} but will be different if
+     *                         dealing with sub-properties
+     * @return a map containing the original values converted to
+     * {@link AspectPropertyValue} instances. Any entries in the source map
+     * where the key ends with 'nullreason' will not appear in the output
+     */
+    protected Map<String, Object> createAPVMap(
+        Map<String, Object> cloudData,
+        List<ElementPropertyMetaData> propertyMetaData) {
+        // Convert the meta-data to a map for faster access.
+        Map<String, ElementPropertyMetaData> metaDataMap =
+            buildMetaDataMap(propertyMetaData);
+
+        Map<String, Object> result = new HashMap<>();
+        // Iterate through all entries in the source data where the
+        // key is not suffixed with 'nullreason'.
+        for (Map.Entry<String, Object> property : cloudData.entrySet()) {
+            if (property.getKey().endsWith("nullreason") == false) {
+                Object outputValue = property.getValue();
+                if (metaDataMap.containsKey(property.getKey().toLowerCase())) {
+                    ElementPropertyMetaData metaData =
+                        metaDataMap.get(property.getKey().toLowerCase());
+
+                    // If this property has a type of AspectPropertyValue
+                    // then create a new instance and populate it.
+                    AspectPropertyValue apv = new AspectPropertyValueDefault<>();
+                    if (property.getValue() != null) {
+                        Object newValue = property.getValue();
+                        if (metaData.getType().equals(JavaScript.class)) {
+                            newValue = new JavaScript(newValue.toString());
+                        }
+                        //noinspection unchecked
+                        apv.setValue(newValue);
+                    }
+                    else {
+                        // Value is null so check if we have a
+                        // corresponding reason.
+                        if (cloudData.containsKey(
+                            property.getKey() + "nullreason")) {
+                            apv.setNoValueMessage(cloudData.get(
+                                property.getKey() + "nullreason").toString());
+                        }
+                        else {
+                            apv.setNoValueMessage("Unknown");
+                        }
+                    }
+                    outputValue = apv;
+                }
+                else {
+                    logger.warn("No meta-data entry for property '" +
+                        property.getKey() + "' in '" +
+                        getClass().getSimpleName() + "'");
+                }
+                result.put(property.getKey(), outputValue);
+            }
+        }
+        return result;
+    }
+
 }

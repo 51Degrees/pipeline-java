@@ -26,6 +26,9 @@ import fiftyone.pipeline.engines.configuration.DataFileConfigurationDefault;
 import fiftyone.pipeline.engines.data.DataUpdateUrlFormatter;
 import fiftyone.pipeline.engines.fiftyone.data.FiftyOneUrlFormatter;
 
+/**
+ * Data file configuration class for 51Degrees data files.
+ */
 public class FiftyOneDataFileConfiguration extends DataFileConfigurationDefault {
     @Override
     public DataUpdateUrlFormatter getUrlFormatter() {

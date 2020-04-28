@@ -27,41 +27,66 @@ import fiftyone.pipeline.engines.configuration.DataFileConfiguration;
 import fiftyone.pipeline.engines.data.AspectEngineDataFile;
 import fiftyone.pipeline.engines.data.AspectEngineDataFileDefault;
 import fiftyone.pipeline.engines.services.DataUpdateService;
-import fiftyone.pipeline.engines.services.DataUpdateServiceDefault;
 import org.slf4j.ILoggerFactory;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Abstract base class that exposes the common options that all 51Degrees
+ * on-premise engine builders should make use of.
+ * @param <TBuilder> the specific builder type to use as the return type from
+ *                  the fluent builder methods
+ * @param <TEngine> the type of the engine that this builder will build
+ */
 public abstract class OnPremiseAspectEngineBuilderBase<
     TBuilder extends OnPremiseAspectEngineBuilderBase<TBuilder, TEngine>,
     TEngine extends OnPremiseAspectEngine>
     extends AspectEngineBuilderBase<TBuilder, TEngine> {
 
-    private DataUpdateService dataUpdateService;
+    private final DataUpdateService dataUpdateService;
 
-    protected List<DataFileConfiguration> dataFileConfigs = new ArrayList<>();
-    protected List<AspectEngineDataFile> dataFiles = new ArrayList<>();
+    protected final List<DataFileConfiguration> dataFileConfigs = new ArrayList<>();
+    protected final List<AspectEngineDataFile> dataFiles = new ArrayList<>();
     protected String tempDir = System.getProperty("java.io.tmpdir");
 
+    /**
+     * Default constructor which uses the {@link ILoggerFactory} implementation
+     * returned by {@link LoggerFactory#getILoggerFactory()}.
+     */
     public OnPremiseAspectEngineBuilderBase() {
         this(null);
     }
 
+    /**
+     * Construct a new instance using the {@link ILoggerFactory} supplied.
+     * @param loggerFactory the logger factory to use
+     */
     public OnPremiseAspectEngineBuilderBase(ILoggerFactory loggerFactory) {
         this(loggerFactory, null);
     }
 
-    public OnPremiseAspectEngineBuilderBase(ILoggerFactory loggerFactory, DataUpdateService dataUpdateService) {
+    /**
+     * Construct a new instance using the {@link ILoggerFactory} and
+     * {@link DataUpdateService} supplied.
+     * @param loggerFactory the logger factory to use
+     * @param dataUpdateService the {@link DataUpdateService} to use when
+     *                          automatic updates happen on the data file
+     */
+    public OnPremiseAspectEngineBuilderBase(
+        ILoggerFactory loggerFactory,
+        DataUpdateService dataUpdateService) {
         super(loggerFactory);
         this.dataUpdateService = dataUpdateService;
     }
 
     /**
      * Add a data file for this engine to use.
-     * @param configuration  The data file configuration to add to this engine.
-     * @return This engine builder instance.
+     * @param configuration  the data file configuration to add to this engine
+     * @return this engine builder instance
      */
+    @SuppressWarnings("unchecked")
     public TBuilder addDataFile(DataFileConfiguration configuration) {
         dataFileConfigs.add(configuration);
         return (TBuilder)this;
@@ -70,9 +95,10 @@ public abstract class OnPremiseAspectEngineBuilderBase<
     /**
      * Set the temporary path to use when the engine needs to create
      * temporary files. (e.g. when downloading data updates)
-     * @param dirPath The full path to the temporary directory
-     * @return This engine builder instance.
+     * @param dirPath the full path to the temporary directory
+     * @return this engine builder instance
      */
+    @SuppressWarnings("unchecked")
     public TBuilder setTempDirPath(String dirPath) {
         tempDir = dirPath;
         return (TBuilder)this;
@@ -80,6 +106,8 @@ public abstract class OnPremiseAspectEngineBuilderBase<
 
     /**
      * Set the performance profile that the engine should use.
+     * @param profile the performance profile for the engine to use
+     * @return this engine builder instance
      */
     public abstract TBuilder setPerformanceProfile(Constants.PerformanceProfiles profile);
 
@@ -111,11 +139,6 @@ public abstract class OnPremiseAspectEngineBuilderBase<
         }
     }
 
-    /**
-     * Private method that performs any generalised configuration on
-     * the engine.
-     * @param engine The engine to configure.
-     */
     @Override
     protected void configureEngine(TEngine engine) throws Exception {
         super.configureEngine(engine);
@@ -128,6 +151,11 @@ public abstract class OnPremiseAspectEngineBuilderBase<
         }
     }
 
+    /**
+     * Create a new empty data file instance to be populated with the details of
+     * the data file to be used.
+     * @return new {@link AspectEngineDataFile} instance
+     */
     protected AspectEngineDataFile newAspectEngineDataFile() {
         return new AspectEngineDataFileDefault();
     }

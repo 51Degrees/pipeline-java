@@ -31,13 +31,23 @@ import java.util.List;
 /**
  * Basic implementation of the {@link AspectPropertyMetaData} interface. Implements
  * public getters for all items.
- * <p>
- * <p>Values are set on construction. Instances are immutable.
+ *
+ * Values are set on construction. Instances are immutable.
  */
-public class AspectPropertyMetaDataDefault extends ElementPropertyMetaDataDefault implements AspectPropertyMetaData {
+public class AspectPropertyMetaDataDefault
+    extends ElementPropertyMetaDataDefault implements AspectPropertyMetaData {
 
     private final List<String> dataTiersWherePresent;
 
+    /**
+     * Construct a new instance
+     * @param name name of the property
+     * @param element the element which the property belongs to
+     * @param category the category which the property belongs to
+     * @param type the type of value returned by the property
+     * @param dataTiersWherePresent data tiers which contain this property
+     * @param available true if the property is available
+     */
     public AspectPropertyMetaDataDefault(
         String name,
         FlowElement element,
@@ -47,8 +57,18 @@ public class AspectPropertyMetaDataDefault extends ElementPropertyMetaDataDefaul
         boolean available) {
         super(name, element, category, type, available);
         this.dataTiersWherePresent = dataTiersWherePresent;
-}
+    }
 
+    /**
+     * Construct a new instance
+     * @param name name of the property
+     * @param element the element which the property belongs to
+     * @param category the category which the property belongs to
+     * @param type the type of value returned by the property
+     * @param dataTiersWherePresent data tiers which contain this property
+     * @param available true if the property is available
+     * @param itemProperties list of sub-properties
+     */
     public AspectPropertyMetaDataDefault(
         String name,
         FlowElement element,

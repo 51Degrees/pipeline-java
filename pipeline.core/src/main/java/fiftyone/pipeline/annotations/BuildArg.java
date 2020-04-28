@@ -22,11 +22,21 @@
 
 package fiftyone.pipeline.annotations;
 
+import fiftyone.pipeline.core.flowelements.PipelineBuilder;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Annotation used to define the name of build method arguments in
+ * implementations of {@link ElementBuilder}.
+ * Variable names are not available at runtime, so the use of the
+ * {@link BuildArg} attribute can be used to distinguish, for example,
+ * 'build(String filePath)' from 'build(String url)' to the
+ * {@link PipelineBuilder}.
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.PARAMETER)
 public @interface BuildArg {

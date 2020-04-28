@@ -26,6 +26,9 @@ import fiftyone.pipeline.core.flowelements.FlowElement;
 
 import java.util.List;
 
+/**
+ * Default implementation of the {@link ElementPropertyMetaData} interface.
+ */
 public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
 
     private final String name;
@@ -35,6 +38,14 @@ public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
     private final boolean available;
     private final List<ElementPropertyMetaData> itemProperties;
 
+    /**
+     * Construct a new instance of {@link ElementPropertyMetaDataDefault}.
+     * @param name the name of the property
+     * @param element the element which the property belongs to
+     * @param category the category the property belongs to
+     * @param type the data type which values of the property have
+     * @param available true if the property is available
+     */
     public ElementPropertyMetaDataDefault(
         String name,
         FlowElement element,
@@ -50,6 +61,16 @@ public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
             null);
     }
 
+    /**
+     * Construct a new instance of {@link ElementPropertyMetaDataDefault}.
+     * @param name the name of the property
+     * @param element the element which the property belongs to
+     * @param category the category the property belongs to
+     * @param type the data type which values of the property have
+     * @param available true if the property is available
+     * @param itemProperties list of sub-properties contained within the
+     *                       property
+     */
     public ElementPropertyMetaDataDefault(
         String name,
         FlowElement element,

@@ -36,11 +36,14 @@ import org.slf4j.ILoggerFactory;
 
 import java.util.List;
 
+/**
+ * Builder for the {@link CloudRequestEngine}.
+ */
 @ElementBuilder
 public class CloudRequestEngineBuilder extends
     AspectEngineBuilderBase<CloudRequestEngineBuilder, CloudRequestEngine> {
 
-    private HttpClient httpClient;
+    private final HttpClient httpClient;
 
     private String endPoint = "https://cloud.51degrees.com/api/v4";
     private String dataEndpoint = null;
@@ -86,6 +89,12 @@ public class CloudRequestEngineBuilder extends
         return buildEngine();
     }
 
+    /**
+     * The root endpoint which the CloudRequestsEngine will query. This will set
+     * the data, properties and evidence keys endpoints.
+     * @param uri root endpoint
+     * @return this builder
+     */
     public CloudRequestEngineBuilder setEndpoint(String uri) {
         if (uri.endsWith("/") == false) {
             uri += '/';
@@ -97,37 +106,70 @@ public class CloudRequestEngineBuilder extends
 
     }
 
+    /**
+     * The endpoint the CloudRequestEngine will query to get a processing result.
+     * @param uri data endpoint
+     * @return this builder
+     */
     public CloudRequestEngineBuilder setDataEndpoint(String uri) {
         dataEndpoint = uri;
         return this;
     }
 
+    /**
+     * The endpoint the cloudRequestEngine will query to get the available
+     * properties.
+     * @param uri properties endpoint
+     * @return this builder
+     */
     public CloudRequestEngineBuilder setPropertiesEndpoint(String uri) {
         propertiesEndpoint = uri;
         return this;
     }
 
+    /**
+     * The endpoint the cloudRequestEngine will query to get the required
+     * evidence keys.
+     * @param uri evidence keys endpoint
+     * @return this builder
+     */
     public CloudRequestEngineBuilder setEvidenceKeysEndpoint(String uri) {
         evidenceKeysEndpoint = uri;
         return this;
     }
 
+    /**
+     * The resource key to query the endpoint with.
+     * @param resourceKey resource key
+     * @return this builder
+     */
     public CloudRequestEngineBuilder setResourceKey(String resourceKey) {
         this.resourceKey = resourceKey;
         return this.setEndpoint(endPoint);
     }
 
+    /**
+     * The license key to query the endpoint with.
+     * @param licenseKey license key
+     * @return this builder
+     */
     public CloudRequestEngineBuilder setLicenseKey(String licenseKey) {
         this.licenseKey = licenseKey;
         return this;
     }
 
+    /**
+     * Timeout in seconds for the request to the endpoint.
+     * @param timeout in seconds
+     * @return this builder
+     */
     public CloudRequestEngineBuilder setTimeOutSeconds(int timeout) {
         this.timeout = timeout;
         return this;
     }
 
-    private static class CloudRequestDataFactory implements ElementDataFactory<CloudRequestData> {
+    private static class CloudRequestDataFactory
+        implements ElementDataFactory<CloudRequestData> {
 
         private final ILoggerFactory loggerFactory;
 
@@ -136,7 +178,9 @@ public class CloudRequestEngineBuilder extends
         }
 
         @Override
-        public CloudRequestData create(FlowData flowData, FlowElement<CloudRequestData, ?> engine) {
+        public CloudRequestData create(
+            FlowData flowData,
+            FlowElement<CloudRequestData, ?> engine) {
             return new CloudRequestData(
                 loggerFactory.getLogger(CloudRequestData.class.getName()),
                 flowData,

@@ -74,6 +74,10 @@ public class PropertyMissingException extends RuntimeException {
         this.propertyName = propertyName;
     }
 
+    /**
+     * Get the name of the property that was missing.
+     * @return property name
+     */
     public String getPropertyName() {
 
         return propertyName;

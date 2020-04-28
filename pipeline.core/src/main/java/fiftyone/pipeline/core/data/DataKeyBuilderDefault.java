@@ -26,9 +26,12 @@ import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Map.Entry;
 
+/**
+ * The default implementation of {@link DataKeyBuilder}.
+ */
 public class DataKeyBuilderDefault implements DataKeyBuilder {
 
-    private List<Entry<Integer, Entry<String, Object>>> keys = new ArrayList<>();
+    private final List<Entry<Integer, Entry<String, Object>>> keys = new ArrayList<>();
 
     @Override
     public DataKeyBuilder add(int order, String keyName, Object keyValue) {
@@ -40,6 +43,7 @@ public class DataKeyBuilderDefault implements DataKeyBuilder {
 
     @Override
     public DataKey build() {
+        @SuppressWarnings("unchecked")
         Entry<Integer, Entry<String, Object>> keyArray[] = new Entry[0];
         keyArray = keys.toArray(keyArray);
         Arrays.sort(keyArray, new KeyComparator());

@@ -25,6 +25,9 @@ package fiftyone.pipeline.web.mvc.configuration;
 import javax.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
 
+/**
+ * Default implementation of the {@link FiftyOneInterceptorConfig} interface.
+ */
 public class FiftyOneInterceptorConfigDefault implements FiftyOneInterceptorConfig {
 
     private String dataFilePath;

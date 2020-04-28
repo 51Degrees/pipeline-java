@@ -25,15 +25,27 @@ package fiftyone.pipeline.engines.fiftyone.flowelements;
 import fiftyone.pipeline.annotations.ElementBuilder;
 import org.slf4j.ILoggerFactory;
 
+/**
+ * Builder for the {@link SequenceElement}.
+ */
 @ElementBuilder
 public class SequenceElementBuilder {
     
-    private ILoggerFactory loggerFactory;
+    private final ILoggerFactory loggerFactory;
 
+    /**
+     * Construct a new instance
+     * @param loggerFactory logger factory to use when passing loggers to any
+     *                      instances created by the builder
+     */
     public SequenceElementBuilder(ILoggerFactory loggerFactory) {
         this.loggerFactory = loggerFactory;
     }
 
+    /**
+     * Build a new {@link SequenceElement}.
+     * @return new element
+     */
     public SequenceElement build() {
         return new SequenceElement(
             loggerFactory.getLogger(SequenceElement.class.getName()));

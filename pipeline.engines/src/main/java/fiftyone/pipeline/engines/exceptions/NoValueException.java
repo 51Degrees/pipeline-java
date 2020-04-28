@@ -22,16 +22,34 @@
 
 package fiftyone.pipeline.engines.exceptions;
 
+import fiftyone.pipeline.engines.data.AspectPropertyValue;
+
+/**
+ * Exception that can be thrown when an {@link AspectPropertyValue} does not
+ * have a value.
+ */
 public class NoValueException extends Exception {
 
+    /**
+     * Construct a new instance
+     * @param message the message to give to the exception
+     * @param cause cause of the exception
+     */
     public NoValueException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * Construct a new instance
+     * @param message the message to give to the exception
+     */
     public NoValueException(String message) {
         super(message);
     }
 
+    /**
+     * Default constructor.
+     */
     public NoValueException() {
         super();
     }

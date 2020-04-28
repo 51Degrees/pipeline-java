@@ -32,7 +32,7 @@ import java.util.List;
  * stored in the engine itself, so if a property is not included for some reason
  * (e.g. not in a data file, or excluded from config) then the engine still has
  * knowledge of its existence.
- * <p>
+ *
  * An AspectPropertyMetaData is a property of an Aspect of a request. E.g. ‘HardwareModel’
  * is a property of the ‘Device’ aspect. They define meta-data such as property
  * name, data type, the data file types the property is present in and a flag

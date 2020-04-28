@@ -24,19 +24,24 @@ package fiftyone.pipeline.core.typed;
 
 /**
  * Holds a name and a type to allow for type safe operations on named values.
- * <p>
+ *
  * TypedKeys of same name and type test equal. TypedKeys of same name and
  * different type test not equal.
  *
  * @param <T> type of the value associated with the Key
  */
-public interface TypedKey<T extends Object> {
+public interface TypedKey<T> {
 
     /**
      * Get the name.
+     * @return name
      */
     String getName();
 
+    /**
+     * Get the type.
+     * @return type
+     */
     Class<T> getType();
 }
 
