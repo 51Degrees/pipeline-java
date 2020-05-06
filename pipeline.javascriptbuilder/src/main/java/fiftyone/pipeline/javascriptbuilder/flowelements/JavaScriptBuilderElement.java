@@ -120,7 +120,7 @@ public class JavaScriptBuilderElement
                 Constants.EVIDENCE_HOST_KEY,
                 String.class);
             if (hostEvidence.hasValue()) {
-                host = hostEvidence.getValue();
+                reqHost = hostEvidence.getValue();
             }
         }
 
@@ -131,7 +131,7 @@ public class JavaScriptBuilderElement
                 Constants.EVIDENCE_PROTOCOL,
                 String.class);
             if (protocolEvidence.hasValue()) {
-                protocol = protocolEvidence.getValue();
+                reqProtocol = protocolEvidence.getValue();
             }
         }
 
