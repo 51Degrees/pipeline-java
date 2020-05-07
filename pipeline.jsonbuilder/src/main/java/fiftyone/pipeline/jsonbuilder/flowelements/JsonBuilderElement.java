@@ -248,7 +248,7 @@ public class JsonBuilderElement
         keys = javascriptPropertiesMap.keySet().toArray(keys);
         for(String key : keys) {
             if(containsIgnoreCase(props, key) == false) {
-                javascriptPropertiesMap.remove(key);
+                javascriptPropertiesMap.remove(key.toLowerCase());
             }
         }
 
@@ -288,12 +288,12 @@ public class JsonBuilderElement
                     if(value instanceof JavaScript)
                         value = value.toString();
 
-                    map.put(ent.getKey().toLowerCase(), value);
+                    map.put(ent.getKey(), value);
                 }
-                json.put(entry.getKey().toLowerCase(), map);
+                json.put(entry.getKey(), map);
             } else {
 
-                json.put(entry.getKey().toLowerCase(), entry.getValue());
+                json.put(entry.getKey(), entry.getValue());
             }
         }
         return json.toString(2);
