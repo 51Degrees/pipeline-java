@@ -158,7 +158,7 @@ public class JsonBuilderElement
         Map<String, Object> allProperties = new HashMap<>();
 
         for (Map.Entry<String, Object> element : data.elementDataAsMap().entrySet()) {
-            if (allProperties.containsKey(element.getKey()) == false)
+            if (allProperties.containsKey(element.getKey().toLowerCase()) == false)
             {
                 Map<String, Object> elementProperties = new HashMap<>();
                 ElementData datum = (ElementData)(element.getValue());
@@ -178,14 +178,14 @@ public class JsonBuilderElement
                         }
                     }
                                         
-                    elementProperties.put(elementProperty.getKey(), value);
+                    elementProperties.put(elementProperty.getKey().toLowerCase(), value);
                     if(value == null) {
                         elementProperties.put(
-                            elementProperty.getKey() + "nullreason",
+                            elementProperty.getKey().toLowerCase() + "nullreason",
                             nullReason);
                     }
                 }
-                allProperties.put(element.getKey(), elementProperties);
+                allProperties.put(element.getKey().toLowerCase(), elementProperties);
             }
         }
 
@@ -218,7 +218,7 @@ public class JsonBuilderElement
                 for (Object propertyObject : entry.entrySet()) {
                     Map.Entry property = (Map.Entry)propertyObject;
                     props.add(
-                        element.getKey() + EVIDENCE_SEPERATOR + property.getKey());
+                        element.getKey().toLowerCase() + EVIDENCE_SEPERATOR + property.getKey().toString().toLowerCase());
                 }
             }
         }
@@ -248,7 +248,7 @@ public class JsonBuilderElement
         keys = javascriptPropertiesMap.keySet().toArray(keys);
         for(String key : keys) {
             if(containsIgnoreCase(props, key) == false) {
-                javascriptPropertiesMap.remove(key);
+                javascriptPropertiesMap.remove(key.toLowerCase());
             }
         }
 
