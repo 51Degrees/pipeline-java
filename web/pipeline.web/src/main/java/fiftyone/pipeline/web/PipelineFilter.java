@@ -35,7 +35,6 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +42,10 @@ import java.io.IOException;
 import static fiftyone.pipeline.web.Constants.DEFAULT_CLIENTSIDE_ENABLED;
 import static fiftyone.pipeline.web.Constants.DEFAULT_CONFIG_FILE;
 
+/**
+ * Servlet filter used to intercept HTTP requests and process them using the
+ * 51Degrees Pipeline.
+ */
 public class PipelineFilter implements Filter {
     private Pipeline pipeline;
 
@@ -87,8 +90,6 @@ public class PipelineFilter implements Filter {
             // Bind the configuration to a pipeline options instance
             PipelineOptions options = (PipelineOptions) unmarshaller.unmarshal(configFile);
             pipeline = StartupHelpers.buildFromConfiguration(builder, options, clientsideEnabled);
-        } catch (JAXBException e) {
-            throw new ServletException(e);
         } catch (Exception e) {
             throw new ServletException(e);
         }

@@ -25,6 +25,9 @@ package fiftyone.pipeline.web.mvc.services;
 import fiftyone.pipeline.web.services.WebRequestEvidenceServiceCore;
 import org.springframework.stereotype.Service;
 
+/**
+ * Spring framework service for the {@link WebRequestEvidenceServiceCore}.
+ */
 @Service
 public interface WebRequestEvidenceService extends WebRequestEvidenceServiceCore {
 

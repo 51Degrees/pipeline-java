@@ -22,28 +22,64 @@
 
 package fiftyone.pipeline.engines.configuration;
 
+import fiftyone.pipeline.engines.exceptions.LazyLoadTimeoutException;
+
 import java.util.concurrent.ExecutorService;
 
+/**
+ * Used to store configuration values relating to lazy loading.
+ */
 public class LazyLoadingConfiguration {
-    private int propertyTimeoutMillis;
+    private final int propertyTimeoutMillis;
 
-    private ExecutorServiceFactory factory;
+    private final ExecutorServiceFactory factory;
 
+    /**
+     * Construct a new instance using the default {@link ExecutorServiceFactory}.
+     * @param propertyTimeoutMillis the timeout in milliseconds to use when
+     *                              waiting for processing to complete in order
+     *                              to retrieve property values. If the timeout
+     *                              is exceeded then a
+     *                              {@link LazyLoadTimeoutException}
+     *                              will be thrown
+     */
     public LazyLoadingConfiguration(int propertyTimeoutMillis) {
         this(propertyTimeoutMillis, new ExecutorServiceFactoryDefault());
     }
 
+    /**
+     * Construct a new instance.
+     * @param propertyTimeoutMillis the timeout in milliseconds to use when
+     *                              waiting for processing to complete in order
+     *                              to retrieve property values. If the timeout
+     *                              is exceeded then a
+     *                              {@link LazyLoadTimeoutException}
+     *                              will be thrown
+     * @param factory the {@link ExecutorServiceFactory} to use when processing
+     *                in order to retrieve property values
+     */
     public LazyLoadingConfiguration(
-        int propertyTimeoutSeconds,
+        int propertyTimeoutMillis,
         ExecutorServiceFactory factory) {
-        this.propertyTimeoutMillis = propertyTimeoutSeconds;
+        this.propertyTimeoutMillis = propertyTimeoutMillis;
         this.factory = factory;
     }
 
+    /**
+     * Get the timeout in milliseconds to use when waiting for processing to
+     * complete in order to retrieve property values. If the timeout is exceeded
+     * then a {@link LazyLoadTimeoutException} will be thrown.
+     * @return timeout in milliseconds
+     */
     public int getPropertyTimeoutMillis() {
         return propertyTimeoutMillis;
     }
 
+    /**
+     * Get an {@link ExecutorService} to use when processing in order to
+     * retrieve property values.
+     * @return new {@link ExecutorService}
+     */
     public ExecutorService getExecutorService() {
         return factory.create();
     }

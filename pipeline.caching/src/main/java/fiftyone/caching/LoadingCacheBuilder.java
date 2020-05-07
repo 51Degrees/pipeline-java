@@ -22,5 +22,8 @@
 
 package fiftyone.caching;
 
+/**
+ * Provides a method to build caches that implement {@link LoadingCache}.
+ */
 public interface LoadingCacheBuilder extends CacheBuilder {
 }

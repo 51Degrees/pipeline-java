@@ -22,11 +22,23 @@
 
 package fiftyone.pipeline.annotations;
 
+import fiftyone.pipeline.core.configuration.PipelineOptions;
+import fiftyone.pipeline.core.flowelements.PipelineBuilderFromConfiguration;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Defines an alternate name for a set method in a {@link ElementBuilder}
+ * implementation. For example, a method named 'setLicenseKey' will be chosen
+ * automatically by the
+ * {@link PipelineBuilderFromConfiguration#buildFromConfiguration(PipelineOptions)}
+ * method for a configuration option named 'LicenseKey'. If the
+ * {@link AlternateName} attribute is added with the value 'Key', then the
+ * method will also be chosen for an option named 'Key'.
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface AlternateName {

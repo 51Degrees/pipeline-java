@@ -32,6 +32,9 @@ import java.nio.file.Paths;
 import java.util.Date;
 import java.util.concurrent.ScheduledFuture;
 
+/**
+ * Default implementation of the {@link AspectEngineDataFile} interface.
+ */
 public class AspectEngineDataFileDefault implements AspectEngineDataFile {
     private String identifier;
     private OnPremiseAspectEngine engine;
@@ -164,7 +167,7 @@ public class AspectEngineDataFileDefault implements AspectEngineDataFile {
         lastUpdateFileCreateTime = createTime;
     }
 
-    private Object syncLock = new Object();
+    private final Object syncLock = new Object();
 
     public Object getUpdateSyncLock() {
         return syncLock;

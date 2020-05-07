@@ -22,13 +22,29 @@
 
 package fiftyone.pipeline.annotations;
 
+import fiftyone.pipeline.core.configuration.PipelineOptions;
+import fiftyone.pipeline.core.flowelements.PipelineBuilder;
+import fiftyone.pipeline.core.flowelements.PipelineBuilderFromConfiguration;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Annotation used to identify {@link ElementBuilder} implementations to the
+ * {@link PipelineBuilder}. For an {@link ElementBuilder} implementation to be
+ * made available when using the
+ * {@link PipelineBuilderFromConfiguration#buildFromConfiguration(PipelineOptions)}
+ * method, the class must be annotated with {@link ElementBuilder}.
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface ElementBuilder {
+    /**
+     * Alternative name for the builder to be used by the {@link PipelineBuilder}
+     * when finding the builder class using the name in the configuration.
+     * @return the alternative builder name
+     */
     String alternateName() default "";
 }

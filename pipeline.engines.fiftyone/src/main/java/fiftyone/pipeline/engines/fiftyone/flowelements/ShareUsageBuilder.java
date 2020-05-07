@@ -26,16 +26,39 @@ import fiftyone.pipeline.engines.services.HttpClient;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 
+/**
+ * Builder class that is used to create {@link ShareUsageElement}.
+ */
 public class ShareUsageBuilder extends ShareUsageBuilderBase<ShareUsageElement> {
 
     private final HttpClient httpClient;
 
-    public ShareUsageBuilder(ILoggerFactory loggerFactory, HttpClient httpClient) {
+    /**
+     * Constructor
+     * @param loggerFactory the {@link ILoggerFactory} to use when creating
+     *                      loggers for a {@link ShareUsageElement}
+     * @param httpClient the {@link HttpClient} that {@link ShareUsageElement}
+     *                   should use for sending data
+     */
+    public ShareUsageBuilder(
+        ILoggerFactory loggerFactory,
+        HttpClient httpClient) {
         super(loggerFactory);
         this.httpClient = httpClient;
     }
 
-    public ShareUsageBuilder(ILoggerFactory loggerFactory, Logger logger, HttpClient httpClient) {
+    /**
+     * Constructor
+     * @param loggerFactory the {@link ILoggerFactory} to use when creating
+     *                      loggers for a {@link ShareUsageElement}
+     * @param logger the {@link Logger} to use for {@link ShareUsageElement}
+     * @param httpClient the {@link HttpClient} that {@link ShareUsageElement}
+     *                   should use for sending data
+     */
+    public ShareUsageBuilder(
+        ILoggerFactory loggerFactory,
+        Logger logger,
+        HttpClient httpClient) {
         super(loggerFactory, logger);
         this.httpClient = httpClient;
     }

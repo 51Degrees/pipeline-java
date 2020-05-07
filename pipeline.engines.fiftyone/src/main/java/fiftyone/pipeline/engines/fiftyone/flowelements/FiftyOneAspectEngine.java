@@ -26,20 +26,58 @@ import fiftyone.pipeline.engines.data.AspectData;
 import fiftyone.pipeline.engines.fiftyone.data.*;
 import fiftyone.pipeline.engines.flowelements.OnPremiseAspectEngine;
 
+/**
+ * 51Degrees specific Engine interface. This adds the concept of license keys to
+ * the standard Engine interface.
+ * @param <TData> the type of aspect data that the flow element will write to
+ * @param <TProperty> the type of meta data that the flow element will supply
+ *                    about the properties it populates.
+ */
 public interface FiftyOneAspectEngine<
     TData extends AspectData,
     TProperty extends FiftyOneAspectPropertyMetaData>
     extends OnPremiseAspectEngine<TData, TProperty> {
 
+    /**
+     * Get all profiles contained in the data set which the engine is using.
+     * @return a {@link CloseableIterable} containing all profiles
+     */
     CloseableIterable<ProfileMetaData> getProfiles();
 
+    /**
+     * Get the profile with the unique profile id from the data set.
+     * @param profileId unique profile id
+     * @return the profile with the id, or null if not found
+     */
     ProfileMetaData getProfile(int profileId);
 
+    /**
+     * Get all data components contained in the data set which the engine is
+     * using e.g. Hardware, Software etc.
+     * @return a {@link CloseableIterable} containing all components
+     */
     CloseableIterable<ComponentMetaData> getComponents();
 
+    /**
+     * Get the component with the specified name from the data set.
+     * @param name the name of the component
+     * @return the component, or null if not found
+     */
     ComponentMetaData getComponent(String name);
 
+    /**
+     * Get all property values contained in the data set which the engine is
+     * using.
+     * @return a {@link CloseableIterable} containing all values
+     */
     CloseableIterable<ValueMetaData> getValues();
 
+    /**
+     * Get the component with the specified property and value name from the
+     * data set.
+     * @param propertyName the name of the property which the value belongs to
+     * @param valueName the name of the value
+     * @return the value or, null if not found
+     */
     ValueMetaData getValue(String propertyName, String valueName);
 }

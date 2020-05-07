@@ -27,14 +27,38 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
 
+/**
+ * Interface used by the {@link DataUpdateService} to process HTTP requests.
+ */
 public interface HttpClient {
 
+    /**
+     * Connect to a URL.
+     * @param url the URL to connect to
+     * @return the open HTTP connection
+     * @throws IOException if a connection error occurred
+     */
     HttpURLConnection connect(URL url) throws IOException;
 
+    /**
+     * Post data to a connection opened by the {@link #connect(URL)} method.
+     * @param connection open connection to post to
+     * @param headers HTTP header to send with the request
+     * @param data data to post
+     * @return response message from request
+     * @throws IOException if an HTTP exception occurred
+     */
     String postData(
         HttpURLConnection connection,
         Map<String, String> headers,
         byte[] data) throws IOException;
 
+    /**
+     * Carry out a get request to a connection opened by the {@link #connect(URL)}
+     * method and return the response string.
+     * @param connection open connection to get
+     * @return response string from request
+     * @throws IOException if an HTTP exception occurred
+     */
     String getResponseString(HttpURLConnection connection) throws IOException;
 }

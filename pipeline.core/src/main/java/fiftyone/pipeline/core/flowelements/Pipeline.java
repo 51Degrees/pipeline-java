@@ -42,7 +42,7 @@ public interface Pipeline extends AutoCloseable {
 
     /**
      * Create a new {@link FlowData} instance linked to this Pipeline. The
-     * resulting FlowData's {@link FlowData#process} method will cause
+     * resulting FlowData's {@link FlowData#process()} method will cause
      * the FlowData to be processed.
      * @return a new {@link FlowData} linked to this Pipeline
      */
@@ -114,7 +114,6 @@ interface PipelineInternal extends Pipeline {
      * If there are no properties with that name or multiple
      * properties on different elements then an exception will
      * be thrown.
-     * </summary>
      * @param propertyName the property name to find the meta data for
      * @return the meta data associated with the specified property name
      * @throws PipelineDataException if the property name is associated with

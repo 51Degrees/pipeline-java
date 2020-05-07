@@ -25,6 +25,7 @@ package fiftyone.pipeline.engines.flowelements;
 import fiftyone.pipeline.annotations.BuildArg;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.engines.configuration.CacheConfiguration;
+import fiftyone.pipeline.engines.data.AspectData;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.services.DataUpdateService;
 
@@ -75,7 +76,7 @@ public interface AspectEngineBuilder {
     /**
      * Set the cache that the engine should use to cache its results. This
      * is a cache configuration which is the build inside the engine to ensure
-     * it is immutable. This is used cache {@link ElementData} keyed on the
+     * it is immutable. This is used cache {@link AspectData} keyed on the
      * evidence in {@link FlowData}, so should be configured to construct a key
      * using only the relevant pieces of evidence.
      *

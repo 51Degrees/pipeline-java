@@ -24,12 +24,32 @@ package fiftyone.pipeline.engines.fiftyone.data;
 
 import java.io.Closeable;
 
+/**
+ * Meta data relating to a specific value within a data set.
+ */
 public interface ValueMetaData extends Closeable {
+    /**
+     * Get the property which the value relates to i.e. the value is a value
+     * which can be returned by the property.
+     * @return the property relating to the value
+     */
     FiftyOneAspectPropertyMetaData getProperty();
 
+    /**
+     * Get the name of the value e.g. "True" or "Samsung".
+     * @return name of the value
+     */
     String getName();
 
+    /**
+     * Get the full description of the value.
+     * @return value description
+     */
     String getDescription();
 
+    /**
+     * Get the URL relating to the value if more information is available.
+     * @return URL for more information
+     */
     String getUrl();
 }

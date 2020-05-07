@@ -30,20 +30,33 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
 
+/**
+ * ParallelElements executes it's child {@link FlowElement} objects in parallel.
+ */
 class ParallelElements
     extends FlowElementBase<ElementData, ElementPropertyMetaData> {
 
-    private ExecutorService threadPool;
+    private final ExecutorService threadPool;
     private List<FlowElement> flowElements;
 
     private EvidenceKeyFilterAggregator evidenceKeyFilter;
 
+    /**
+     * Constructor
+     * @param logger used for logging
+     * @param flowElements the list of {@link FlowElement} instances to execute
+     *                    when Process is called
+     */
     ParallelElements(Logger logger, List<FlowElement> flowElements) {
         super(logger, null);
         threadPool = Executors.newCachedThreadPool();
         this.flowElements = flowElements;
     }
 
+    /**
+     * Get an unmodifiable list of the child {@link FlowElement} instances.
+     * @return child {@link FlowElement}s
+     */
     List<FlowElement> getFlowElements() {
         return Collections.unmodifiableList(flowElements);
     }
@@ -76,6 +89,11 @@ class ParallelElements
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Get a filter that will only include the evidence keys that can be used by
+     * at least one {@link FlowElement} within this pipeline.
+     * @return evidence key filter
+     */
     @Override
     public EvidenceKeyFilter getEvidenceKeyFilter() {
         if (evidenceKeyFilter == null) {
@@ -121,8 +139,8 @@ class ParallelElements
      */
     private static class FlowElementCallable implements Callable<FlowError> {
 
-        private FlowData _flowData;
-        private FlowElement _element;
+        private final FlowData _flowData;
+        private final FlowElement _element;
 
         private FlowElementCallable(FlowElement element, FlowData flowData) {
             _element = element;
@@ -131,8 +149,7 @@ class ParallelElements
 
         /**
          * Call the {@link FlowElement#process} method and return, catching any
-         * errors and returning a FlowError on failure
-         *
+         * errors and returning a FlowError on failure.
          * @return null on success, FlowError on failure
          */
         @Override

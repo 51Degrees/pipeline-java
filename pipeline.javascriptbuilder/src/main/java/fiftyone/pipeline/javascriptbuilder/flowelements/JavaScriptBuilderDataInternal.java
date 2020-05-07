@@ -28,7 +28,13 @@ import org.slf4j.Logger;
 import fiftyone.pipeline.javascriptbuilder.data.JavaScriptBuilderData;
 
 //! [class]
-public class JavaScriptBuilderDataInternal extends ElementDataBase implements JavaScriptBuilderData {
+
+/**
+ * Default implementation of the {@link JavaScriptBuilderData} interface.
+ */
+public class JavaScriptBuilderDataInternal
+    extends ElementDataBase
+    implements JavaScriptBuilderData {
 
     public JavaScriptBuilderDataInternal(Logger logger, FlowData flowData) {
         super(logger, flowData);

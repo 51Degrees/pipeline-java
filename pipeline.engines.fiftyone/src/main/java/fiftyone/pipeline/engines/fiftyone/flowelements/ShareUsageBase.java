@@ -3,7 +3,7 @@
  * Copyright 2019 51 Degrees Mobile Experts Limited, 5 Charlotte Close,
  * Caversham, Reading, Berkshire, United Kingdom RG4 7BY.
  *
- * This Original Work is licensed under the European Union Public Licence (EUPL) 
+ * This Original Work is licensed under the European Union Public Licence (EUPL)
  * v.1.2 and is subject to its terms as set out below.
  *
  * If a copy of the EUPL was not distributed with this file, You can obtain
@@ -13,10 +13,10 @@
  * amended by the European Commission) shall be deemed incompatible for
  * the purposes of the Work and the provisions of the compatibility
  * clause in Article 5 of the EUPL shall not apply.
- * 
- * If using the Work as, or as part of, a network application, by 
+ *
+ * If using the Work as, or as part of, a network application, by
  * including the attribution notice(s) required under Article 5 of the EUPL
- * in the end user terms of the application under an appropriate heading, 
+ * in the end user terms of the application under an appropriate heading,
  * such notice(s) shall fulfill the requirements of that article.
  * ********************************************************************* */
 
@@ -45,6 +45,10 @@ import java.util.concurrent.*;
 import static fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR;
 import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.SHARE_USAGE_MAX_EVIDENCE_LENGTH;
 
+/**
+ * Abstract base class for ShareUsage elements. Contains common functionality
+ * such as filtering the evidence and building the XML records.
+ */
 public abstract class ShareUsageBase
     extends FlowElementBase<ElementData, ElementPropertyMetaData> {
 
@@ -68,30 +72,131 @@ public abstract class ShareUsageBase
         localHosts = localHosts1;
     }
 
+    /**
+     * Executor service used to start data sending threads.
+     */
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+    /**
+     * Queue used to store entries in memory prior to them being sent to
+     * 51Degrees.
+     */
     protected BlockingQueue<ShareUsageData> evidenceCollection;
+
+    /**
+     * Timeout to use when taking from the queue.
+     */
     protected int takeTimeout;
+
+    /**
+     * The minimum number of request entries per message sent to 51Degrees.
+     */
     protected int minEntriesPerMessage = 50;
+
+    /**
+     * The URL to send data to.
+     */
     protected String shareUsageUrl = "";
+
+    /**
+     * Evidence key filter including the session id.
+     */
     private EvidenceKeyFilter evidenceKeyFilter;
+
+    /**
+     * Evidence key filter excluding the session id
+     */
     private EvidenceKeyFilter evidenceKeyFilterExclSession;
+
+    /**
+     * The filter used to determine if an item of evidence should be ignored or
+     * not.
+     */
     private List<Map.Entry<String, String>> ignoreDataEvidenceFilter;
+
+    /**
+     * The host address of the current machine.
+     */
     private String hostAddress;
+
+    /**
+     * Empty list. This engine returns no properties.
+     */
     private List<ElementPropertyMetaData> properties;
+
+    /**
+     * Future for the thread currently attempting to send usage data, or null
+     * if no data is currently being sent.
+     */
     private volatile Future sendDataFuture = null;
-    private volatile Object lock = new Object();
+
+    /**
+     * Lock used for thread-safe access to internal items.
+     */
+    private final Object lock = new Object();
+
+    /**
+     * Timeout to use when adding to the queue.
+     */
     private int addTimeout;
-    private Random random = new Random();
+
+    /**
+     * Random number generator used when sharing only a percentage of data i.e.
+     * when {@link #sharePercentage} < 1.
+     */
+    private final Random random = new Random();
+
+    /**
+     * The tracker to use to determine if a {@link FlowData} instance should be
+     * shared or not.
+     */
     private Tracker tracker;
+
+    /**
+     * The interval is a timespan which is used to determine if a piece of
+     * repeated evidence should be considered new evidence to share. If the
+     * evidence from a request matches that in the tracker but this interval has
+     * elapsed then the tracker will track it as new evidence.
+     */
     private long interval;
 
+    /**
+     * The approximate proportion of requests to be shared.
+     * 1 = 100%, 0.5 = 50%, etc.
+     */
     private double sharePercentage = 1;
 
+    /**
+     * List of {@link FlowElement} in the pipeline. This is populated when the
+     * {@link #getFlowElements()} is called.
+     */
     private List<String> flowElements = null;
+
+    /**
+     * Version of the OS the pipeline is being run on, as reported by
+     * System.getProperty("os.name").
+     */
     private String osVersion = "";
+
+    /**
+     * The Java version the pipeline is being run on, as reported by
+     * System.getProperty("java.version")
+     */
     private String languageVersion = "";
+
+    /**
+     * The version of the pipeline package.
+     */
     private String coreVersion = "";
+
+    /**
+     * The version of this engine package.
+     */
     private String enginesVersion = "";
+
+    /**
+     * True if usage sharing has been canceled.
+     */
     private boolean canceled = false;
 
     /**
@@ -100,6 +205,35 @@ public abstract class ShareUsageBase
      */
     private boolean flagBadSchema;
 
+    /**
+     * Constructor
+     * @param logger the logger to use
+     * @param sharePercentage the approximate proportion of requests to share.
+     *                        1 = 100%, 0.5 = 50%, etc.
+     * @param minimumEntriesPerMessage the minimum number of request entries per
+     *                                 message sent to 51Degrees
+     * @param maximumQueueSize the maximum number of items to hold in the queue
+     *                         at one time. This must be larger than minimum
+     *                         entries
+     * @param addTimeout the timeout in milliseconds to allow when attempting to
+     *                   add an item to the queue. If this timeout is exceeded
+     *                   then usage sharing will be disabled
+     * @param takeTimeout the timeout in milliseconds to allow when attempting
+     *                    to take an item to the queue
+     * @param repeatEvidenceIntervalMinutes the interval (in minutes) which is
+     *                                      used to decide if repeat evidence is
+     *                                      old enough to consider a new session
+     * @param trackSession set if the tracker should consider sessions in share
+     *                     usage
+     * @param shareUsageUrl the URL to send data to
+     * @param blockedHttpHeaders a list of the names of the HTTP headers that
+     *                           share usage should not send to 51Degrees
+     * @param includedQueryStringParameters a list of the names of query string
+     *                                      parameters that share usage should
+     *                                      send to 51Degrees
+     * @param ignoreDataEvidenceFilter the filter used to determine if an item
+     *                                 of evidence should be ignored or not
+     */
     protected ShareUsageBase(
         Logger logger,
         double sharePercentage,
@@ -129,6 +263,37 @@ public abstract class ShareUsageBase
             fiftyone.pipeline.engines.Constants.DEFAULT_SESSION_COOKIE_NAME);
     }
 
+    /**
+     * Constructor
+     * @param logger the logger to use
+     * @param sharePercentage the approximate proportion of requests to share.
+     *                        1 = 100%, 0.5 = 50%, etc.
+     * @param minimumEntriesPerMessage the minimum number of request entries per
+     *                                 message sent to 51Degrees
+     * @param maximumQueueSize the maximum number of items to hold in the queue
+     *                         at one time. This must be larger than minimum
+     *                         entries
+     * @param addTimeout the timeout in milliseconds to allow when attempting to
+     *                   add an item to the queue. If this timeout is exceeded
+     *                   then usage sharing will be disabled
+     * @param takeTimeout the timeout in milliseconds to allow when attempting
+     *                    to take an item to the queue
+     * @param repeatEvidenceIntervalMinutes the interval (in minutes) which is
+     *                                      used to decide if repeat evidence is
+     *                                      old enough to consider a new session
+     * @param trackSession set if the tracker should consider sessions in share
+     *                     usage
+     * @param shareUsageUrl the URL to send data to
+     * @param blockedHttpHeaders a list of the names of the HTTP headers that
+     *                           share usage should not send to 51Degrees
+     * @param includedQueryStringParameters a list of the names of query string
+     *                                      parameters that share usage should
+     *                                      send to 51Degrees
+     * @param ignoreDataEvidenceFilter the filter used to determine if an item
+     *                                 of evidence should be ignored or not
+     * @param sessionCookieName the name of the cookie that contains the session
+     *                          id
+     */
     protected ShareUsageBase(
         Logger logger,
         double sharePercentage,
@@ -160,6 +325,39 @@ public abstract class ShareUsageBase
             null);
     }
 
+    /**
+     * Constructor
+     * @param logger the logger to use
+     * @param sharePercentage the approximate proportion of requests to share.
+     *                        1 = 100%, 0.5 = 50%, etc.
+     * @param minimumEntriesPerMessage the minimum number of request entries per
+     *                                 message sent to 51Degrees
+     * @param maximumQueueSize the maximum number of items to hold in the queue
+     *                         at one time. This must be larger than minimum
+     *                         entries
+     * @param addTimeout the timeout in milliseconds to allow when attempting to
+     *                   add an item to the queue. If this timeout is exceeded
+     *                   then usage sharing will be disabled
+     * @param takeTimeout the timeout in milliseconds to allow when attempting
+     *                    to take an item to the queue
+     * @param repeatEvidenceIntervalMinutes the interval (in minutes) which is
+     *                                      used to decide if repeat evidence is
+     *                                      old enough to consider a new session
+     * @param trackSession set if the tracker should consider sessions in share
+     *                     usage
+     * @param shareUsageUrl the URL to send data to
+     * @param blockedHttpHeaders a list of the names of the HTTP headers that
+     *                           share usage should not send to 51Degrees
+     * @param includedQueryStringParameters a list of the names of query string
+     *                                      parameters that share usage should
+     *                                      send to 51Degrees
+     * @param ignoreDataEvidenceFilter the filter used to determine if an item
+     *                                 of evidence should be ignored or not
+     * @param sessionCookieName the name of the cookie that contains the session
+     *                          id
+     * @param tracker the {@link Tracker} to use to determine if a given
+     *                {@link FlowData} instance should be shared or not
+     */
     protected ShareUsageBase(
         Logger logger,
         double sharePercentage,
@@ -233,9 +431,15 @@ public abstract class ShareUsageBase
         properties = new ArrayList<>();
     }
 
+    /**
+     * Return a list of {@link FlowElement} in the pipeline.
+     * If the list is null then populate from the pipeline.
+     * If there are multiple or no pipelines then log an error.
+     * @return list of flow elements
+     */
     private List<String> getFlowElements() {
         if (flowElements == null) {
-            Pipeline pipeline = null;
+            Pipeline pipeline;
             if (getPipelines().size() == 1) {
                 pipeline = getPipelines().get(0);
                 List<String> list = new ArrayList<>();
@@ -263,14 +467,20 @@ public abstract class ShareUsageBase
         return "shareusage";
     }
 
+    /**
+     * Get the IP address of the machine that this code is running on.
+     * @return machine IP
+     */
     private String getHostAddress() {
         if (hostAddress == null) {
             String address = null;
             try (final DatagramSocket socket = new DatagramSocket()) {
                 socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
-                hostAddress = socket.getLocalAddress().getHostAddress();
+                address = socket.getLocalAddress().getHostAddress();
             } catch (UnknownHostException e) {
+                logger.debug("The host was unknown", e);
             } catch (SocketException e) {
+                logger.debug("There was a socket exception", e);
             }
 
             hostAddress = address == null ? "" : address;
@@ -319,20 +529,36 @@ public abstract class ShareUsageBase
         return properties;
     }
 
+    /**
+     * Indicates whether share usage has been canceled as a result of an error.
+     * @return true if share usage has been canceled
+     */
     boolean isCanceled() {
         return canceled;
     }
 
+    /**
+     * Cancel the sending of usage data.
+     */
     protected void cancel() {
         canceled = true;
     }
 
+    /**
+     * Returns true if there is a thread attempting to send usage data.
+     * @return true if data is being sent
+     */
     boolean isRunning() {
         return sendDataFuture != null &&
             sendDataFuture.isDone() == false &&
             sendDataFuture.isCancelled() == false;
     }
 
+    /**
+     * Get the future for the thread currently attempting to send usage data.
+     * @return future for data being sent, or null if no data is currently being
+     * sent
+     */
     Future getSendDataFuture() {
         return sendDataFuture;
     }
@@ -356,15 +582,25 @@ public abstract class ShareUsageBase
 
     }
 
-    private boolean isLocalHost(String address) {
+    /**
+     * Return true if the address is the localhost address.
+     * @param address the address to check
+     * @return true if localhost
+     */
+    private boolean isLocalHost(String address) throws UnknownHostException {
+        InetAddress other = InetAddress.getByName(address);
         for (InetAddress host : localHosts) {
-            if (host.equals(address)) {
+            if (host.equals(other)) {
                 return true;
             }
         }
         return false;
     }
 
+    /**
+     * Process the supplied request data
+     * @param data the {@link FlowData} instance that provides the evidence
+     */
     private void processData(FlowData data) {
         if (random.nextDouble() <= sharePercentage) {
             // Check if the tracker will allow sharing of this data
@@ -404,6 +640,16 @@ public abstract class ShareUsageBase
         }
     }
 
+    /**
+     * Extract the desired data from the evidence.
+     * In order to avoid problems with the evidence data being disposed before
+     * it is sent, the data placed into a new object rather than being a
+     * reference to the existing evidence instance.
+     * @param evidence an {@link Evidence} instance that contains the data to be
+     *                 extracted
+     * @return a {@link ShareUsageData} instance populated with data from the
+     * evidence
+     */
     private ShareUsageData getDataFromEvidence(Evidence evidence) {
         ShareUsageData data = new ShareUsageData();
 
@@ -424,7 +670,7 @@ public abstract class ShareUsageBase
                     break;
                 case Constants.EVIDENCE_SEQUENCE:
                     // The Sequence is dealt with separately.
-                    int sequence = 0;
+                    int sequence;
                     try {
                         sequence = Integer.parseInt(entry.getValue().toString(), 10);
                         data.sequence = sequence;
@@ -473,6 +719,12 @@ public abstract class ShareUsageBase
         categoryDict.put(field, evidenceValue);
     }
 
+    /**
+     * Attempt to send the data to the remote service. This only happens if
+     * there is not a task already running.
+     * If any error occurs while sending the data, then usage sharing is
+     * stopped.
+     */
     protected void trySendData() {
         if (isCanceled() == false &&
             isRunning() == false) {
@@ -501,6 +753,12 @@ public abstract class ShareUsageBase
 
     protected abstract void buildAndSendXml() throws HttpException;
 
+    /**
+     * Virtual method to be overridden in extending usage share elements.
+     * Write the specified data using the specified writer.
+     * @param builder the {@link XmlBuilder} to use
+     * @param data the data to write
+     */
     protected void buildData(XmlBuilder builder, ShareUsageData data) {
         builder.writeStartElement("Device");
 
@@ -509,6 +767,11 @@ public abstract class ShareUsageBase
         builder.writeEndElement("Device");
     }
 
+    /**
+     * Write the specified device data using the specified writer.
+     * @param builder the {@link XmlBuilder} to use
+     * @param data the data to write
+     */
     protected void buildDeviceData(XmlBuilder builder, ShareUsageData data) {
         flagBadSchema = false;
         // The SessionID used to track a series of requests
@@ -551,7 +814,9 @@ public abstract class ShareUsageBase
     }
 
     /**
-     * encodes any unusual characters into their hex representation
+     * Encodes any unusual characters into their hex representation.
+     * @param text the text to encode
+     * @return encoded text
      */
     public String encodeInvalidXMLChars(String text) {
         // Validate characters in string. If not valid check chars
@@ -577,6 +842,7 @@ public abstract class ShareUsageBase
 
     /**
      * Method to write details about the pipeline.
+     * @param builder {@link XmlBuilder} to use
      */
     protected void writePipelineInfo(XmlBuilder builder) {
         // The product name
@@ -587,7 +853,6 @@ public abstract class ShareUsageBase
         }
     }
 
-
     /**
      * Inner class that is used to store details of data in memory
      * prior to it being sent to 51Degrees.
@@ -596,8 +861,7 @@ public abstract class ShareUsageBase
         public String sessionId;
         public int sequence;
         public String clientIP;
-        public Map<String, Map<String, String>> evidenceData =
+        public final Map<String, Map<String, String>> evidenceData =
             new HashMap<>();
     }
-
 }

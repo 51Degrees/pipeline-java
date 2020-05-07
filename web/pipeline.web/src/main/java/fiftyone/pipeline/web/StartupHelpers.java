@@ -9,8 +9,19 @@ import fiftyone.pipeline.engines.fiftyone.flowelements.SequenceElement;
 import fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElement;
 import fiftyone.pipeline.jsonbuilder.flowelements.JsonBuilderElement;
 
+/**
+ * Static methods used on server startup to configure and build the Pipeline and
+ * services needed.
+ */
 public class StartupHelpers {
 
+    /**
+     * Get the index in the {@link PipelineOptions#elements} of the element with
+     * the name required.
+     * @param options the options to search
+     * @param name the name to search for
+     * @return the zero based index or -1 if not found
+     */
     private static int getElementIndex(
         PipelineOptions options,
         String name) {
@@ -24,6 +35,18 @@ public class StartupHelpers {
         return -1;
     }
 
+    /**
+     * Configure the extra web elements required and build the Pipeline using
+     * the {@link PipelineBuilder#buildFromConfiguration(PipelineOptions)}
+     * method.
+     * @param builder to build the Pipeline
+     * @param options to build the Pipeline with
+     * @param clientSideEvidenceEnabled true if client-side evidence is enabled
+     *                                  in the configuration. This will add JSON
+     *                                  and JavaScript elements to the Pipeline
+     * @return new {@link Pipeline} instance
+     * @throws Exception if there was an error building the Pipeline
+     */
     public static Pipeline buildFromConfiguration(
         PipelineBuilder builder,
         PipelineOptions options,

@@ -22,9 +22,24 @@
 
 package fiftyone.pipeline.core.data;
 
+/**
+ * Public builder for the {@link DataKey} class.
+ */
 public interface DataKeyBuilder {
 
+    /**
+     * Add a key value pair to the data key.
+     * @param order the order of importance of the key value pair
+     * @param keyName the key
+     * @param keyValue the value
+     * @return this builder
+     */
     DataKeyBuilder add(int order, String keyName, Object keyValue);
 
+    /**
+     * Build a new instance of {@link DataKey} from the key value pairs added to
+     * this builder.
+     * @return a new {@link DataKey}
+     */
     DataKey build();
 }

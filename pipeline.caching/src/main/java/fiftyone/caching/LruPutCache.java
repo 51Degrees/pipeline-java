@@ -22,11 +22,22 @@
 
 package fiftyone.caching;
 
-
+/**
+ * Uses the {@link LruCacheBase} to implement the {@link PutCache} interface.
+ * @param <K> the type of key
+ * @param <V> the type of value
+ */
 public class LruPutCache<K, V> extends LruCacheBase<K, V> implements PutCache<K, V> {
 
-    LruPutCache(int cacheSize, int concurrency, boolean updateExising) {
-        super(cacheSize, concurrency, updateExising);
+    /**
+     * Constructs a new instance of the cache.
+     * @param cacheSize the number of items to store in the cache
+     * @param concurrency the expected number of concurrent requests to the
+     *                    cache
+     * @param updateExisting true if existing items should be replaced
+     */
+    LruPutCache(int cacheSize, int concurrency, boolean updateExisting) {
+        super(cacheSize, concurrency, updateExisting);
     }
 
     @Override
@@ -34,6 +45,9 @@ public class LruPutCache<K, V> extends LruCacheBase<K, V> implements PutCache<K,
         super.add(key, value);
     }
 
+    /**
+     * Implementation of {@link CacheBuilder} for {@link LruPutCache} caches.
+     */
     public static class Builder implements PutCacheBuilder {
 
         private boolean updateExisting = false;

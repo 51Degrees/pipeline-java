@@ -27,19 +27,36 @@ import fiftyone.pipeline.core.flowelements.PipelineBuilder;
 import fiftyone.pipeline.engines.services.HttpClientDefault;
 import org.slf4j.ILoggerFactory;
 
-
+/**
+ * Pipeline builder class that allows the 51Degrees share usage element to be
+ * enabled/disabled.
+ */
 public class FiftyOnePipelineBuilder extends PipelineBuilder {
 
     private boolean shareUsageEnabled = true;
 
+    /**
+     * Construct a new builder.
+     */
     public FiftyOnePipelineBuilder() {
         super();
     }
 
+    /**
+     * Construct a new instance
+     * @param loggerFactory logger factory to use when passing loggers to any
+     *                      instances created by the builder
+     */
     public FiftyOnePipelineBuilder(ILoggerFactory loggerFactory) {
         super(loggerFactory);
     }
 
+    /**
+     * Set share usage enabled/disabled.
+     * Defaults to enabled.
+     * @param enabled true to enable usage sharing, false to disable
+     * @return this builder
+     */
     public FiftyOnePipelineBuilder setShareUsage(boolean enabled) {
         this.shareUsageEnabled = enabled;
         return this;

@@ -29,6 +29,11 @@ import javax.xml.bind.annotation.adapters.XmlAdapter;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * XML adapter used to unmarshal XML elements to a {@link Map}. Note that this
+ * only implements the {@link XmlAdapter#unmarshal(Object)}, not the
+ * {@link XmlAdapter#marshal(Object)} as this is only ever used to unmarshal.
+ */
 public class MapAdapter extends XmlAdapter<Object, Map<String, Object>> {
 
     @Override

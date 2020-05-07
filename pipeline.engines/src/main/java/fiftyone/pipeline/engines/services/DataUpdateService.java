@@ -42,26 +42,30 @@ public interface DataUpdateService extends Closeable, PipelineService {
      * Check for an available download of a new data file, or a local data file
      * newer than the one currently in use. If either is the case, then the
      * engine is updated with the new data.
-     * <p>
      * The engine does not need to be registered with the service for this
      * method to be used.
      *
      * @param engine {@link AspectEngine} to try updating
-     * @param dataFileIdentifier
-     * @return true if the data file was successfully updated
+     * @param dataFileIdentifier the identifier of the data file to check for.
+     *                           If the engine has only one data file then this
+     *                           parameter is ignored
+     * @return {@link AutoUpdateStatus#AUTO_UPDATE_SUCCESS} if the data file was
+     * successfully updated
      */
-    AutoUpdateStatus checkForUpdate(OnPremiseAspectEngine engine, String dataFileIdentifier);
+    AutoUpdateStatus checkForUpdate(
+        OnPremiseAspectEngine engine,
+        String dataFileIdentifier);
 
     /**
      * Check for an available download of a new data file, or a local data file
      * newer than the one currently in use. If either is the case, then the
      * engine is updated with the new data.
-     * <p>
      * The engine does not need to be registered with the service for this
      * method to be used.
      *
      * @param engine {@link AspectEngine} to try updating
-     * @return true if the data file was successfully updated
+     * @return {@link AutoUpdateStatus#AUTO_UPDATE_SUCCESS} if the data file was
+     * successfully updated
      */
     AutoUpdateStatus checkForUpdate(OnPremiseAspectEngine engine);
 
@@ -70,11 +74,17 @@ public interface DataUpdateService extends Closeable, PipelineService {
      * data on disk, then the file is replaced with the new data.
      *
      * @param engine {@link AspectEngine} to try updating
-     * @param data   new data file in memory
-     * @return true if the Engine was successfully updated
+     * @param data new data file in memory
+     * @return {@link AutoUpdateStatus#AUTO_UPDATE_SUCCESS} if the data file was
+     * successfully updated
      */
     AutoUpdateStatus updateFromMemory(AspectEngineDataFile engine, byte[] data);
 
+    /**
+     * Add an event handler fired when a call to
+     * {@link #checkForUpdate(OnPremiseAspectEngine)} is completed.
+     * @param onUpdateComplete event handler to call
+     */
     void onUpdateComplete(OnUpdateComplete onUpdateComplete);
 
     /**
@@ -82,11 +92,20 @@ public interface DataUpdateService extends Closeable, PipelineService {
      * scheduled for downloading and updating when new data files are expected.
      * A regular task is also run to update an engine if the local data file
      * is newer than the one in use.
+     * @param dataFile data file to register
      */
     void registerDataFile(AspectEngineDataFile dataFile);
 
+    /**
+     * Un-register a data file which was registered with the
+     * {@link #registerDataFile(AspectEngineDataFile)} method.
+     * @param dataFile data file to un-register
+     */
     void unregisterDataFile(AspectEngineDataFile dataFile);
 
+    /**
+     * Status code indicating the result of an update.
+     */
     enum AutoUpdateStatus {
 
         // Update completed successfully.

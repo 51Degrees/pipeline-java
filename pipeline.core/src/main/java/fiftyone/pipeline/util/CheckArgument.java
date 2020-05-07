@@ -26,12 +26,25 @@ package fiftyone.pipeline.util;
  * Helper to guard that an argument fulfills its contract
  */
 public class CheckArgument {
+    /**
+     * Throw an {@link IllegalArgumentException} if a condition is not met.
+     * @param condition result of a conditional expression
+     * @param message message to add to the exception if one is thrown
+     */
     public static void guard(boolean condition, String message) {
         if (condition) {
             throw new IllegalArgumentException(message);
         }
     }
 
+    /**
+     * Checks if a value is null, and throws an {@link IllegalArgumentException}
+     * if it is.
+     * @param value to check
+     * @param message message to add to the exception if one is thrown
+     * @param <T> type of the value
+     * @return the value that was checked
+     */
     public static <T> T checkNotNull(T value, String message) {
         if (value == null) {
             throw new IllegalArgumentException(message);

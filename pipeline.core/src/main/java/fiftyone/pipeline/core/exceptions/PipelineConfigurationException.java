@@ -22,11 +22,27 @@
 
 package fiftyone.pipeline.core.exceptions;
 
+import fiftyone.pipeline.core.flowelements.PipelineBuilder;
+
+/**
+ * Exception that is thrown when the configuration options provided to
+ * {@link PipelineBuilder} are invalid.
+ */
 public class PipelineConfigurationException extends RuntimeException {
+
+    /**
+     * Constructor
+     * @param message the exception message
+     */
     public PipelineConfigurationException(String message) {
         super(message);
     }
 
+    /**
+     * Constructor
+     * @param message the exception message
+     * @param cause the exception which triggered this exception
+     */
     public PipelineConfigurationException(String message, Throwable cause) {
         super(message, cause);
     }

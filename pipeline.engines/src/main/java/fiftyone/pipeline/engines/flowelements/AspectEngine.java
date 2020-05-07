@@ -39,25 +39,57 @@ import java.util.concurrent.ExecutorService;
  * {@link FlowData} (e.g. User-Agent) to determine the properties of an Aspect
  * (e.g. hardware device). By defining an AspectEngine, 51Degrees FlowElements
  * can easily share common functionality through base classes and convention.
- * <p>
+ *
  * Third parties can also benefit by extending {@link AspectEngineBase} to make
  * use of its generic methods.
- * <p>
+ *
  * A major defining feature of an AspectEngine is that it uses a data file which
  * will be kept up to date by the {@link DataUpdateService}.
+ * @param <TData> the type of aspect data that the flow element will write to
+ * @param <TProperty> the type of meta data that the flow element will supply
+ *                    about the properties it populates.
  */
 public interface AspectEngine<
     TData extends AspectData,
     TProperty extends AspectPropertyMetaData>
     extends FlowElement<TData, TProperty> {
 
+    /**
+     * Set the results cache.
+     * This is used to store the results of queries against the evidence that
+     * was provided.
+     * If the same evidence is provided again then the cached response is
+     * returned without needing to call the engine itself.
+     * @param cache the cache to use
+     */
     void setCache(FlowCache cache);
 
+    /**
+     * Get the tier to which the current data source belongs.
+     * For 51Degrees this will usually be one of:
+     * Lite
+     * Premium
+     * Enterprise
+     * @return data tier
+     */
     String getDataSourceTier();
 
+    /**
+     * Configure lazy loading of results.
+     * @param configuration the configuration to use
+     */
     void setLazyLoading(LazyLoadingConfiguration configuration);
 
+    /**
+     * Get the lazy loading configuration used for loading of results.
+     * @return lazy loading configuration
+     */
     LazyLoadingConfiguration getLazyLoadingConfiguration();
 
+    /**
+     * Get the executor service to use when starting processing threads which
+     * are lazily loaded.
+     * @return an {@link ExecutorService}
+     */
     ExecutorService getExecutor();
 }

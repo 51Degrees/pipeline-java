@@ -23,7 +23,15 @@
 package fiftyone.pipeline.javascriptbuilder.data;
 
 import fiftyone.pipeline.core.data.ElementData;
+import fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElement;
 
-public interface JavaScriptBuilderData extends ElementData{
+/**
+ * Data containing the result of a {@link JavaScriptBuilderElement}s processing.
+ */
+public interface JavaScriptBuilderData extends ElementData {
+    /**
+     * The JavaScript string produced by the {@link JavaScriptBuilderElement}.
+     * @return JavaScript string
+     */
     String getJavaScript();
 }

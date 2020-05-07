@@ -23,7 +23,6 @@
 package pipeline.developerexamples.cloudengine.flowelements;
 
 import pipeline.developerexamples.cloudengine.data.StarSignData;
-import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngine;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
 import fiftyone.pipeline.core.flowelements.FlowElement;
@@ -47,7 +46,7 @@ public class SimpleCloudEngineBuilder
 
     @Override
     protected SimpleCloudEngine newEngine(List<String> properties) {
-        SimpleCloudEngine engine = new SimpleCloudEngine(
+        return new SimpleCloudEngine(
             loggerFactory.getLogger(SimpleCloudEngine.class.getName()),
             new ElementDataFactory<StarSignData>() {
                 @Override
@@ -61,7 +60,6 @@ public class SimpleCloudEngineBuilder
                         MissingPropertyServiceDefault.getInstance());
                 }
             });
-        return engine;
     }
 
     public SimpleCloudEngine build() throws Exception {

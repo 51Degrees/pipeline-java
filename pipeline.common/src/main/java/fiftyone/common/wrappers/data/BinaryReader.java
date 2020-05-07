@@ -85,16 +85,16 @@ public class BinaryReader implements Closeable {
     public String readLine() {
         char c;
         boolean read = false;
-        String result = "";
+        StringBuilder result = new StringBuilder();
         while (getPosition() < getSize() && (c = (char)byteBuffer.get()) != '\n') {
             if (read == false) {
                 read = true;
             }
             if (c != '\r') {
-                result += c;
+                result.append(c);
             }
         }
-        return read == true ? result : null;
+        return read == true ? result.toString() : null;
     }
 
     public byte[] readBytes(final int length) {

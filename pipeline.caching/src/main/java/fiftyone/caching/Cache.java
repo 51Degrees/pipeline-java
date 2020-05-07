@@ -24,6 +24,18 @@ package fiftyone.caching;
 
 import java.io.Closeable;
 
+/**
+ * Base cache interface which declares only the get method and the types of key
+ * and value stored in the cache.
+ * @param <K> type key stored in the cache
+ * @param <V> type of value stored in the cache
+ */
 public interface Cache<K, V> extends Closeable {
-    V get(K key);
+
+    /**
+     * Retrieves the value for key requested.
+     * @param key or the item required
+     * @return an instance of the value associated with the key or null
+     */
+     V get(K key);
 }

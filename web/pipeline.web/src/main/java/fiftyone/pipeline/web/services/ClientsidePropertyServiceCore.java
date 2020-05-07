@@ -35,7 +35,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static fiftyone.pipeline.core.Constants.EVIDENCE_HTTPHEADER_PREFIX;
@@ -43,25 +43,68 @@ import static fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR;
 import fiftyone.pipeline.javascriptbuilder.data.JavaScriptBuilderData;
 import static fiftyone.pipeline.util.StringManipulation.stringJoin;
 
+/**
+ * Class that provides functionality for the 'Client side overrides' feature.
+ * Client side overrides allow JavaScript running on the client device to
+ * provide additional evidence in the form of cookies or query string parameters
+ * to the pipeline on subsequent requests. This enables more detailed
+ * information to be supplied to the application. (e.g. iPhone model for device
+ * detection).
+ */
 public interface ClientsidePropertyServiceCore {
 
+    /**
+     * Add the JavaScript from the {@link FlowData} object to the
+     * {@link HttpServletResponse}
+     * @param request the {@link HttpServletRequest} containing the
+     * {@link FlowData}
+     * @param response the {@link HttpServletResponse} to add the JavaScript to
+     * @throws IOException
+     */
     void serveJavascript(
         HttpServletRequest request,
         HttpServletResponse response) throws IOException;
 
 
-        class Default implements ClientsidePropertyServiceCore {
+    /**
+     * Default implementation of the {@link ClientsidePropertyServiceCore}
+     * interface.
+     */
+    class Default implements ClientsidePropertyServiceCore {
+
+        /**
+         * Character used by profile override logic to separate profile IDs.
+         */
         protected static final char PROFILE_OVERRIDES_SPLITTER = '|';
 
-        private FlowDataProviderCore flowDataProviderCore;
+        /**
+         * Provider to get the {@link FlowData} from.
+         */
+        private final FlowDataProviderCore flowDataProviderCore;
 
+        /**
+         * The Pipeline in the server instance.
+         */
         protected Pipeline pipeline;
 
+        /**
+         * A list of all the HTTP headers that are requested evidence for
+         * elements that populate JavaScript properties.
+         */
         private List<String> headersAffectingJavaScript;
 
-        private List<String> cacheControl = Arrays.asList(
+        /**
+         * The cache control values that will be set for the JavaScript.
+         */
+        private final List<String> cacheControl = Collections.singletonList(
             "max-age=0");
 
+        /**
+         * Create a new instance.
+         * @param flowDataProviderCore the provider to the {@link FlowData} for
+         *                             a request from
+         * @param pipeline the Pipeline in the server instance
+         */
         public Default(
             FlowDataProviderCore flowDataProviderCore,
             Pipeline pipeline) {
@@ -72,6 +115,9 @@ public interface ClientsidePropertyServiceCore {
             }
         }
 
+        /**
+         * Initialise the service.
+         */
         protected void init() {
             headersAffectingJavaScript = new ArrayList<>();
             // Get evidence filters for all elements that have
@@ -79,7 +125,9 @@ public interface ClientsidePropertyServiceCore {
             List<EvidenceKeyFilter> filters = new ArrayList<>();
             for (FlowElement element : pipeline.getFlowElements()) {
                 boolean hasJavaScript = false;
-                for (ElementPropertyMetaData property : (List<ElementPropertyMetaData>) element.getProperties()) {
+                for (Object propertyObject : element.getProperties()) {
+                    ElementPropertyMetaData property =
+                        (ElementPropertyMetaData)propertyObject;
                     if (property.getType().equals(JavaScript.class)) {
                         hasJavaScript = true;
                         break;
@@ -133,7 +181,18 @@ public interface ClientsidePropertyServiceCore {
 
         }
 
-        private void setHeaders(HttpServletResponse response, int hash, int contentLength) {
+        /**
+         * Set various HTTP headers on the JavaScript response.
+         * @param response the {@link HttpServletResponse} to add the response
+         *                 headers to
+         * @param hash the hash to use for the ETag
+         * @param contentLength the length of the returned content. This is used
+         *                      for the 'Content-Length' header
+         */
+        private void setHeaders(
+            HttpServletResponse response,
+            int hash,
+            int contentLength) {
             response.setContentType("application/x-javascript");
             response.setContentLength(contentLength);
             response.setStatus(200);

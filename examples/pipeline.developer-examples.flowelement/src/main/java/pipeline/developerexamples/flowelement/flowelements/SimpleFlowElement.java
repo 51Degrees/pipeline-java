@@ -43,7 +43,7 @@ public class SimpleFlowElement extends FlowElementBase<StarSignData, ElementProp
     }
 //! [constructor]
 
-    private static String[][] starSignData = {
+    private static final String[][] starSignData = {
         {"Aries","21/03","19/04"},
         {"Taurus","20/04","20/05"},
         {"Gemini","21/05","20/06"},
@@ -112,7 +112,8 @@ public class SimpleFlowElement extends FlowElementBase<StarSignData, ElementProp
     @Override
     public EvidenceKeyFilter getEvidenceKeyFilter() {
         // The only item of evidence needed is "date-of-birth".
-        return new EvidenceKeyFilterWhitelist(Arrays.asList("date-of-birth"),
+        return new EvidenceKeyFilterWhitelist(
+            Collections.singletonList("date-of-birth"),
             String.CASE_INSENSITIVE_ORDER);
     }
 
@@ -120,8 +121,8 @@ public class SimpleFlowElement extends FlowElementBase<StarSignData, ElementProp
     public List<ElementPropertyMetaData> getProperties() {
         // The only property which will be returned is "starsign" which will be
         // an String.
-        return Arrays.asList(
-            (ElementPropertyMetaData)new ElementPropertyMetaDataDefault(
+        return Collections.singletonList(
+            (ElementPropertyMetaData) new ElementPropertyMetaDataDefault(
                 "starsign",
                 this,
                 "starsign",

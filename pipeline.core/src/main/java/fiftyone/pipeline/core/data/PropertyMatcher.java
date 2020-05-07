@@ -22,6 +22,15 @@
 
 package fiftyone.pipeline.core.data;
 
+/**
+ * Matcher interface used primarily by the
+ * {@link FlowData#getWhere(PropertyMatcher)} method to filter properties.
+ */
 public interface PropertyMatcher {
+    /**
+     * Returns true if the property is considered a match.
+     * @param property the property to check
+     * @return true if the property is considered a match
+     */
     boolean isMatch(ElementPropertyMetaData property);
 }

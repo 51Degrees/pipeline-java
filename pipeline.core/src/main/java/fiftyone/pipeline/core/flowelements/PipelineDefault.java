@@ -33,34 +33,100 @@ import org.slf4j.Logger;
 
 import java.util.*;
 
+/**
+ * A pipeline is used to create {@link FlowData} instances which then
+ * automatically use the pipeline when their {@link FlowData#process()} method
+ * is called.
+ */
 class PipelineDefault implements PipelineInternal {
 
+    /**
+     * Used for logging.
+     */
     private final Logger logger;
 
+    /**
+     * Factory used to create {@link FlowData} instances.
+     */
     private final FlowDataFactory flowDataFactory;
 
+    /**
+     * Control flag that indicates if the Pipeline will automatically call
+     * {@link #close()} on child elements when it is closed or not.
+     */
     private final boolean autoDisposeElements;
 
+    /**
+     * Control flag that indicates if the Pipeline will throw an
+     * {@link AggregateException} during processing or suppress it and ignore
+     * the exceptions added to {@link FlowData#getErrors()}.
+     */
     private final boolean suppressProcessExceptions;
 
+    /**
+     * Map of {@link ElementPropertyMetaData}s keyed first on the data key of
+     * the element which they belong to, then by the property name.
+     */
     private final Map<String, Map<String, ElementPropertyMetaData>>
         elementAvailableProperties;
 
-    private volatile Object lock = new Object();
+    /**
+     * Lock used for synchronised blocks.
+     */
+    private final Object lock = new Object();
 
+    /**
+     * True if the instance has been closed. This is used as part of the
+     * closable pattern.
+     */
     private volatile boolean isClosed = false;
 
+    /**
+     * True if multiple {@link FlowElement} instances will run concurrently
+     * within this pipeline. False otherwise.
+     */
     private boolean isConcurrent;
 
-    private List<FlowElement> flowElements;
+    /**
+     * The {@link FlowElement}s that make up this Pipeline.
+     */
+    private final List<FlowElement> flowElements;
 
+    /**
+     * A filter that will only include the evidence keys that can be used by at
+     * least one {@link FlowElement} within this pipeline.
+     * (Will only be populated after the {@link #getEvidenceKeyFilter()} method
+     * is called.)
+     */
     private EvidenceKeyFilter evidenceKeyFilter = null;
 
-    private Map<Class, List<FlowElement>> elementsByType = new HashMap<>();
+    /**
+     * The pipeline maintains a map of the elements it contains indexed by type.
+     * This is used by the {@link #getElement(Class)} method.
+     */
+    private final Map<Class, List<FlowElement>> elementsByType = new HashMap<>();
 
-    private Map<String, ElementPropertyMetaData> metaDataByPropertyName =
+    /**
+     * The pipeline maintains a map of property meta data indexed by property
+     * name. This is used by the {@link #getMetaDataForProperty(String)} method.
+     */
+    private final Map<String, ElementPropertyMetaData> metaDataByPropertyName =
         new HashMap<>();
 
+    /**
+     * Construct a new instance.
+     * @param logger used for logging
+     * @param flowElements the {@link FlowElement} instances that make up this
+     *                     pipeline
+     * @param flowDataFactory factory used to create new {@link FlowData}
+     *                        instances
+     * @param autoDisposeElements if true then pipeline will call
+     *                            {@link FlowElement#close()} on its child
+     *                            elements when it is closed
+     * @param suppressProcessExceptions if true then pipeline will suppress
+     *                                  exceptions added to
+     *                                  {@link FlowData#getErrors()}
+     */
     PipelineDefault(
         Logger logger,
         List<FlowElement> flowElements,
@@ -121,6 +187,12 @@ class PipelineDefault implements PipelineInternal {
         return isClosed;
     }
 
+    /**
+     * Construct the map of available properties for the elements in the
+     * pipeline.
+     * @param elements the elements to get the available properties from
+     * @return map of available properties for elements
+     */
     private Map<String, Map<String, ElementPropertyMetaData>>
     getElementAvailableProperties(List<FlowElement> elements) {
         Map<String, Map<String, ElementPropertyMetaData>> map =
@@ -136,6 +208,12 @@ class PipelineDefault implements PipelineInternal {
         return Collections.unmodifiableMap(mapOfReadonly);
     }
 
+    /**
+     * Add all the properties which are marked as available to the map, keyed on
+     * the element's data key then the property name.
+     * @param elements list of elements to get the available properties for
+     * @param map to add the properties to
+     */
     private void addAvailableProperties(
         List<FlowElement> elements,
         Map<String, Map<String, ElementPropertyMetaData>> map) {
@@ -150,7 +228,9 @@ class PipelineDefault implements PipelineInternal {
                 }
                 Map<String, ElementPropertyMetaData> availableElementProperties =
                     map.get(element.getElementDataKey());
-                for (ElementPropertyMetaData property : (List<ElementPropertyMetaData>) element.getProperties()) {
+                for (Object propertyObject : element.getProperties()) {
+                    ElementPropertyMetaData property =
+                        (ElementPropertyMetaData)propertyObject;
                     if (property.isAvailable() &&
                         availableElementProperties.containsKey(property.getName()) == false) {
                         availableElementProperties.put(
@@ -162,6 +242,11 @@ class PipelineDefault implements PipelineInternal {
         }
     }
 
+    /**
+     * Add the specified flow elements to the {@link #elementsByType} map, which
+     * contains a list of all the elements in the pipeline indexed by type.
+     * @param elements the {@link FlowElement}s to add
+     */
     private void addElementsByType(List<FlowElement> elements) {
         for (FlowElement element : elements) {
             element.addPipeline(this);
@@ -182,7 +267,17 @@ class PipelineDefault implements PipelineInternal {
 
     }
 
-    private <T extends FlowElement> boolean anyAssignableFrom(Map<Class, List<FlowElement>> elements, Class<T> type) {
+    /**
+     * Return true if any of the {@link FlowElement}s provided, can be assigned
+     * to the specified class.
+     * @param elements element to check
+     * @param type the class to compare the elements to
+     * @param <T> the type of the class
+     * @return true if any elements are the requested type
+     */
+    private <T extends FlowElement> boolean anyAssignableFrom(
+        Map<Class, List<FlowElement>> elements,
+        Class<T> type) {
         for (Class element : elements.keySet()) {
             if (type.isAssignableFrom(element)) {
                 return true;
@@ -191,7 +286,16 @@ class PipelineDefault implements PipelineInternal {
         return false;
     }
 
-    private <T extends FlowElement> List<List<FlowElement>> getElementsWhereAssignableFrom(
+    /**
+     * Get a list of all {@link FlowElement}s which can be assigned the
+     * requested type.
+     * @param elements map of types to elements
+     * @param type the type of elements to get
+     * @param <T> the type of elements to get
+     * @return list of elements
+     */
+    private <T extends FlowElement> List<List<FlowElement>>
+    getElementsWhereAssignableFrom(
         Map<Class, List<FlowElement>> elements,
         Class<T> type) {
         List<List<FlowElement>> result = new ArrayList<>();
@@ -203,6 +307,8 @@ class PipelineDefault implements PipelineInternal {
         return result;
     }
 
+    @Override
+    @SuppressWarnings("unchecked")
     public <T extends FlowElement> T getElement(Class<T> type) {
         T result = null;
         if (elementsByType.containsKey(type)) {
@@ -213,7 +319,9 @@ class PipelineDefault implements PipelineInternal {
             }
         }
         else if (anyAssignableFrom(elementsByType, type)) {
-            List<List<FlowElement>> matches = getElementsWhereAssignableFrom(elementsByType, type);
+            List<List<FlowElement>> matches = getElementsWhereAssignableFrom(
+                elementsByType,
+                type);
             if (matches.size() == 1 &&
                 matches.get(0).size() == 1) {
                 result = (T)matches.get(0).get(0);
@@ -229,7 +337,8 @@ class PipelineDefault implements PipelineInternal {
     }
 
     @Override
-    public Map<String, Map<String, ElementPropertyMetaData>> getElementAvailableProperties() {
+    public Map<String, Map<String, ElementPropertyMetaData>>
+    getElementAvailableProperties() {
         return Collections.unmodifiableMap(elementAvailableProperties);
     }
 
@@ -270,8 +379,8 @@ class PipelineDefault implements PipelineInternal {
         try {
             logger.warn(
                 "Pipeline '" + hashCode() + "' finalised. It is recommended " +
-                    "that instance lifetimes are managed explicitly with a 'try' " +
-                    "block or calling the close method as part of a 'finally' block.");
+                "that instance lifetimes are managed explicitly with a 'try' " +
+                "block or calling the close method as part of a 'finally' block.");
             // Do not change this code. Put cleanup code in close(boolean disposing) above.
             close(false);
         } finally {
@@ -311,8 +420,9 @@ class PipelineDefault implements PipelineInternal {
     }
 
     @Override
-    public ElementPropertyMetaData getMetaDataForProperty(String propertyName) throws PipelineDataException {
-        ElementPropertyMetaData result = null;
+    public ElementPropertyMetaData getMetaDataForProperty(String propertyName)
+        throws PipelineDataException {
+        ElementPropertyMetaData result;
 
         if (metaDataByPropertyName.containsKey(propertyName)) {
             result = metaDataByPropertyName.get(propertyName);
@@ -321,7 +431,8 @@ class PipelineDefault implements PipelineInternal {
             List<ElementPropertyMetaData> properties = new ArrayList<>();
             for (FlowElement element : flowElements) {
                 for (Object property : element.getProperties()) {
-                    if (((ElementPropertyMetaData) property).getName().equalsIgnoreCase(propertyName)) {
+                    if (((ElementPropertyMetaData) property).getName()
+                        .equalsIgnoreCase(propertyName)) {
                         properties.add((ElementPropertyMetaData) property);
                     }
                 }

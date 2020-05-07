@@ -25,6 +25,10 @@ package fiftyone.pipeline.engines.configuration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * Default implementation of {@link ExecutorServiceFactory}. This uses the
+ * {@link Executors#newCachedThreadPool()} method to create a new service.
+ */
 public class ExecutorServiceFactoryDefault implements ExecutorServiceFactory {
     @Override
     public ExecutorService create() {

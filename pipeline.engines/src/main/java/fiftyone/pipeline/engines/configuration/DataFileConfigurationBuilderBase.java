@@ -23,10 +23,18 @@
 package fiftyone.pipeline.engines.configuration;
 
 import fiftyone.pipeline.engines.data.DataUpdateUrlFormatter;
+import fiftyone.pipeline.engines.services.DataUpdateService;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+/**
+ * Builder class that is used to create instances of
+ * {@link DataFileConfiguration} objects.
+ * @param <TBuilder> the type of the builder implementation
+ * @param <TConfig> the type of configuration returned by the builder
+ */
 public abstract class DataFileConfigurationBuilderBase<
     TBuilder extends DataFileConfigurationBuilderBase<TBuilder, TConfig>,
     TConfig extends DataFileConfiguration> {
@@ -42,10 +50,11 @@ public abstract class DataFileConfigurationBuilderBase<
     private Boolean dataUpdateDecompress = null;
     private Boolean dataUpdateVerifyModifiedSince = null;
     private Boolean updateOnStartup = null;
-    private List<String> licenseKeys = new ArrayList<>();
+    private final List<String> licenseKeys = new ArrayList<>();
 
     /**
-     * License keys to use when updating the Engine's data file.
+     * Get the license keys to use when updating the Engine's data file.
+     * @return list of license keys
      */
     protected List<String> getDataUpdateLicenseKeys() {
         return licenseKeys;
@@ -59,9 +68,10 @@ public abstract class DataFileConfigurationBuilderBase<
      * information applies to.
      * If the engine only supports a single data file then this
      * value will be ignored.
-     * @param identifier The identifier to use.
-     * @return This builder instance.
+     * @param identifier the identifier to use
+     * @return this builder instance
      */
+    @SuppressWarnings("unchecked")
     public TBuilder setDataFileIdentifier(String identifier) {
         this.identifier = identifier;
         return (TBuilder)this;
@@ -70,9 +80,10 @@ public abstract class DataFileConfigurationBuilderBase<
     /**
      * Configure the engine to use the specified URL when looking for
      * an updated data file.
-     * @param url The URL to check for a new data file.
-     * @return This builder instance.
+     * @param url the URL to check for a new data file.
+     * @return this builder instance.
      */
+    @SuppressWarnings("unchecked")
     public TBuilder setDataUpdateUrl(String url) {
         dataUpdateUrlOverride = url;
         return (TBuilder)this;
@@ -81,35 +92,38 @@ public abstract class DataFileConfigurationBuilderBase<
     /**
      * Specify a DataUpdateUrlFormatter to be used by the DataUpdateService
      * when building the complete URL to query for updated data.
-     * @param formatter  The formatter to use.
-     * @return  This builder instance.
+     * @param formatter  the formatter to use
+     * @return  this builder instance
      */
+    @SuppressWarnings("unchecked")
     public TBuilder setDataUpdateUrlFormatter( DataUpdateUrlFormatter formatter) {
         dataUpdateUrlFormatter = formatter;
         return (TBuilder)this;
     }
 
     /**
-     * Set a value indicating if the <see cref="DataUpdateService"/>
+     * Set a value indicating if the {@link DataUpdateService}
      * should expect the response from the data update URL to contain a
      * 'content-md5' HTTP header that can be used to verify the integrity
      * of the content.
-     * @param verify  True if the content should be verified with the Md5 hash.
-     * False otherwise.
-     * @return This builder instance.
+     * @param verify true if the content should be verified with the Md5 hash.
+     *               False otherwise
+     * @return this builder instance
      */
+    @SuppressWarnings("unchecked")
     public TBuilder setDataUpdateVerifyMd5(boolean verify) {
         dataUpdateVerifyMd5 = verify;
         return (TBuilder)this;
     }
 
     /**
-     * Set a value indicating if the DataUpdateService should expect content
-     * from the configured data update URL to be compressed or not.
-     * @param decompress  True if the content from the data update URL needs to
-     *                    be decompressed. False otherwise.
-     * @return This builder instance.
+     * Set a value indicating if the {@link DataUpdateService} should expect
+     * content from the configured data update URL to be compressed or not.
+     * @param decompress  true if the content from the data update URL needs to
+     *                    be decompressed. False otherwise
+     * @return this builder instance
      */
+    @SuppressWarnings("unchecked")
     public TBuilder setDataUpdateDecompress(boolean decompress) {
         dataUpdateDecompress = decompress;
         return (TBuilder)this;
@@ -117,28 +131,30 @@ public abstract class DataFileConfigurationBuilderBase<
 
     /**
      * Enable or disable automatic updates for this engine.
-     * @param enabled If true, the engine will update it's data file with no
+     * @param enabled if true, the engine will update it's data file with no
      *                manual intervention. If false, the engine will never
      *                update it's data file unless the manual update method is
-     *                called on DataUpdateService
-     * @return This builder instance.
+     *                called on {@link DataUpdateService}
+     * @return this builder instance
      */
+    @SuppressWarnings("unchecked")
     public TBuilder setAutoUpdate(boolean enabled) {
         autoUpdateEnabled = enabled;
         return (TBuilder)this;
     }
 
     /**
-     * The DataUpdateService has the ability to watch a data file on disk and
-     * automatically refresh the engine as soon as the file is updated.
+     * The {@link DataUpdateService} has the ability to watch a data file on
+     * disk and automatically refresh the engine as soon as the file is updated.
      * This setting enables/disables that feature.
      *
-     * The AutoUpdate feature must also be enabled in order for the file
-     * system watcher to work.
+     * The {@link #setAutoUpdate(boolean)} feature must also be enabled in order
+     * for the file system watcher to work.
      * If the engine is built from a byte[] then this setting does nothing.
-     * @param enabled  The cache configuration to use.
-     * @return This builder instance.
+     * @param enabled  the cache configuration to use
+     * @return this builder instance
      */
+    @SuppressWarnings("unchecked")
     public TBuilder setDataFileSystemWatcher(boolean enabled) {
         dataFileSystemWatcherEnabled = enabled;
         return (TBuilder)this;
@@ -146,17 +162,19 @@ public abstract class DataFileConfigurationBuilderBase<
 
     /**
      * Set the time between checks for a new data file made by the
-     * DataUpdateService.
+     * {@link DataUpdateService}.
      * Default = 30 minutes.
      *
-     * Generally, the DataUpdateService will not check for a new data file until
-     * the 'expected update time' that is stored in the current data file.
+     * Generally, the {@link DataUpdateService} will not check for a new data
+     * file until the 'expected update time' that is stored in the current data
+     * file.
      * This interval is the time to wait between checks after that time
      * if no update is initially found.
      * If automatic updates are disabled then this setting does nothing.
-     * @param pollingIntervalSeconds  The number of seconds between checks.
-     * @return This builder instance.
+     * @param pollingIntervalSeconds the number of seconds between checks
+     * @return this builder instance
      */
+    @SuppressWarnings("unchecked")
     public TBuilder setUpdatePollingInterval(int pollingIntervalSeconds) {
         updatePollingIntervalSeconds = pollingIntervalSeconds;
         return (TBuilder)this;
@@ -164,7 +182,7 @@ public abstract class DataFileConfigurationBuilderBase<
 
     /**
      * Set the time between checks for a new data file made by the
-     * DataUpdateService.
+     * {@link DataUpdateService}.
      * Default = 30 minutes.
      *
      * Generally, the will not check for a new data file until the 'expected
@@ -172,9 +190,10 @@ public abstract class DataFileConfigurationBuilderBase<
      * This interval is the time to wait between checks after that time
      * if no update is initially found.
      * If automatic updates are disabled then this setting does nothing.
-     * @param pollingIntervalMillis The time between checks.
-     * @return This builder instance.
+     * @param pollingIntervalMillis the time between checks
+     * @return this builder instance
      */
+    @SuppressWarnings("unchecked")
     public TBuilder setUpdatePollingInterval(long pollingIntervalMillis) {
         if (pollingIntervalMillis / 1000 > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Polling interval timespan too large.");
@@ -184,13 +203,15 @@ public abstract class DataFileConfigurationBuilderBase<
     }
 
     /**
-     * A random element can be added to the DataUpdateService polling interval.
+     * A random element can be added to the {@link DataUpdateService} polling
+     * interval.
      * This option sets the maximum length of this random addition.
      * Default = 10 minutes.
-     * @param maximumDeviationMillis The maximum time added to the data update
-     *                               polling interval.
-     * @return This builder instance.
+     * @param maximumDeviationMillis the maximum time added to the data update
+     *                               polling interval
+     * @return this builder instance
      */
+    @SuppressWarnings("unchecked")
     public TBuilder setUpdateRandomisationMax(long maximumDeviationMillis){
         if (maximumDeviationMillis / 1000 > Integer.MAX_VALUE) {
             throw new IllegalArgumentException(
@@ -201,11 +222,12 @@ public abstract class DataFileConfigurationBuilderBase<
     }
 
     /**
-     * Set if DataUpdateService sends the If-Modified-Since header
+     * Set if {@link DataUpdateService} sends the If-Modified-Since header
      * in the request for a new data file.
-     * @param enabled Whether to use the If-Modified-Since header.
-     * @return This builder instance.
+     * @param enabled whether to use the If-Modified-Since header
+     * @return this builder instance
      */
+    @SuppressWarnings("unchecked")
     public TBuilder setVerifyIfModifiedSince(boolean enabled) {
         dataUpdateVerifyModifiedSince = enabled;
         return (TBuilder)this;
@@ -214,8 +236,9 @@ public abstract class DataFileConfigurationBuilderBase<
     /**
      * Set the license key to use when updating the Engine's data file.
      * @param key 51Degrees license key
-     * @return This builder
+     * @return this builder
      * */
+    @SuppressWarnings("unchecked")
     public TBuilder setDataUpdateLicenseKey(String key) {
         licenseKeys.add(key);
         return (TBuilder)this;
@@ -223,12 +246,14 @@ public abstract class DataFileConfigurationBuilderBase<
 
     /**
      * Configure the data file to update on startup or not.
-     * @param enabled If true then when this file is registered with the data
-     * update service, it will immediately try to download the latest
-     * copy of the file.
      * This action will block execution until the download is complete
      * and the engine has loaded the new file.
+     * @param enabled if true then when this file is registered with the data
+     *                update service, it will immediately try to download the
+     *                latest copy of the file
+     * @return this builder
      */
+    @SuppressWarnings("unchecked")
     public TBuilder setUpdateOnStartup(boolean enabled) {
         updateOnStartup = enabled;
         return (TBuilder)this;
@@ -237,12 +262,11 @@ public abstract class DataFileConfigurationBuilderBase<
     /**
      * Set the license keys to use when updating the Engine's data file.
      * @param keys 51Degrees license keys
-     * @return This builder
+     * @return this builder
      * */
+    @SuppressWarnings("unchecked")
     public TBuilder setDataUpdateLicenseKeys(String[] keys) {
-        for (String key : keys) {
-            licenseKeys.add(key);
-        }
+        Collections.addAll(licenseKeys, keys);
         return (TBuilder)this;
     }
 
@@ -252,7 +276,7 @@ public abstract class DataFileConfigurationBuilderBase<
      * Called to indicate that configuration of this file is complete
      * and the user can continue to configure the engine that the
      * data file will be used by.
-     * @return The new DataFileConfiguration instance
+     * @return the new {@link DataFileConfiguration} instance
      */
     public TConfig build(String filename, boolean createTempCopy) {
         TConfig config = createConfig();
@@ -268,7 +292,7 @@ public abstract class DataFileConfigurationBuilderBase<
      * Called to indicate that configuration of this file is complete
      * and the user can continue to configure the engine that the
      * data file will be used by.
-     * @return The new DataFileConfiguration instance
+     * @return the new {@link DataFileConfiguration} instance
      */
     public TConfig build(byte[] data) {
         TConfig config = createConfig();
@@ -283,7 +307,7 @@ public abstract class DataFileConfigurationBuilderBase<
      * Set any properties on the configuration object that are the
      * same regardless of the method of creation.
      * (i.e. file or byte array)
-     * @param config The configuration object to update.
+     * @param config the configuration object to update
      */
     private void configureCommonOptions(TConfig config) {
         config.setIdentifier(identifier);

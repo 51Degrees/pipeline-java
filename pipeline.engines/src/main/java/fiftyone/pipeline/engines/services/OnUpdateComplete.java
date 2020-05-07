@@ -22,6 +22,17 @@
 
 package fiftyone.pipeline.engines.services;
 
+import fiftyone.pipeline.engines.data.AspectEngineDataFile;
+
+/**
+ * Event class called by the {@link DataUpdateService} when an update has been
+ * completed.
+ */
 public interface OnUpdateComplete {
+    /**
+     * Called by the {@link DataUpdateService}.
+     * @param sender the {@link AspectEngineDataFile} which has been updated
+     * @param args information on the status of the update
+     */
     void call(Object sender, DataUpdateService.DataUpdateCompleteArgs args);
 }

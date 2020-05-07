@@ -24,18 +24,35 @@ package fiftyone.pipeline.core.data;
 
 import java.util.*;
 
+/**
+ * This evidence filter will only include keys that are on a whitelist that is
+ * specified at construction time.
+ */
 public class EvidenceKeyFilterWhitelist implements EvidenceKeyFilter {
 
-    protected Map<String, Integer> whitelist;
+    protected final Map<String, Integer> whitelist;
 
-    protected Comparator<String> comparator;
+    protected final Comparator<String> comparator;
 
+    /**
+     * Construct a new instance using the list of evidence keys provided.
+     * By default, all keys will have the same order of precedence.
+     * @param whitelist evidence keys to add to the whitelist
+     */
     public EvidenceKeyFilterWhitelist(List<String> whitelist) {
         this.whitelist = new TreeMap<>();
         addValues(whitelist);
         this.comparator = null;
     }
 
+    /**
+     * Construct a new instance using the list of evidence keys provided and
+     * a custom string comparator to use when calling the
+     * {@link #include(String)} method.
+     * By default, all keys will have the same order of precedence.
+     * @param whitelist evidence keys to add to the whitelist
+     * @param comparator the string comparator to use on the keys
+     */
     public EvidenceKeyFilterWhitelist(
         List<String> whitelist,
         Comparator<String> comparator) {
@@ -44,12 +61,27 @@ public class EvidenceKeyFilterWhitelist implements EvidenceKeyFilter {
         this.comparator = comparator;
     }
 
+    /**
+     * Construct a new instance using the map of evidence keys and order of
+     * precedence provided.
+     * The order of precedence of each key is given by the value of the
+     * key/value pair.
+     * @param whitelist evidence keys to add to the whitelist
+     */
     public EvidenceKeyFilterWhitelist(Map<String, Integer> whitelist) {
         this.whitelist = new TreeMap<>();
         addValues(whitelist);
         this.comparator = null;
     }
 
+    /**
+     * Construct a new instance using the map of evidence keys and order of
+     * precedence provided.
+     * The order of precedence of each key is given by the value of the
+     * key/value pair.
+     * @param whitelist evidence keys to add to the whitelist
+     * @param comparator the string comparator to use on the keys
+     */
     public EvidenceKeyFilterWhitelist(
         Map<String, Integer> whitelist,
         Comparator<String> comparator) {
@@ -58,6 +90,11 @@ public class EvidenceKeyFilterWhitelist implements EvidenceKeyFilter {
         this.comparator = comparator;
     }
 
+    /**
+     * Add the keys to the internal map. This should only be called by
+     * constructors.
+     * @param values values to add
+     */
     private void addValues(Map<String, Integer> values) {
         for (Map.Entry<String, Integer> entry : values.entrySet()) {
             if (whitelist.containsKey(entry.getKey()) == false) {
@@ -66,6 +103,11 @@ public class EvidenceKeyFilterWhitelist implements EvidenceKeyFilter {
         }
     }
 
+    /**
+     * Add the keys to the internal map. This should only be called by
+     * constructors.
+     * @param values values to add
+     */
     private void addValues(List<String> values) {
         for (String value : values) {
             if (whitelist.containsKey(value) == false) {
@@ -74,6 +116,11 @@ public class EvidenceKeyFilterWhitelist implements EvidenceKeyFilter {
         }
     }
 
+    /**
+     * Get the internal list of whitelisted evidence keys along with their order
+     * of precedence as an unmodifiable map.
+     * @return internal whitelist
+     */
     public Map<String, Integer> getWhitelist() {
         return Collections.unmodifiableMap(whitelist);
     }

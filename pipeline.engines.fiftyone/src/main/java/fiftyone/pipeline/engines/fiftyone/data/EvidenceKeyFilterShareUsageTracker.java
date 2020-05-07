@@ -22,29 +22,48 @@
 
 package fiftyone.pipeline.engines.fiftyone.data;
 
+import fiftyone.pipeline.engines.fiftyone.trackers.ShareUsageTracker;
+
 import java.util.List;
 
 import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.*;
 
+/**
+ * Wrapper for EvidenceKeyFilter for Share Usage, to be used with the
+ * {@link ShareUsageTracker} to excluded specific evidence keys from the filter.
+ */
 public class EvidenceKeyFilterShareUsageTracker extends EvidenceKeyFilterShareUsage {
-
+    /**
+     * Constructor.
+     * @param blockedHttpHeaders a list of the names of the HTTP headers that
+     *                           share usage should not send to 51Degrees
+     * @param includedQueryStringParams a list of the names of query string
+     *                                  parameters that share usage should send
+     *                                  to 51Degrees
+     * @param includeSession if true then the session cookie will be included in
+     *                       the filter
+     * @param sessionCookieName the name of the cookie that contains the session
+     *                          id
+     */
     public EvidenceKeyFilterShareUsageTracker(
         List<String> blockedHttpHeaders,
         List<String> includedQueryStringParams,
         boolean includeSession,
         String sessionCookieName) {
-        super(blockedHttpHeaders, includedQueryStringParams, includeSession, sessionCookieName);
+        super(
+            blockedHttpHeaders,
+            includedQueryStringParams,
+            includeSession,
+            sessionCookieName);
     }
 
     @Override
     public boolean include(String key) {
-        boolean result = false;
-        
-        if(key == EVIDENCE_SESSIONID)
+        if(key.equalsIgnoreCase(EVIDENCE_SESSIONID) ||
+            key.equalsIgnoreCase(EVIDENCE_SEQUENCE)) {
             return false;
-        if(key == EVIDENCE_SEQUENCE)
-            return false;
-        
-        return result;
+        }
+
+        return super.include(key);
     }
 }

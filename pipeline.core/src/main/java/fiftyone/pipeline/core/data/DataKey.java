@@ -24,12 +24,22 @@ package fiftyone.pipeline.core.data;
 
 import java.util.List;
 
+/**
+ * Data key class containing a number of objects which are used for equality.
+ * When comparing {@link DataKey}s, the hash codes of each object in the key
+ * are compared. Instances of this class are created using a
+ * {@link DataKeyBuilder}.
+ */
 public class DataKey {
 
     private int hashCode;
 
-    private List<Object> keyValues;
+    private final List<Object> keyValues;
 
+    /**
+     * Construct a new instance of {@link DataKey} using the objects provided.
+     * @param keyValues list of objects which define the key
+     */
     DataKey(List<Object> keyValues) {
         this.keyValues = keyValues;
         hashCode = 0;
@@ -53,7 +63,7 @@ public class DataKey {
 
             // Check if the object passed in is a DataKey and contains the
             // same number of key fields.
-            if (other != null && other.keyValues.size() == keyValues.size()) {
+            if (other.keyValues.size() == keyValues.size()) {
                 result = true;
                 int count = 0;
                 // Check each key field in turn until the values fail to match

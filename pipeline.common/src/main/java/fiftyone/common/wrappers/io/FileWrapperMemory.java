@@ -29,6 +29,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+/**
+ * In memory implementation of the {@link FileWrapperFactory}. This is only used
+ * for tests, where it makes more sense to write things to memory rather than
+ * writing to the actual file system.
+ */
 public class FileWrapperMemory implements FileWrapper {
 
     /**

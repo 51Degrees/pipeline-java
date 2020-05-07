@@ -26,12 +26,12 @@ import java.util.HashMap;
 
 //! [class]
 public class JavaScriptResource {
-    private String _objName;
-    private String _jsonObject;
-    private boolean _supportsPromises;
-    private String _url;
-    private boolean _enableCookies;
-    private boolean _updateEnabled;
+    private final String _objName;
+    private final String _jsonObject;
+    private final boolean _supportsPromises;
+    private final String _url;
+    private final boolean _enableCookies;
+    private final boolean _updateEnabled;
 
     public JavaScriptResource(
         String objName,

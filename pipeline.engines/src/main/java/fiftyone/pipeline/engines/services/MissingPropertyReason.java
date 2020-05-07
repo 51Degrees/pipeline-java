@@ -30,6 +30,6 @@ import fiftyone.pipeline.engines.flowelements.AspectEngine;
  */
 public enum MissingPropertyReason {
     DataFileUpgradeRequired,
-    PropertyExculdedFromEngineConfiguration,
+    PropertyExcludedFromEngineConfiguration,
     Unknown
 }

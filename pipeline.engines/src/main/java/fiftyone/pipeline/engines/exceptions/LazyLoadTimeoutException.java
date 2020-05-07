@@ -22,15 +22,34 @@
 
 package fiftyone.pipeline.engines.exceptions;
 
+import fiftyone.pipeline.core.data.ElementData;
+
+/**
+ * Timeout exception thrown if the lazy loading of a property value from an
+ * {@link ElementData} times out.
+ */
 public class LazyLoadTimeoutException extends RuntimeException {
+
+    /**
+     * Construct a new instance
+     * @param message the message to give to the exception
+     * @param cause cause of the exception
+     */
     public LazyLoadTimeoutException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * Construct a new instance
+     * @param message the message to give to the exception
+     */
     public LazyLoadTimeoutException(String message) {
         super(message);
     }
 
+    /**
+     * Default constructor.
+     */
     public LazyLoadTimeoutException() {
         super();
     }

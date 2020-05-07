@@ -22,10 +22,7 @@
 
 package fiftyone.pipeline.core.flowelements;
 
-import fiftyone.pipeline.core.data.ElementData;
-import fiftyone.pipeline.core.data.ElementPropertyMetaData;
-import fiftyone.pipeline.core.data.EvidenceKeyFilter;
-import fiftyone.pipeline.core.data.FlowData;
+import fiftyone.pipeline.core.data.*;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
 import fiftyone.pipeline.core.typed.TypedKey;
 import fiftyone.pipeline.core.typed.TypedKeyDefault;
@@ -38,14 +35,16 @@ import java.util.List;
 
 /**
  * Provides a base class from which authors may create new FlowElements. The
- * {@link #process} method deals with {@link FlowData#isStopped} and any errors
- * that may be thrown, and calls the abstract {@link #processInternal} method
- * to do the actual processing.
- * <p>
- * <p>This class is primarily of use to creators of FlowElement subclasses, end users of {@link Pipeline}s are
- * unlikely to use this class in its raw form.
+ * {@link #process(FlowData)} method deals with {@link FlowData#isStopped()} and
+ * any errors that may be thrown, and calls the abstract
+ * {@link #processInternal(FlowData)} method to do the actual processing.
  *
- * @param <TData>
+ * This class is primarily of use to creators of FlowElement subclasses, end
+ * users of {@link Pipeline}s are unlikely to use this class in its raw form.
+ * @param <TData> the type of element data that the flow element will write to
+ *               {@link FlowData}
+ * @param <TProperty> the type of meta data that the flow element will supply
+ *                  about the properties it populates.
  */
 public abstract class FlowElementBase<
     TData extends ElementData,
@@ -55,10 +54,18 @@ public abstract class FlowElementBase<
     protected final Logger logger;
     protected TypedKey<TData> typedKey = null;
     private boolean closed = false;
-    private List<Pipeline> pipelines = new ArrayList<>();
-    private DataFactory<TData> dataFactory;
+    private final List<Pipeline> pipelines = new ArrayList<>();
+    private final DataFactory<TData> dataFactory;
 
-    public FlowElementBase(Logger logger, ElementDataFactory<TData> elementDataFactory) {
+    /**
+     * Construct a new instance of the {@link FlowElement}.
+     * @param logger logger instance to use for logging
+     * @param elementDataFactory the factory to use when creating a
+     *                          {@link ElementDataBase} instance
+     */
+    public FlowElementBase(
+        Logger logger,
+        ElementDataFactory<TData> elementDataFactory) {
         this.logger = logger;
         logger.info("FlowElement '" + getClass().getSimpleName() + "'-'" +
             hashCode() + "' created.");
@@ -67,11 +74,11 @@ public abstract class FlowElementBase<
 
     /**
      * Abstract method to be overridden by a FlowElement author. This is the
-     * where the main processing happens, and is called by the {@link #process}
-     * method of the base class.
+     * where the main processing happens, and is called by the
+     * {@link #process(FlowData)} method of the base class.
      *
      * @param data containing evidence to process
-     * @throws Exception to be caught by {@link #process}
+     * @throws Exception to be caught by {@link #process(FlowData)}
      */
     protected abstract void processInternal(FlowData data) throws Exception;
 
@@ -80,6 +87,11 @@ public abstract class FlowElementBase<
         pipelines.add(pipeline);
     }
 
+    /**
+     * Get a unmodifiable list of the {@link Pipeline}s that this element has
+     * been added to.
+     * @return list of {@link Pipeline}s
+     */
     public List<Pipeline> getPipelines() {
         return Collections.unmodifiableList(pipelines);
     }
@@ -106,7 +118,12 @@ public abstract class FlowElementBase<
     @Override
     public TypedKey<TData> getTypedDataKey() {
         if (typedKey == null) {
-            typedKey = new TypedKeyDefault<>(getElementDataKey(), Types.findSubClassParameterType(this, FlowElementBase.class, 0));
+            typedKey = new TypedKeyDefault<>(
+                getElementDataKey(),
+                Types.findSubClassParameterType(
+                    this,
+                    FlowElementBase.class,
+                    0));
         }
         return typedKey;
     }
@@ -189,10 +206,21 @@ public abstract class FlowElementBase<
         close(true);
     }
 
-    protected static class DataFactoryInternal<T extends ElementData> implements DataFactory<T> {
-        private ElementDataFactory<T> elementDataFactory;
-        private FlowElement<T, ?> element;
+    /**
+     * Default implementation of the {@link DataFactory} interface. Uses the
+     * {@link ElementDataFactory} the element was constructed with.
+     * @param <T> the type of {@link ElementData}
+     */
+    protected static class DataFactoryInternal<T extends ElementData>
+        implements DataFactory<T> {
+        private final ElementDataFactory<T> elementDataFactory;
+        private final FlowElement<T, ?> element;
 
+        /**
+         * Construct a new instance for the calling element.
+         * @param elementDataFactory factory used to create {@link ElementData}
+         * @param element the element to create the data for
+         */
         DataFactoryInternal(
             ElementDataFactory<T> elementDataFactory,
             FlowElement<T, ?> element) {
@@ -206,9 +234,23 @@ public abstract class FlowElementBase<
         }
     }
 
+    /**
+     * {@link DataFactory} implementation which should be used temporarily with
+     * a single {@link ElementData} instance. An instance's
+     * {@link #create(FlowData)} method will always return the element data it
+     * was constructed with.
+     *
+     * This is used within the caching mechanism where the data is already known.
+     * @param <T> the type of (@link ElementData}
+     */
     protected static class DataFactorySimple<T extends ElementData> implements DataFactory<T> {
         private final T value;
 
+        /**
+         * Create a new instance which returns the data provided.
+         * @param value the {@link ElementData} which should be returned by the
+         *              {@link #create(FlowData)} method
+         */
         public DataFactorySimple(T value) {
             this.value = value;
         }

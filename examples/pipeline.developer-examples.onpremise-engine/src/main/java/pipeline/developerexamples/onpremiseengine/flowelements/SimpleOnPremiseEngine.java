@@ -51,7 +51,7 @@ public class SimpleOnPremiseEngine extends OnPremiseAspectEngineBase<StarSignDat
     }
 //! [constructor]
 
-    private String dataFile;
+    private final String dataFile;
 
     private List<StarSign> starSigns;
 
@@ -60,7 +60,7 @@ public class SimpleOnPremiseEngine extends OnPremiseAspectEngineBase<StarSignDat
         List<StarSign> starSigns = new ArrayList<>();
         try (FileReader fileReader = new FileReader(dataFile)) {
             try (BufferedReader reader = new BufferedReader(fileReader)) {
-                String line = null;
+                String line;
                 while ((line = reader.readLine()) != null) {
                     String[] columns = line.split(",");
                     starSigns.add(new StarSign(
@@ -94,7 +94,9 @@ public class SimpleOnPremiseEngine extends OnPremiseAspectEngineBase<StarSignDat
         try {
             init();
         } catch (IOException e) {
-
+            logger.warn("There was an exception refreshing the data file" +
+            "'" + dataFileIdentifier + "'",
+                e);
         }
     }
 
@@ -142,7 +144,8 @@ public class SimpleOnPremiseEngine extends OnPremiseAspectEngineBase<StarSignDat
     @Override
     public EvidenceKeyFilter getEvidenceKeyFilter() {
         // The only item of evidence needed is "date-of-birth".
-        return new EvidenceKeyFilterWhitelist(Arrays.asList("date-of-birth"),
+        return new EvidenceKeyFilterWhitelist(
+            Collections.singletonList("date-of-birth"),
             String.CASE_INSENSITIVE_ORDER);
     }
 
@@ -150,13 +153,13 @@ public class SimpleOnPremiseEngine extends OnPremiseAspectEngineBase<StarSignDat
     public List<AspectPropertyMetaData> getProperties() {
         // The only property which will be returned is "starsign" which will be
         // an String.
-        return Arrays.asList(
-            (AspectPropertyMetaData)new AspectPropertyMetaDataDefault(
+        return Collections.singletonList(
+            (AspectPropertyMetaData) new AspectPropertyMetaDataDefault(
                 "starsign",
                 this,
                 "starsign",
                 String.class,
-                Arrays.asList("free"),
+                Collections.singletonList("free"),
                 true));
     }
 

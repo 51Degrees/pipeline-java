@@ -22,6 +22,10 @@
 
 package fiftyone.common.wrappers.io;
 
+/**
+ * Default implementation of the {@link FileWrapperFactory} interface. This uses
+ * the OS file system.
+ */
 public class FileWrapperFactoryDefault implements FileWrapperFactory {
     @Override
     public FileWrapper build(String path) {

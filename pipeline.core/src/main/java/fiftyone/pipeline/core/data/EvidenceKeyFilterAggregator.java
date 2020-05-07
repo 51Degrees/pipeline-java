@@ -26,15 +26,29 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This implementation of {@link EvidenceKeyFilter} aggregates multiple other
+ * filters using a logical OR approach. I.e. if any one of the child filters
+ * would allow the inclusion of an evidence key then this aggregator will allow
+ * it as well, even if none of the other child filters do.
+ */
 public class EvidenceKeyFilterAggregator extends EvidenceKeyFilterWhitelist {
 
-    private List<EvidenceKeyFilter> filters;
+    private final List<EvidenceKeyFilter> filters;
 
+    /**
+     * Construct a new empty instance where the evidence keys are case
+     * insensitive.
+     */
     public EvidenceKeyFilterAggregator() {
         super(new ArrayList<String>(), String.CASE_INSENSITIVE_ORDER);
         filters = new ArrayList<>();
     }
 
+    /**
+     * Add a child filter to this aggregator.
+     * @param filter child filter to add
+     */
     public void addFilter(EvidenceKeyFilter filter) {
         boolean addFilter = true;
         if (filter instanceof EvidenceKeyFilterWhitelist) {

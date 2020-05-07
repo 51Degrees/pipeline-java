@@ -41,7 +41,7 @@ public class Constants {
              fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR +
             EVIDENCE_OBJECT_NAME_SUFFIX;
     
-    public static String DEFAULT_PROTOCOL = "https";
+    public static final String DEFAULT_PROTOCOL = "https";
     
-    public static String TEMPLATE = "/fiftyone/pipeline/javascriptbuilder/templates/JavaScriptResource.mustache";
+    public static final String TEMPLATE = "/fiftyone/pipeline/javascriptbuilder/templates/JavaScriptResource.mustache";
 }

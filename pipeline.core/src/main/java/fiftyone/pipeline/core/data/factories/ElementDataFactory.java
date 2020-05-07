@@ -25,8 +25,28 @@ package fiftyone.pipeline.core.data.factories;
 import fiftyone.pipeline.core.data.ElementData;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.flowelements.FlowElement;
+import fiftyone.pipeline.core.typed.TypedKey;
 
+/**
+ * Factory class used to create a new {@link ElementData} instance for a
+ * {@link FlowElement}. An element will contain its own implementation of this
+ * interface which builds the type of {@link ElementData} specific to that
+ * element.
+ * An implementation of (@link ElementDataFactory} is passed to the
+ * {@link FlowData#getOrAdd(TypedKey, FlowElement.DataFactory)} method and is
+ * called if the key does not already exist in the {@link FlowData}.
+ * @param <T> the type of {@link ElementData} which should be built by the
+ *           factory
+ */
 public interface ElementDataFactory<T extends ElementData> {
 
+    /**
+     * Create a new instance of {@link ElementData} for the {@link FlowElement}
+     * provided, linked to the {@link FlowData} provided.
+     * @param flowData to link the {@link ElementData} to
+     * @param flowElement to create the {@link ElementData} to
+     * @return a new {@link ElementData} instance to be added to the
+     * {@link FlowData}
+     */
     T create(FlowData flowData, FlowElement<T, ?> flowElement);
 }

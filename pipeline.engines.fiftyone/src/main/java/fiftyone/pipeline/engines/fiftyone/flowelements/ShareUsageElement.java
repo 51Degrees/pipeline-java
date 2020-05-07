@@ -22,6 +22,7 @@
 
 package fiftyone.pipeline.engines.fiftyone.flowelements;
 
+import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.engines.Constants;
 import fiftyone.pipeline.engines.fiftyone.exceptions.HttpException;
 import fiftyone.pipeline.engines.services.HttpClient;
@@ -40,12 +41,48 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
 
+/**
+ * Flow element that sends usage data to 51Degrees for analysis. The type and
+ * quantity of data being sent can be customised using the options on the
+ * constructor.
+ * By default, data is queued until there are at least 50 items in memory. It is
+ * then serialised to an XML file and sent to the specified URL.
+ */
 public class ShareUsageElement extends ShareUsageBase {
 
     private final HttpClient httpClient;
 
     private final Map<String, String> headers;
 
+    /**
+     * Constructor
+     * @param logger the logger to use
+     * @param sharePercentage the approximate proportion of requests to share.
+     *                        1 = 100%, 0.5 = 50%, etc.
+     * @param minimumEntriesPerMessage the minimum number of request entries per
+     *                                 message sent to 51Degrees
+     * @param maximumQueueSize the maximum number of items to hold in the queue
+     *                         at one time. This must be larger than minimum
+     *                         entries
+     * @param addTimeout the timeout in milliseconds to allow when attempting to
+     *                   add an item to the queue. If this timeout is exceeded
+     *                   then usage sharing will be disabled
+     * @param takeTimeout the timeout in milliseconds to allow when attempting
+     *                    to take an item to the queue
+     * @param repeatEvidenceIntervalMinutes the interval (in minutes) which is
+     *                                      used to decide if repeat evidence is
+     *                                      old enough to consider a new session
+     * @param trackSession set if the tracker should consider sessions in share
+     *                     usage
+     * @param shareUsageUrl the URL to send data to
+     * @param blockedHttpHeaders a list of the names of the HTTP headers that
+     *                           share usage should not send to 51Degrees
+     * @param includedQueryStringParameters a list of the names of query string
+     *                                      parameters that share usage should
+     *                                      send to 51Degrees
+     * @param ignoreDataEvidenceFilter the filter used to determine if an item
+     *                                 of evidence should be ignored or not
+     */
     ShareUsageElement(
         Logger logger,
         HttpClient httpClient,
@@ -77,6 +114,37 @@ public class ShareUsageElement extends ShareUsageBase {
             Constants.DEFAULT_SESSION_COOKIE_NAME);
     }
 
+    /**
+     * Constructor
+     * @param logger the logger to use
+     * @param sharePercentage the approximate proportion of requests to share.
+     *                        1 = 100%, 0.5 = 50%, etc.
+     * @param minimumEntriesPerMessage the minimum number of request entries per
+     *                                 message sent to 51Degrees
+     * @param maximumQueueSize the maximum number of items to hold in the queue
+     *                         at one time. This must be larger than minimum
+     *                         entries
+     * @param addTimeout the timeout in milliseconds to allow when attempting to
+     *                   add an item to the queue. If this timeout is exceeded
+     *                   then usage sharing will be disabled
+     * @param takeTimeout the timeout in milliseconds to allow when attempting
+     *                    to take an item to the queue
+     * @param repeatEvidenceIntervalMinutes the interval (in minutes) which is
+     *                                      used to decide if repeat evidence is
+     *                                      old enough to consider a new session
+     * @param trackSession set if the tracker should consider sessions in share
+     *                     usage
+     * @param shareUsageUrl the URL to send data to
+     * @param blockedHttpHeaders a list of the names of the HTTP headers that
+     *                           share usage should not send to 51Degrees
+     * @param includedQueryStringParameters a list of the names of query string
+     *                                      parameters that share usage should
+     *                                      send to 51Degrees
+     * @param ignoreDataEvidenceFilter the filter used to determine if an item
+     *                                 of evidence should be ignored or not
+     * @param sessionCookieName the name of the cookie that contains the session
+     *                          id
+     */
     ShareUsageElement(
         Logger logger,
         HttpClient httpClient,
@@ -91,7 +159,7 @@ public class ShareUsageElement extends ShareUsageBase {
         List<String> blockedHttpHeaders,
         List<String> includedQueryStringParameters,
         List<Map.Entry<String, String>> ignoreDataEvidenceFilter,
-        String sesstionCookieName) {
+        String sessionCookieName) {
         this(
             logger,
             httpClient,
@@ -106,10 +174,43 @@ public class ShareUsageElement extends ShareUsageBase {
             blockedHttpHeaders,
             includedQueryStringParameters,
             ignoreDataEvidenceFilter,
-            sesstionCookieName,
+            sessionCookieName,
             null);
     }
 
+    /**
+     * Constructor
+     * @param logger the logger to use
+     * @param sharePercentage the approximate proportion of requests to share.
+     *                        1 = 100%, 0.5 = 50%, etc.
+     * @param minimumEntriesPerMessage the minimum number of request entries per
+     *                                 message sent to 51Degrees
+     * @param maximumQueueSize the maximum number of items to hold in the queue
+     *                         at one time. This must be larger than minimum
+     *                         entries
+     * @param addTimeout the timeout in milliseconds to allow when attempting to
+     *                   add an item to the queue. If this timeout is exceeded
+     *                   then usage sharing will be disabled
+     * @param takeTimeout the timeout in milliseconds to allow when attempting
+     *                    to take an item to the queue
+     * @param repeatEvidenceIntervalMinutes the interval (in minutes) which is
+     *                                      used to decide if repeat evidence is
+     *                                      old enough to consider a new session
+     * @param trackSession set if the tracker should consider sessions in share
+     *                     usage
+     * @param shareUsageUrl the URL to send data to
+     * @param blockedHttpHeaders a list of the names of the HTTP headers that
+     *                           share usage should not send to 51Degrees
+     * @param includedQueryStringParameters a list of the names of query string
+     *                                      parameters that share usage should
+     *                                      send to 51Degrees
+     * @param ignoreDataEvidenceFilter the filter used to determine if an item
+     *                                 of evidence should be ignored or not
+     * @param sessionCookieName the name of the cookie that contains the session
+     *                          id
+     * @param tracker the {@link Tracker} to use to determine if a given
+     *                {@link FlowData} instance should be shared or not
+     */
     ShareUsageElement(
         Logger logger,
         HttpClient httpClient,
@@ -153,10 +254,15 @@ public class ShareUsageElement extends ShareUsageBase {
         List<ShareUsageData> allData = new ArrayList<>();
 
         try {
-            ShareUsageData currentData = evidenceCollection.poll(takeTimeout, TimeUnit.MILLISECONDS);
-            while (currentData != null && allData.size() < minEntriesPerMessage * 2) {
+            ShareUsageData currentData = evidenceCollection.poll(
+                takeTimeout,
+                TimeUnit.MILLISECONDS);
+            while (currentData != null &&
+                allData.size() < minEntriesPerMessage * 2) {
                 allData.add(currentData);
-                currentData = evidenceCollection.poll(takeTimeout, TimeUnit.MILLISECONDS);
+                currentData = evidenceCollection.poll(
+                    takeTimeout,
+                    TimeUnit.MILLISECONDS);
             }
         } catch (InterruptedException e) {
             // do nothing.
@@ -183,7 +289,7 @@ public class ShareUsageElement extends ShareUsageBase {
         }
         if (zipFailed == false) {
 
-            HttpURLConnection connection = null;
+            HttpURLConnection connection;
             try {
                 connection = httpClient.connect(new URL(shareUsageUrl.trim()));
             } catch (MalformedURLException e) {

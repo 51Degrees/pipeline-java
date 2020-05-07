@@ -22,22 +22,45 @@
 
 package fiftyone.pipeline.web.services;
 
+import fiftyone.pipeline.core.data.FlowData;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 import static fiftyone.pipeline.web.Constants.CORE_JS_NAME;
 
+/**
+ * Service that provides the 51Degrees javascript when requested.
+ */
 public interface FiftyOneJSServiceCore {
 
-    boolean serveJS(
-        HttpServletRequest request,
-        HttpServletResponse response) throws IOException;
+    /**
+     * Check if the 51Degrees JavaScript is being requested and write it to the
+     * response if it is.
+     * @param request the {@link HttpServletRequest} to get the {@link FlowData}
+     *                from
+     * @param response the {@link HttpServletResponse} to write the JavaScript
+     *                 to
+     * @return true if JavaScript was written to the response, false otherwise
+     * @throws IOException
+     */
+    boolean serveJS(HttpServletRequest request, HttpServletResponse response)
+        throws IOException;
 
+    /**
+     * Default implementation of the {@link FiftyOneJSServiceCore} service.
+     */
     class Default implements FiftyOneJSServiceCore {
-        protected ClientsidePropertyServiceCore clientsidePropertyServiceCore;
+        protected final ClientsidePropertyServiceCore clientsidePropertyServiceCore;
         protected boolean enabled;
 
+        /**
+         * Construct a new instance.
+         * @param clientsidePropertyServiceCore used to get the JavaScript to
+         *                                      add to the returned file
+         * @param enabled true if the service should be enabled
+         */
         public Default(
             ClientsidePropertyServiceCore clientsidePropertyServiceCore,
             boolean enabled) {
@@ -50,7 +73,8 @@ public interface FiftyOneJSServiceCore {
             HttpServletRequest request,
             HttpServletResponse response) throws IOException {
             boolean result = false;
-            if (request.getRequestURL().toString().toLowerCase().endsWith(CORE_JS_NAME.toLowerCase())) {
+            if (request.getRequestURL().toString().toLowerCase()
+                .endsWith(CORE_JS_NAME.toLowerCase())) {
                 serveCoreJS(request, response);
                 result = true;
             }

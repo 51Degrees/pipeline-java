@@ -24,15 +24,41 @@ package fiftyone.pipeline.engines.fiftyone.data;
 
 import java.io.Closeable;
 
+/**
+ * Meta data relating to a component of an Engine's results e.g. Hardware.
+ */
 public interface ComponentMetaData extends Closeable {
 
+    /**
+     * Get the unique Id of the component.
+     * @return unique component id
+     */
     byte getComponentId();
 
+    /**
+     * Get the name of the component.
+     * @return component name
+     */
     String getName();
 
+    /**
+     * Get the default profile which is used by the Engine for this component.
+     * @return default profile for this component
+     */
     ProfileMetaData getDefaultProfile();
 
+    /**
+     * List of the properties which come under the umbrella of this component.
+     * @return list of properties
+     */
     Iterable<FiftyOneAspectPropertyMetaData> getProperties();
 
+    /**
+     * Get the property from the component which has the name provided. Null is
+     * returned if the component does not contain a property with the name
+     * provided.
+     * @param propertyName name of the property to return
+     * @return the property or null if not in this component
+     */
     FiftyOneAspectPropertyMetaData getProperty(String propertyName);
 }

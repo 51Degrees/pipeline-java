@@ -25,9 +25,22 @@ package fiftyone.pipeline.engines.caching;
 import fiftyone.pipeline.core.data.ElementData;
 import fiftyone.pipeline.core.flowelements.FlowElement;
 
+/**
+ * Represents a 'flow cache'
+ * A flow cache is a cache that is used to cache results from individual flow
+ * elements in the pipeline.
+ */
 public interface FlowCache extends DataKeyedCache<ElementData> {
 
+    /**
+     * Get the {@link FlowElement} that this cache is associated with.
+     * @return this cache's {@link FlowElement}
+     */
     FlowElement getFlowElement();
 
+    /**
+     * Set the {@link FlowElement} that this cache is associated with.
+     * @param flowElement this cache's {@link FlowElement}
+     */
     void setFlowElement(FlowElement flowElement);
 }

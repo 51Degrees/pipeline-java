@@ -27,20 +27,43 @@ import fiftyone.pipeline.engines.fiftyone.data.FiftyOneDataFileDefault;
 import fiftyone.pipeline.engines.flowelements.SingleFileAspectEngineBuilderBase;
 import fiftyone.pipeline.engines.services.DataUpdateService;
 import org.slf4j.ILoggerFactory;
+import org.slf4j.LoggerFactory;
 
+/**
+ * Abstract base class that exposes the common options that all 51Degrees
+ * on-premise engine builders using a single data file should make use of.
+ * @param <TBuilder> the specific builder type to use as the return type from
+ *                  the fluent builder methods
+ * @param <TEngine> the type of the engine that this builder will build
+ */
 public abstract class FiftyOneOnPremiseAspectEngineBuilderBase<
     TBuilder extends FiftyOneOnPremiseAspectEngineBuilderBase<TBuilder, TEngine>,
     TEngine extends FiftyOneAspectEngine> extends
     SingleFileAspectEngineBuilderBase<TBuilder, TEngine> {
 
+    /**
+     * Default constructor which uses the {@link ILoggerFactory} implementation
+     * returned by {@link LoggerFactory#getILoggerFactory()}.
+     */
     public FiftyOneOnPremiseAspectEngineBuilderBase() {
         super();
     }
 
+    /**
+     * Construct a new instance using the {@link ILoggerFactory} supplied.
+     * @param loggerFactory the logger factory to use
+     */
     public FiftyOneOnPremiseAspectEngineBuilderBase(ILoggerFactory loggerFactory) {
         super(loggerFactory);
     }
 
+    /**
+     * Construct a new instance using the {@link ILoggerFactory} and
+     * {@link DataUpdateService} supplied.
+     * @param loggerFactory the logger factory to use
+     * @param dataUpdateService the {@link DataUpdateService} to use when
+     *                          automatic updates happen on the data file
+     */
     public FiftyOneOnPremiseAspectEngineBuilderBase(
         ILoggerFactory loggerFactory,
         DataUpdateService dataUpdateService) {

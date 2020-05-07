@@ -31,12 +31,27 @@ import fiftyone.pipeline.engines.flowelements.OnPremiseAspectEngineBase;
 import fiftyone.pipeline.util.Types;
 import org.slf4j.Logger;
 
+/**
+ * 51Degrees specific engine base class. This adds the concept of license keys
+ * to the standard Engine base class.
+ * @param <TData> the type of aspect data that the flow element will write to
+ * @param <TProperty> the type of meta data that the flow element will supply
+ *                    about the properties it populates.
+ */
 public abstract class FiftyOneOnPremiseAspectEngineBase<
     TData extends AspectData,
     TProperty extends FiftyOneAspectPropertyMetaData>
     extends OnPremiseAspectEngineBase<TData, TProperty>
     implements FiftyOneAspectEngine<TData, TProperty> {
 
+    /**
+     * Construct a new instance of the {@link FiftyOneOnPremiseAspectEngineBase}.
+     * @param logger logger instance to use for logging
+     * @param aspectDataFactory the factory to use when creating a {@link TData}
+     *                          instance
+     * @param tempDataFilePath the file where a temporary data file copy
+     *                        will be stored if one is created
+     */
     public FiftyOneOnPremiseAspectEngineBase(
         Logger logger,
         ElementDataFactory<TData> aspectDataFactory,

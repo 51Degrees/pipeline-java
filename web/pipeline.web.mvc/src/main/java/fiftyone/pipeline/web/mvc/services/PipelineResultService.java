@@ -27,6 +27,9 @@ import fiftyone.pipeline.web.services.PipelineResultServiceCore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+/**
+ * Spring framework service for the {@link PipelineResultServiceCore}.
+ */
 @Service
 public interface PipelineResultService extends PipelineResultServiceCore {
 

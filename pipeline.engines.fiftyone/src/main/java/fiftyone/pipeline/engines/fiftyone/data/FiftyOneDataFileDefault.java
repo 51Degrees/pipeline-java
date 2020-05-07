@@ -24,6 +24,9 @@ package fiftyone.pipeline.engines.fiftyone.data;
 
 import fiftyone.pipeline.engines.data.AspectEngineDataFileDefault;
 
+/**
+ * Default implementation of the {@link FiftyOneDataFile} interface.
+ */
 public class FiftyOneDataFileDefault extends AspectEngineDataFileDefault implements FiftyOneDataFile {
 
     private String downloadType;

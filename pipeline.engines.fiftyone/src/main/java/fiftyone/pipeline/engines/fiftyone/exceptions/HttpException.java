@@ -24,25 +24,48 @@ package fiftyone.pipeline.engines.fiftyone.exceptions;
 
 import java.io.IOException;
 
+/**
+ * HTTP exception which can be thrown by a cloud aspect engine.
+ */
 public class HttpException extends IOException {
+
+    /**
+     * Default constructor.
+     */
     public HttpException() {
         super();
     }
 
+    /**
+     * Construct a new instance.
+     * @param statusCode the status code of the HTTP request
+     * @param message the message to give to the exception
+     */
     public HttpException(int statusCode, String message) {
-        this("HTTP response was " + statusCode + " " +
-            message);
-
+        this("HTTP response was " + statusCode + " " + message);
     }
 
+    /**
+     * Construct a new instance.
+     * @param message the message to give to the exception
+     */
     public HttpException(String message) {
         super(message);
     }
 
+    /**
+     * Construct a new instance.
+     * @param message the message to give to the exception
+     * @param cause the cause of the exception
+     */
     public HttpException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * Construct a new instance.
+     * @param cause the cause of the exception
+     */
     public HttpException(Throwable cause) {
         super(cause);
     }

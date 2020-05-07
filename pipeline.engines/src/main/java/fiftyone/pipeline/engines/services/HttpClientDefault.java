@@ -39,7 +39,7 @@ public class HttpClientDefault implements HttpClient {
         HttpURLConnection connection,
         Map<String, String> headers,
         byte[] data) throws IOException {
-        String reply = null;
+        String reply;
         connection.setRequestMethod("POST");
         if (headers != null) {
             for (Map.Entry<String, String> e : headers.entrySet()) {
@@ -76,7 +76,7 @@ public class HttpClientDefault implements HttpClient {
         BufferedReader in = new BufferedReader(
             new InputStreamReader(connection.getInputStream()));
         String inputLine;
-        StringBuffer response = new StringBuffer();
+        StringBuilder response = new StringBuilder();
 
         while ((inputLine = in.readLine()) != null) {
             response.append(inputLine);
