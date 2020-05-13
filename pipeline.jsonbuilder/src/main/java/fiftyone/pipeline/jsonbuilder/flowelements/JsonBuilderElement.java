@@ -252,7 +252,11 @@ public class JsonBuilderElement
             }
         }
 
-        return new ArrayList<>(javascriptPropertiesMap.keySet());
+        List<String> javascriptPropertyNames = new ArrayList<>();
+        for (String name : javascriptPropertiesMap.keySet()) {
+            javascriptPropertyNames.add(name.toLowerCase());
+        }
+        return javascriptPropertyNames;
     }
 
     private void addErrors(FlowData data, Map<String, Object> allProperties) {
