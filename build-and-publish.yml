@@ -46,11 +46,6 @@ stages:
         targetType: 'inline'
         script: 'echo $(gpg_passphrase) | gpg --import --batch --yes --passphrase-fd 0 "$(CodeSigningCert.secureFilePath)"'
 
-    - task: Bash@3
-      inputs:
-        targetType: 'inline'
-        script: 'cp $(stagingsettings.secureFilePath) /tmp/settings.xml'
-
     - task: Maven@2
       displayName: 'Maven version set'
       inputs:
@@ -90,3 +85,15 @@ stages:
       displayName: 'Publish Artifact: drop'
       inputs:
         PathtoPublish: '$(build.artifactstagingdirectory)'
+        
+    # Add a tag to the git repository with the version number of
+    # the package that has just been published
+    - task: ATP.ATP-GitTag.GitTag.GitTag@5
+      displayName: 'Tag Repo With Version Number'
+      inputs:
+        tagUser: 'Azure DevOps'
+        tagEmail: 'CIUser@51Degrees.com'
+      # Only create the tag if we also published a package as defined in
+      # the previous task.
+      condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/master'), or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), or(startsWith(variables['Build.SourceBranch'], 'refs/heads/release/'), eq('true', variables['ForcePushMaven'])))))
+
