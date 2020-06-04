@@ -36,6 +36,7 @@ import fiftyone.pipeline.engines.services.update.FutureFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runners.Parameterized;
 import org.mockito.ArgumentMatcher;
 import org.mockito.internal.matchers.LessOrEqual;
 import org.mockito.invocation.InvocationOnMock;
@@ -43,6 +44,7 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -55,6 +57,8 @@ import java.util.Date;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static fiftyone.pipeline.engines.services.DataUpdateService.AutoUpdateStatus.AUTO_UPDATE_HTTPS_ERR;
+import static fiftyone.pipeline.engines.services.DataUpdateService.AutoUpdateStatus.AUTO_UPDATE_NOT_NEEDED;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.*;
@@ -563,7 +567,7 @@ public class DataUpdateServiceTests {
                 completed);
             verify(httpClient, times(1)).connect(
                 any(URL.class));
-            // Make sure engine was refresheds
+            // Make sure engine was refreshed
             verify(engine, times(1)).refreshData((String)any());
             // The timer factory should have been called twice, once for
             // the initial registration and again after the update was
@@ -652,6 +656,100 @@ public class DataUpdateServiceTests {
         }
     }
 
+
+    /**
+     * Configure the engine to have a temp path but no temp file.
+     * Therefore file system check will not occur but URL check will.
+     * Configure HTTP handler to return an exception and ensure it
+     * is handled correctly.
+     *
+     * This test writes to and reads from the file system temp path.
+     * This is required in this case in order to fully test the
+     * interaction between the various temp files that are required.
+     */
+    @Test
+    public void DataUpdateService_UpdateFromUrl_HttpException() throws IOException, InterruptedException {
+        // Arrange
+        // For this test we want to use the real FileWrapper to allow
+        // the test to perform file system read/write operations.
+        configureRealFileSystem();
+        // Configure the timer to execute immediately.
+        // When subsequent timers are created, they will not execute.
+        configureTimerImmediateCallbackOnce();
+
+        // Configure the mock HTTP handler to throw an exception
+        final String errorText = "There was an error!";
+        when(httpClient.connect(any(URL.class))).then(new Answer<Object>() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                throw new Exception(errorText);
+            }
+        });
+        // Configure a ManualResetEvent to be set when processing
+        // is complete.
+        final Semaphore completeFlag = new Semaphore(1);
+        completeFlag.acquire();
+        final DataUpdateService.DataUpdateCompleteArgs[] completeEventArgs = {null};
+        dataUpdate.onUpdateComplete(new OnUpdateComplete() {
+            @Override
+            public void call(Object sender, DataUpdateService.DataUpdateCompleteArgs args) {
+                completeEventArgs[0] = args;
+                completeFlag.release();
+            }
+        });
+
+        OnPremiseAspectEngine engine = mock(OnPremiseAspectEngine.class);
+        String tempPath = System.getProperty("java.io.tmpdir");
+        String dataFile = File.createTempFile("test", ".tmp").getAbsolutePath();
+        try {
+            // Configure the engine to return the relevant paths.
+            when(engine.getTempDataDirPath()).thenReturn(tempPath);
+            DataFileConfiguration config = new DataFileConfigurationDefault();
+            config.setAutomaticUpdatesEnabled(true);
+            config.setDataUpdateUrl("http://www.test.com");
+            config.setDataFilePath(dataFile);
+            config.setVerifyMd5(true);
+            config.setDecompressContent(true);
+            config.setFileSystemWatcherEnabled(false);
+            config.setVerifyModifiedSince(false);
+            config.setUpdateOnStartup(false);
+            AspectEngineDataFile file = new AspectEngineDataFileDefault();
+            file.setEngine(engine);
+            file.setConfiguration(config);
+            when(engine.getDataFileMetaData(anyString())).thenReturn(file);
+
+            // Act
+            dataUpdate.registerDataFile(file);
+            // Wait until processing is complete.
+            boolean completed = completeFlag.tryAcquire(1, TimeUnit.SECONDS);
+
+            // Assert
+            assertTrue("The 'checkForUpdateComplete' " +
+                "event was never fired",
+                completed);
+            verify(httpClient, times(1))
+                .connect(any(URL.class));
+            // Make sure engine was not refreshed
+            verify(engine, never()).refreshData(config.getIdentifier());
+            // The timer factory should have been called once for
+            // the initial registration.
+            // After the update fails, the same timer will be
+            // reconfigured to try again later.
+            verify(futureFactory, atLeast(1))
+                .schedule(any(Runnable.class), anyLong());
+            // We expect one error to be logged so make sure it's
+            // ignored in cleanup and verify its presence.
+            ignoreErrors = 1;
+            assertEquals(1, logger.errorsLogged.size());
+            assertEquals(AUTO_UPDATE_HTTPS_ERR, completeEventArgs[0].getStatus());
+        }
+        finally {
+            File tempFile = new File(dataFile);
+            if (tempFile.exists()) {
+                tempFile.delete();
+            }
+        }
+    }
     @Test
     public void DataUpdateService_UpdateAllEnabled_NoUpdates() throws IOException, InterruptedException {
         // Arrange
@@ -961,13 +1059,182 @@ public class DataUpdateServiceTests {
             completed);
         verify(httpClient, times(1)).connect(any(URL.class));
         // Make sure engine was refreshed
-        verify(engine, times(1)).refreshData((String)any());
+        verify(engine, times(1)).refreshData(
+            (String)any(),
+            argThat(
+            new ArgumentMatcher<byte[]>() {
+                @Override
+                public boolean matches(byte[] argument) {
+                    return argument != null;
+                }
+            }));
         // The timer factory should have been called once.
         verify(futureFactory, times(1)).schedule(any(Runnable.class), anyLong());
     }
 
+
+
+    /**
+     * Configure the engine to update on startup.
+     * The update service will find that an update is not required.
+     * In this scenario, confirm that the timer is configured so that
+     * the service will check again in the future.
+     */
+    @Test
+    public void DataUpdateService_Register_UpdateOnStartup_NotNeeded() throws IOException, InterruptedException {
+        // Arrange
+        // For this test we want to use the real FileWrapper to allow
+        // the test to perform file system read/write operations.
+        configureRealFileSystem();
+        // Configure the timer to execute as normal
+        configureTimerAccurateCallback();
+        // Configure the HTTP client to return a 'NOT_MODIFIED' status
+        configureHttpNoUpdateAvailable();
+
+        // Configure a ManualResetEvent to be set when processing
+        // is complete.
+        final Semaphore completeFlag = new Semaphore(1);
+        completeFlag.acquire();
+        final DataUpdateService.DataUpdateCompleteArgs[] completeEventArgs = {null};
+        dataUpdate.onUpdateComplete(new OnUpdateComplete() {
+            @Override
+            public void call(Object sender, DataUpdateService.DataUpdateCompleteArgs args) {
+                completeEventArgs[0] = args;
+                completeFlag.release();
+            }
+        });
+
+        OnPremiseAspectEngine engine = mock(OnPremiseAspectEngine.class);
+        String tempDir = System.getProperty("java.io.tmpdir");
+        Path dataFile = Paths.get(tempDir, getClass().getName() + ".tmp");
+
+        try (FileWriter writer = new FileWriter(dataFile.toFile().getAbsolutePath())) {
+            writer.write("TEST");
+        }
+
+        try {
+            // Configure the engine to return the relevant paths.
+            when(engine.getTempDataDirPath()).thenReturn(tempDir);
+            DataFileConfiguration config = new DataFileConfigurationDefault();
+            config.setAutomaticUpdatesEnabled(true);
+            config.setDataUpdateUrl("http://www.test.com");
+            config.setDataFilePath(dataFile.toFile().getAbsolutePath());
+            config.setVerifyMd5(true);
+            config.setDecompressContent(true);
+            config.setFileSystemWatcherEnabled(false);
+            config.setVerifyModifiedSince(false);
+            config.setUpdateOnStartup(true);
+            AspectEngineDataFile file = new AspectEngineDataFileDefault();
+            file.setEngine(engine);
+            file.setConfiguration(config);
+            file.setTempDataDirPath(tempDir);
+
+            when(engine.getDataFileMetaData(anyString())).thenReturn(file);
+
+            // Act
+            dataUpdate.registerDataFile(file);
+            // Wait until processing is complete.
+            boolean completed = completeFlag.tryAcquire(1, TimeUnit.SECONDS);
+
+            // Assert
+            assertTrue("The 'CheckForUpdateComplete' " +
+                "event was never fired",
+                completed);
+            verify(httpClient, times(1)).connect(any(URL.class));
+
+            // If auto update is enabled then the timer factory
+            // should have been called once to set up the next
+            // update check.
+            verify(futureFactory, times(1))
+                .schedule(any(Runnable.class), anyLong());
+            assertEquals(AUTO_UPDATE_NOT_NEEDED, completeEventArgs[0].getStatus());
+        }
+        finally {
+            Files.deleteIfExists(dataFile);
+        }
+    }
+
+    /**
+     * Check that unregistering a data file works without exception.
+     */
+    @Test
+    public void DataUpdateService_Unregister() {
+        OnPremiseAspectEngine engine = mock(OnPremiseAspectEngine.class);
+
+        DataFileConfiguration config = new DataFileConfigurationDefault();
+        config.setAutomaticUpdatesEnabled(true);
+        config.setPollingIntervalSeconds(Integer.MAX_VALUE);
+        AspectEngineDataFile file = new AspectEngineDataFileDefault();
+        file.setEngine(engine);
+        file.setConfiguration(config);
+
+        // Act
+        dataUpdate.registerDataFile(file);
+
+        // Assert
+        dataUpdate.unregisterDataFile(file);
+    }
+
+    /**
+     * Check that a failure when updating does not prevent the next
+     * update check from occurring.
+     */
+    @Test
+    public void DataUpdateService_Register_TimerSetAfter429() throws InterruptedException, IOException {
+        // Arrange
+        OnPremiseAspectEngine engine = mock(OnPremiseAspectEngine.class);
+        DataFileConfiguration config = new DataFileConfigurationDefault();
+        config.setAutomaticUpdatesEnabled(true);
+        config.setPollingIntervalSeconds(10);
+        config.setMaxRandomisationSeconds(0);
+        config.setDataUpdateUrl("https://test.com");
+        config.setFileSystemWatcherEnabled(false);
+        AspectEngineDataFileDefault file = new AspectEngineDataFileDefault();
+        file.setEngine(engine);
+        file.setConfiguration(config);
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_MONTH, -1);
+        file.setUpdateAvailableTime(calendar.getTime());
+
+        when(engine.getDataFileMetaData()).thenReturn(file);
+        configureFileNoUpdate(engine);
+        configureHttpTooManyRequests();
+        configureTimerImmediateCallback(1, terminalFuture);
+        // Configure a ManualResetEvent to be set when processing
+        // is complete.
+        final Semaphore completeFlag = new Semaphore(1);
+        completeFlag.acquire();
+        final DataUpdateService.DataUpdateCompleteArgs[] completeEventArgs = {null};
+        dataUpdate.onUpdateComplete(new OnUpdateComplete() {
+            @Override
+            public void call(Object sender, DataUpdateService.DataUpdateCompleteArgs args) {
+                completeEventArgs[0] = args;
+                completeFlag.release();
+            }
+        });
+
+        // Act
+        dataUpdate.registerDataFile(file);
+
+        // Wait until processing is complete.
+        boolean completed = completeFlag.tryAcquire(1, TimeUnit.SECONDS);
+
+        // Assert
+        assertTrue("The 'checkForUpdateComplete' " +
+            "event was never fired",
+            completed);
+        // Ignore the error that is logged due to the 429
+        ignoreErrors = 1;
+        // Check that the timer has been set to go off again.
+        assertNotNull(file.getFuture());
+        // Check that the timer has been set to expire in 10 seconds.
+        assertEquals(10000, lastDelay);
+    }
+
+    private long lastDelay = -1;
+
     private void configureNoFileSystem() {
-        // Configure the file wrapper to be 'strict'. This means that
+        // Configure the file wrapper` to be 'strict'. This means that
         // and calls to methods that have not been set up will throw
         // an exception.
         // We use this behavior to verify there is no interaction
@@ -1007,6 +1274,7 @@ public class DataUpdateServiceTests {
             .thenAnswer(new Answer<ScheduledFuture>() {
                 @Override
                 public ScheduledFuture answer(InvocationOnMock invocationOnMock) throws Throwable {
+                    lastDelay = invocationOnMock.getArgument(1);
                     return executorService.schedule(
                         (Runnable)invocationOnMock.getArgument(0),
                         (long)invocationOnMock.getArgument(1),
@@ -1023,14 +1291,18 @@ public class DataUpdateServiceTests {
             anyLong())).then(new Answer<ScheduledFuture>() {
             @Override
             public ScheduledFuture answer(InvocationOnMock invocationOnMock) throws Throwable {
+                lastDelay = invocationOnMock.getArgument(1);
                 return executorService.schedule(
                     (Runnable) invocationOnMock.getArgument(0),
-                    0, TimeUnit.SECONDS);
+                    0,
+                    TimeUnit.SECONDS);
             }
         });
     }
 
-    private void configureTimerImmediateCallbackOnce() {
+    private static final ScheduledFuture terminalFuture = mock(ScheduledFuture.class);
+
+    private void configureTimerImmediateCallback(final int n, final ScheduledFuture termination) {
         // Configure the timer factory to return a timer that will
         // execute the callback immediately
         final AtomicInteger counter = new AtomicInteger(0);
@@ -1039,17 +1311,22 @@ public class DataUpdateServiceTests {
             anyLong())).then(new Answer<ScheduledFuture>() {
             @Override
             public ScheduledFuture answer(InvocationOnMock invocationOnMock) throws Throwable {
-                if (counter.get() == 0) {
+                if (counter.get() < n) {
                     counter.incrementAndGet();
+                    lastDelay = invocationOnMock.getArgument(1);
                     return executorService.schedule(
                         (Runnable) invocationOnMock.getArgument(0),
                         0,
                         TimeUnit.MILLISECONDS);
                 } else {
-                    return null;
+                    return termination;
                 }
             }
         });
+    }
+
+    private void configureTimerImmediateCallbackOnce() {
+        configureTimerImmediateCallback(1, null);
     }
 
     private void configureFileNoUpdate(OnPremiseAspectEngine engine) {
@@ -1095,6 +1372,13 @@ public class DataUpdateServiceTests {
         // Configure the mock HTTP handler to return an 'NotModified'
         // status code.
         when(httpClientConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_NOT_MODIFIED);
+        when(httpClientConnection.getResponseMessage()).thenReturn("<empty />");
+    }
+
+    private void configureHttpTooManyRequests() throws IOException {
+        // Configure the mock HTTP handler to return a 429
+        // 'TooManyRequests' status code.
+        when(httpClientConnection.getResponseCode()).thenReturn(429);
         when(httpClientConnection.getResponseMessage()).thenReturn("<empty />");
     }
 }

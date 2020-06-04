@@ -196,6 +196,9 @@ public class DataUpdateServiceDefault implements DataUpdateService {
                 // the timer to check again after the configured interval.
                 // This will repeat until the update is acquired.
                 if (manualUpdate == false) {
+                    if (dataFile.getFuture() != null) {
+                        dataFile.getFuture().cancel(true);
+                    }
                     dataFile.setFuture(futureFactory.schedule(
                         new Runnable() {
                             @Override
@@ -215,7 +218,7 @@ public class DataUpdateServiceDefault implements DataUpdateService {
         }
         for (OnUpdateComplete onUpdateComplete : onUpdateCompleteList) {
             onUpdateComplete.call(state, new DataUpdateCompleteArgs(
-                result == AUTO_UPDATE_SUCCESS,
+                result,
                 dataFile));
         }
         return result;
@@ -312,7 +315,7 @@ public class DataUpdateServiceDefault implements DataUpdateService {
         }
         for (OnUpdateComplete onUpdateComplete : onUpdateCompleteList) {
             onUpdateComplete.call(sender, new DataUpdateCompleteArgs(
-                status == AUTO_UPDATE_SUCCESS,
+                status,
                 dataFile));
         }
     }
@@ -531,7 +534,14 @@ public class DataUpdateServiceDefault implements DataUpdateService {
                 connection.setIfModifiedSince(ifModifiedSince);
             }
             connection.setInstanceFollowRedirects(true);
-        } catch (IOException e) {
+
+            if (connection == null) {
+                result.status = AutoUpdateStatus.AUTO_UPDATE_HTTPS_ERR;
+                logger.error("No response from data update service at " +
+                    dataFile.getFormattedUrl() + "' for engine '" +
+                    dataFile.getEngine().getClass().getSimpleName() + "'.");
+            }
+        } catch (Exception e) {
             result.status = AutoUpdateStatus.AUTO_UPDATE_HTTPS_ERR;
             logger.error("Error accessing data update service at '" +
                     dataFile.getFormattedUrl() + "' for engine '" +
@@ -540,12 +550,6 @@ public class DataUpdateServiceDefault implements DataUpdateService {
             connection = null;
         }
 
-        if (connection == null) {
-            result.status = AutoUpdateStatus.AUTO_UPDATE_HTTPS_ERR;
-            logger.error("No response from data update service at " +
-                dataFile.getFormattedUrl() + "' for engine '" +
-                dataFile.getEngine().getClass().getSimpleName() + "'.");
-        }
 
         if (result.status == AutoUpdateStatus.AUTO_UPDATE_IN_PROGRESS) {
             try {
@@ -579,7 +583,7 @@ public class DataUpdateServiceDefault implements DataUpdateService {
                             break;
                         case HttpURLConnection.HTTP_NOT_MODIFIED:
                             result.status = AutoUpdateStatus.AUTO_UPDATE_NOT_NEEDED;
-                            logger.warn("No data update available from '" +
+                            logger.info("No data update available from '" +
                                 dataFile.getFormattedUrl() + "' for engine '" +
                                 dataFile.getEngine().getClass().getSimpleName() + "'");
                             break;
