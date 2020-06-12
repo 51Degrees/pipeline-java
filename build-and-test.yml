@@ -6,107 +6,55 @@ pr:
 
 trigger: none
 
-stages:
+strategy:
+  matrix:
+    linux-JDK8:
+      imageName: 'ubuntu-latest'
+      jdkVersion: '1.8'
+    linux-JDK11:
+      imageName: 'ubuntu-latest'
+      jdkVersion: '1.11'
+    mac-JDK8:
+      imageName: 'macos-latest'
+      jdkVersion: '1.8'
+    mac-JDK11:
+      imageName: 'macos-latest'
+      jdkVersion: '1.11'
+    windows-JDK8:
+      imageName: 'windows-latest'
+      jdkVersion: '1.8'
+    windows-JDK11:
+      imageName: 'windows-latest'
+      jdkVersion: '1.11'
 
-- stage: Build_Windows
-  dependsOn: []
-  jobs:
-  - job: Build
-    pool:
-      vmImage: 'windows-latest'
 
-    steps:
+pool:
+  vmImage: $(imageName)
 
-    - checkout: self
-      submodules: recursive
-      lfs: true
-      persistCredentials: true
+steps:
 
-    - task: Maven@1
-      displayName: 'Maven test'
-      inputs:
-        mavenPomFile: 'pom.xml'
-        goals: 'clean test'
-        options: '-Dhttps.protocols=TLSv1.2 -DfailIfNoTests=false -DXmx2048m'
-        jdkVersionOption: '1.8'
-        testRunTitle: 'Windows'
+- checkout: self
+  submodules: recursive
+  lfs: true
+  persistCredentials: true
 
-    - task: CopyFiles@2
-      displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
-      inputs:
-        SourceFolder: '$(build.sourcesdirectory)'
-        Contents: '**/*.jar'
-        TargetFolder: '$(build.artifactstagingdirectory)'
+- task: Maven@1
+  displayName: 'Maven test'
+  inputs:
+    mavenPomFile: 'pom.xml'
+    goals: 'clean test'
+    options: '-Dhttps.protocols=TLSv1.2 -DfailIfNoTests=false -DXmx2048m'
+    jdkVersionOption: $(jdkVersion)
+    testRunTitle: '$(imageName)-$(jdkVersion)'
 
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish Artifact: drop'
-      inputs:
-        PathtoPublish: '$(build.artifactstagingdirectory)'
-        
-- stage: Build_Mac
-  dependsOn: []
-  jobs:
-  - job: Build
-    pool:
-      vmImage: 'macOS-latest'
+- task: CopyFiles@2
+  displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
+  inputs:
+    SourceFolder: '$(build.sourcesdirectory)'
+    Contents: '**/*.jar'
+    TargetFolder: '$(build.artifactstagingdirectory)'
 
-    steps:
-
-    - checkout: self
-      submodules: recursive
-      lfs: true
-
-    - task: Maven@1
-      displayName: 'Maven test'
-      inputs:
-        mavenPomFile: 'pom.xml'
-        goals: 'clean test'
-        options: '-Dhttps.protocols=TLSv1.2 -DfailIfNoTests=false -DXmx2048m'
-        jdkVersionOption: '1.8'
-        testRunTitle: 'Mac'
-
-    - task: CopyFiles@2
-      displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
-      inputs:
-        SourceFolder: '$(build.sourcesdirectory)'
-        Contents: '**/*.jar'
-        TargetFolder: '$(build.artifactstagingdirectory)'
-
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish Artifact: drop'
-      inputs:
-        PathtoPublish: '$(build.artifactstagingdirectory)'
-
-- stage: Build_Linux
-  dependsOn: []
-  jobs:
-  - job: Build
-    pool:
-      vmImage: 'ubuntu-latest'
-
-    steps:
-
-    - checkout: self
-      submodules: recursive
-      lfs: true
-
-    - task: Maven@1
-      displayName: 'Maven test'
-      inputs:
-        mavenPomFile: 'pom.xml'
-        goals: 'clean test'
-        options: '-Dhttps.protocols=TLSv1.2 -DfailIfNoTests=false -DXmx2048m'
-        jdkVersionOption: '1.8'
-        testRunTitle: 'Linux'
-
-    - task: CopyFiles@2
-      displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
-      inputs:
-        SourceFolder: '$(build.sourcesdirectory)'
-        Contents: '**/*.jar'
-        TargetFolder: '$(build.artifactstagingdirectory)'
-
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish Artifact: drop'
-      inputs:
-        PathtoPublish: '$(build.artifactstagingdirectory)'
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact: drop'
+  inputs:
+    PathtoPublish: '$(build.artifactstagingdirectory)'
