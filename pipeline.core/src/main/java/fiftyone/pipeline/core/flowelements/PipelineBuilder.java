@@ -22,7 +22,6 @@
 
 package fiftyone.pipeline.core.flowelements;
 
-import com.google.common.base.Predicate;
 import fiftyone.pipeline.annotations.AlternateName;
 import fiftyone.pipeline.annotations.BuildArg;
 import fiftyone.pipeline.annotations.ElementBuilder;
@@ -30,14 +29,15 @@ import fiftyone.pipeline.core.configuration.ElementOptions;
 import fiftyone.pipeline.core.configuration.PipelineOptions;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.core.services.PipelineService;
-import org.reflections.Reflections;
-import org.reflections.util.ConfigurationBuilder;
+import org.reflections8.Reflections;
+import org.reflections8.util.ConfigurationBuilder;
 import org.slf4j.ILoggerFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.function.Predicate;
 import java.util.*;
 
 import static fiftyone.pipeline.util.CheckArgument.checkNotNull;
@@ -135,15 +135,12 @@ public class PipelineBuilder
      * which are annotated with the {@link ElementBuilder} annotation.
      */
     private void getAvailableElementBuilders() {
-        // Disable logging for Reflections otherwise it will log all the missing
-        // classes on construction.
-        Reflections.log = null;
 
         ConfigurationBuilder config = ConfigurationBuilder.build();
 
         config.setInputsFilter(new Predicate<String>() {
             @Override
-            public boolean apply(String s) {
+            public boolean test(String s) {
                 return s.toLowerCase().contains("flowelements");
             }
         });
