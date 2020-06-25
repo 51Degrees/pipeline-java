@@ -155,8 +155,7 @@ public class DataUpdateServiceDefault implements DataUpdateService {
                 null;
         boolean newDataAvailable = false;
 
-        if (dataFile != null &&
-            dataFile.getEngine() != null) {
+        if (dataFile != null) {
             // Only check the file system if the file system watcher
             // is not enabled and the engine is using a temporary file.
             if (dataFile.getConfiguration().getFileSystemWatcherEnabled() == false &&
@@ -236,23 +235,45 @@ public class DataUpdateServiceDefault implements DataUpdateService {
      */
     private AutoUpdateStatus updatedFileAvailable(
         AspectEngineDataFile dataFile) {
-        AutoUpdateStatus result;
+        AutoUpdateStatus result = AutoUpdateStatus.AUTO_UPDATE_IN_PROGRESS;
         AspectEngineDataFileDefault aspectDataFile =
             (AspectEngineDataFileDefault)dataFile;
-        try {
-            dataFile.getEngine().refreshData(dataFile.getIdentifier());
-            result = AUTO_UPDATE_SUCCESS;
-        } catch (Exception ex) {
-            logger.error("An error occurred when applying a data update to " +
-                    "engine '" +
-                    dataFile.getEngine().getClass().getSimpleName() + "'.",
-                ex);
-            result = AutoUpdateStatus.AUTO_UPDATE_REFRESH_FAILED;
+
+        Exception exception = null;
+        int tries = 0;
+
+        if (dataFile.getEngine() != null) {
+            // Try to update the file multiple times to ensure the file is not
+            // locked.
+            while (result != AutoUpdateStatus.AUTO_UPDATE_SUCCESS && tries < 10) {
+                try {
+                    dataFile.getEngine().refreshData(dataFile.getIdentifier());
+                    result = AUTO_UPDATE_SUCCESS;
+                } catch (Exception ex) {
+                    logger.error("An error occurred when applying a data update to " +
+                                    "engine '" +
+                                    dataFile.getEngine().getClass().getSimpleName() + "'.",
+                            ex);
+                    result = AutoUpdateStatus.AUTO_UPDATE_REFRESH_FAILED;
+                    try {
+                        Thread.sleep(200);
+                    }
+                    catch (InterruptedException e) {
+                        // Do nothing
+                    }
+                }
+                tries++;
+                if (aspectDataFile.getFuture() != null) {
+                    // Dispose of the old timer object
+                    aspectDataFile.getFuture().cancel(true);
+                    aspectDataFile.setFuture(null);
+                }
+            }
         }
-        if (aspectDataFile.getFuture() != null) {
-            // Dispose of the old timer object
-            aspectDataFile.getFuture().cancel(true);
-            aspectDataFile.setFuture(null);
+        else {
+            // Engine not yet set so no need to refresh it.
+            // We can consider the update a success.
+            result = AutoUpdateStatus.AUTO_UPDATE_SUCCESS;
         }
 
         return result;
@@ -578,27 +599,27 @@ public class DataUpdateServiceDefault implements DataUpdateService {
                             result.status = AutoUpdateStatus.
                                 AUTO_UPDATE_ERR_429_TOO_MANY_ATTEMPTS;
                             logger.error("Too many requests to '" +
-                                dataFile.getFormattedUrl() + "' for engine '" +
-                                dataFile.getEngine().getClass().getSimpleName() + "'");
+                                dataFile.getFormattedUrl() + "' for " +
+                                getIdForLogging(dataFile));
                             break;
                         case HttpURLConnection.HTTP_NOT_MODIFIED:
                             result.status = AutoUpdateStatus.AUTO_UPDATE_NOT_NEEDED;
                             logger.info("No data update available from '" +
-                                dataFile.getFormattedUrl() + "' for engine '" +
-                                dataFile.getEngine().getClass().getSimpleName() + "'");
+                                dataFile.getFormattedUrl() + "' for " +
+                                getIdForLogging(dataFile));
                             break;
                         case HttpURLConnection.HTTP_FORBIDDEN:
                             result.status = AutoUpdateStatus.AUTO_UPDATE_ERR_403_FORBIDDEN;
                             logger.error("Access denied to data update service at '" +
-                                dataFile.getFormattedUrl() + "' for engine '" +
-                                dataFile.getEngine().getClass().getSimpleName() + "'");
+                                dataFile.getFormattedUrl() + "' for " +
+                                getIdForLogging(dataFile));
                             break;
                         default:
                             result.status = AutoUpdateStatus.AUTO_UPDATE_HTTPS_ERR;
                             logger.error("HTTP status code '" + connection.getResponseCode() +
                                 "' from data update service at '" +
-                                dataFile.getFormattedUrl() + "' for engine '" +
-                                dataFile.getEngine().getClass().getSimpleName() + "'");
+                                dataFile.getFormattedUrl() + "' for " +
+                                getIdForLogging(dataFile));
                             break;
                     }
                 }
@@ -621,6 +642,12 @@ public class DataUpdateServiceDefault implements DataUpdateService {
                 logger.error("Error closing future factory.", e);
             }
         }
+    }
+
+    private String getIdForLogging(AspectEngineDataFile dataFile) {
+        return dataFile.getEngine() == null ?
+            "data file '" + dataFile.getIdentifier() + "'" :
+            "engine '" + dataFile.getEngine().getClass().getSimpleName() + "'";
     }
 
     /**
@@ -765,12 +792,10 @@ public class DataUpdateServiceDefault implements DataUpdateService {
         }
         else {
             Path compressedTempFile = Paths.get(
-                dataFile.getEngine().getTempDataDirPath(),
-                dataFile.getEngine().getClass().getSimpleName() + "-" +
+                dataFile.getTempDataDirPath(),
                     dataFile.getIdentifier() + "-" + randomUUID() + ".tmp");
             Path uncompressedTempFile = Paths.get(
-                dataFile.getEngine().getTempDataDirPath(),
-                dataFile.getEngine().getClass().getSimpleName() + "-" +
+                dataFile.getTempDataDirPath(),
                     dataFile.getIdentifier() + "-" + randomUUID() + ".tmp");
             FileWrapper uncompressedData = fileWrapperFactory.build(uncompressedTempFile.toString());
             FileWrapper compressedData = fileWrapperFactory.build(compressedTempFile.toString());

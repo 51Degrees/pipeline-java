@@ -36,6 +36,7 @@ import fiftyone.pipeline.engines.services.update.FutureFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.mockito.ArgumentMatcher;
 import org.mockito.internal.matchers.LessOrEqual;
@@ -52,7 +53,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -63,7 +66,22 @@ import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.*;
 
+@RunWith(Parameterized.class)
 public class DataUpdateServiceTests {
+
+    @Parameterized.Parameter(0)
+    public boolean autoUpdateEnabled;
+    @Parameterized.Parameter(1)
+    public boolean setEngineNull;
+    @Parameterized.Parameters(name = "{index}: Test with autoUpdateEnabled={0}, setEngineNull={1} ")
+    public static Collection<Object[]> data() {
+        Object[][] data = new Object[][]{
+            {true, false},
+            {false, false},
+            {true, true},
+            {false, true}};
+        return Arrays.asList(data);
+    }
 
     private FileWrapperFactory fileWrapperFactory;
     private FutureFactory futureFactory;
@@ -282,7 +300,7 @@ public class DataUpdateServiceTests {
         // Arrange
         OnPremiseAspectEngine engine = mock(OnPremiseAspectEngine.class);
         DataFileConfigurationDefault config = new DataFileConfigurationDefault();
-        config.setAutomaticUpdatesEnabled(true);
+        config.setAutomaticUpdatesEnabled(autoUpdateEnabled);
         config.setFileSystemWatcherEnabled(true);
 
         AspectEngineDataFileDefault file = new AspectEngineDataFileDefault();
@@ -944,7 +962,7 @@ public class DataUpdateServiceTests {
             // Configure the engine to return the relevant paths.
             when(engine.getTempDataDirPath()).thenReturn(tempDir);
             DataFileConfiguration config = new DataFileConfigurationDefault();
-            config.setAutomaticUpdatesEnabled(true);
+            config.setAutomaticUpdatesEnabled(autoUpdateEnabled);
             config.setDataUpdateUrl("http://test.com");
             config.setDataFilePath(dataFile.toString());
             config.setVerifyMd5(true);
@@ -953,10 +971,12 @@ public class DataUpdateServiceTests {
             config.setVerifyModifiedSince(false);
             config.setUpdateOnStartup(true);
             AspectEngineDataFile file = new AspectEngineDataFileDefault();
-            file.setEngine(engine);
+            // Don't set the engine as it will not have been created yet.
+             file.setEngine(setEngineNull ? null : engine);
+             when(engine.getDataFileMetaData()).thenReturn(file);
+             when(engine.getDataFileMetaData(anyString())).thenReturn(file);
             file.setConfiguration(config);
-            when(engine.getDataFileMetaData()).thenReturn(file);
-            when(engine.getDataFileMetaData(anyString())).thenReturn(file);
+            file.setTempDataDirPath(tempDir);
 
             // Check that files do not exist before the test starts
             assertFalse(
@@ -964,6 +984,7 @@ public class DataUpdateServiceTests {
                 Files.exists(Paths.get(file.getDataFilePath())));
             assertFalse(
                 "Temp data file already exists before test starts",
+                file.getTempDataFilePath() != null &&
                 Files.exists(Paths.get(file.getTempDataFilePath())));
 
             // Act
@@ -976,11 +997,11 @@ public class DataUpdateServiceTests {
                 "The 'CheckForUpdateComplete' event was never fired",
                 completed);
             verify(httpClient, times(1)).connect(any(URL.class));
-            // Make sure engine was refreshed
-            verify(engine, times(1)).refreshData((String)any());
             // The timer factory should have been called once.
-            verify(futureFactory, times(1))
-                .schedule(any(Runnable.class),anyLong());
+            if (autoUpdateEnabled) {
+                verify(futureFactory, times(1))
+                    .schedule(any(Runnable.class), anyLong());
+            }
             // Check that files exist at both the original and temporary
             // locations.
             assertTrue(
@@ -1043,7 +1064,7 @@ public class DataUpdateServiceTests {
         config.setData(null);
         AspectEngineDataFile file = new AspectEngineDataFileDefault();
         file.setConfiguration(config);
-        file.setEngine(engine);
+        file.setEngine(setEngineNull ? null : engine);
 
         when(engine.getDataFileMetaData()).thenReturn(file);
 
@@ -1058,16 +1079,23 @@ public class DataUpdateServiceTests {
             "The 'CheckForUpdateComplete' event was never fired",
             completed);
         verify(httpClient, times(1)).connect(any(URL.class));
-        // Make sure engine was refreshed
-        verify(engine, times(1)).refreshData(
-            (String)any(),
-            argThat(
-            new ArgumentMatcher<byte[]>() {
-                @Override
-                public boolean matches(byte[] argument) {
-                    return argument != null;
-                }
-            }));
+        if (setEngineNull) {
+            assertNotEquals(
+                DataUpdateServiceTests.class.getClassLoader().getResource("file.gz").getContent(),
+                file.getConfiguration().getData());
+        }
+        else {
+            // Make sure engine was refreshed
+            verify(engine, times(1)).refreshData(
+                (String) any(),
+                argThat(
+                    new ArgumentMatcher<byte[]>() {
+                        @Override
+                        public boolean matches(byte[] argument) {
+                            return argument != null;
+                        }
+                    }));
+        }
         // The timer factory should have been called once.
         verify(futureFactory, times(1)).schedule(any(Runnable.class), anyLong());
     }
@@ -1116,7 +1144,7 @@ public class DataUpdateServiceTests {
             // Configure the engine to return the relevant paths.
             when(engine.getTempDataDirPath()).thenReturn(tempDir);
             DataFileConfiguration config = new DataFileConfigurationDefault();
-            config.setAutomaticUpdatesEnabled(true);
+            config.setAutomaticUpdatesEnabled(autoUpdateEnabled);
             config.setDataUpdateUrl("http://www.test.com");
             config.setDataFilePath(dataFile.toFile().getAbsolutePath());
             config.setVerifyMd5(true);
@@ -1125,7 +1153,7 @@ public class DataUpdateServiceTests {
             config.setVerifyModifiedSince(false);
             config.setUpdateOnStartup(true);
             AspectEngineDataFile file = new AspectEngineDataFileDefault();
-            file.setEngine(engine);
+            file.setEngine(setEngineNull ? null : engine);
             file.setConfiguration(config);
             file.setTempDataDirPath(tempDir);
 
@@ -1134,7 +1162,7 @@ public class DataUpdateServiceTests {
             // Act
             dataUpdate.registerDataFile(file);
             // Wait until processing is complete.
-            boolean completed = completeFlag.tryAcquire(1, TimeUnit.SECONDS);
+            boolean completed = completeFlag.tryAcquire(1000, TimeUnit.SECONDS);
 
             // Assert
             assertTrue("The 'CheckForUpdateComplete' " +
@@ -1142,11 +1170,13 @@ public class DataUpdateServiceTests {
                 completed);
             verify(httpClient, times(1)).connect(any(URL.class));
 
-            // If auto update is enabled then the timer factory
-            // should have been called once to set up the next
-            // update check.
-            verify(futureFactory, times(1))
-                .schedule(any(Runnable.class), anyLong());
+            if (autoUpdateEnabled) {
+                // If auto update is enabled then the timer factory
+                // should have been called once to set up the next
+                // update check.
+                verify(futureFactory, times(1))
+                    .schedule(any(Runnable.class), anyLong());
+            }
             assertEquals(AUTO_UPDATE_NOT_NEEDED, completeEventArgs[0].getStatus());
         }
         finally {
