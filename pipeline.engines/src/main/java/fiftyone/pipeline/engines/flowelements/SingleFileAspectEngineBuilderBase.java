@@ -275,7 +275,11 @@ public abstract class SingleFileAspectEngineBuilderBase<
 
     /**
      * Set the license key to use when updating the Engine's data file.
-     * @param key 51Degrees license key
+     * @param key the license key to use when checking for updates to the data
+     *            file. A license key can be obtained from the
+     *            <a href="https://51degrees.com/pricing">51Degrees website</a>.
+     *            If you have no license key then this parameter can be set to
+     *            null, but doing so will disable automatic updates.
      * @return this builder
      */
     @SuppressWarnings("unchecked")

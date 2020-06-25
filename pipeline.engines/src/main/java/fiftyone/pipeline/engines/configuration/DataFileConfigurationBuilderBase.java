@@ -235,12 +235,23 @@ public abstract class DataFileConfigurationBuilderBase<
 
     /**
      * Set the license key to use when updating the Engine's data file.
-     * @param key 51Degrees license key
+     * @param key 51Degrees license key. This parameter can be set to
+     *            null, but doing so will disable automatic updates for
+     *            this file
      * @return this builder
      * */
     @SuppressWarnings("unchecked")
     public TBuilder setDataUpdateLicenseKey(String key) {
-        licenseKeys.add(key);
+        if (key == null) {
+            // Clear any configured license keys and disable
+            // any features that would make use of the license key.
+            licenseKeys.clear();
+            autoUpdateEnabled = false;
+            updateOnStartup = false;
+        }
+        else {
+            licenseKeys.add(key);
+        }
         return (TBuilder)this;
     }
 
