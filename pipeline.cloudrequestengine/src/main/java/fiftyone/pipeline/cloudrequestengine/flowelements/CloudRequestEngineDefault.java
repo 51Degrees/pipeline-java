@@ -210,16 +210,35 @@ public class CloudRequestEngineDefault
     }
 
     private void getCloudProperties() {
+        int response;
         String jsonResult;
 
         try {
             HttpURLConnection connection = httpClient.connect(new URL(propertiesEndpoint.trim()));
             jsonResult = httpClient.getResponseString(connection);
+            response = connection.getResponseCode();
         }
         catch (Exception ex) {
             throw new RuntimeException("Failed to retrieve available properties " +
                 "from cloud service at " + propertiesEndpoint + ".", ex);
         }
+        
+        if (response >= 400)
+        {
+            RuntimeException exception = new RuntimeException();
+            if (jsonResult.isEmpty() == false)
+            {
+                JSONObject jsonObj = new JSONObject(jsonResult);
+                for (Object o : jsonObj.getJSONArray("errors"))
+                {
+                    if(o instanceof String){
+                        exception.addSuppressed(new Exception(o.toString()));
+                    }
+                }
+            }
+            throw exception;
+        }
+
 
         if (jsonResult != null && jsonResult.isEmpty() == false) {
             JSONObject jsonObj = new JSONObject(jsonResult);
