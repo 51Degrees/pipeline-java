@@ -1,0 +1,10 @@
+<PipelineOptions>
+    <Elements>
+        <Element>
+            <BuilderName>MultiplyByElement</BuilderName>
+            <BuildParameters>
+                <Multiple>8</Multiple>
+            </BuildParameters>
+        </Element>
+    </Elements>
+</PipelineOptions>

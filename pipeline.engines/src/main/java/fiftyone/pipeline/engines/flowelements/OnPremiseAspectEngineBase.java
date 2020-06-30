@@ -183,6 +183,7 @@ public abstract class OnPremiseAspectEngineBase<
                     "to have either the 'Data' property or 'DataFilePath' " +
                     "property populated but it has neither.");
         }
+        dataFile.setEngine(this);
 
     }
 

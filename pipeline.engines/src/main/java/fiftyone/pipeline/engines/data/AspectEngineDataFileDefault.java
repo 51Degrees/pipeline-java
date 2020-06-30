@@ -72,12 +72,11 @@ public class AspectEngineDataFileDefault implements AspectEngineDataFile {
     @Override
     public String getTempDataFilePath() {
         if (tempDataFilePath == null &&
-            engine != null &&
-            engine.getTempDataDirPath() != null &&
+            getTempDataDirPath() != null &&
             getDataFilePath() != null) {
             // By default, use the temp path from the engine
             // combined with the name of the data file.
-            tempDataFilePath = Paths.get(engine.getTempDataDirPath(),
+            tempDataFilePath = Paths.get(getTempDataDirPath(),
                 new File(getDataFilePath()).getName()).toString();
         }
         return tempDataFilePath;
@@ -90,6 +89,12 @@ public class AspectEngineDataFileDefault implements AspectEngineDataFile {
 
     @Override
     public String getTempDataDirPath() {
+        if (tempDataDirPath == null &&
+            engine != null &&
+            engine.getTempDataDirPath() != null) {
+            // By default, use the temp path from the engine.
+            tempDataDirPath = engine.getTempDataDirPath();
+        }
         return tempDataDirPath;
     }
 

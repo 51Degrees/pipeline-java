@@ -29,25 +29,23 @@ import fiftyone.pipeline.core.configuration.PipelineOptions;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.core.services.PipelineService;
-import fiftyone.pipeline.core.testclasses.flowelements.ElementRequiringService;
-import fiftyone.pipeline.core.testclasses.flowelements.ListSplitterElement;
+import fiftyone.pipeline.core.testclasses.flowelements.*;
 import fiftyone.pipeline.core.testclasses.data.ListSplitterElementData;
-import fiftyone.pipeline.core.testclasses.flowelements.MultiplyByElement;
 import fiftyone.pipeline.core.testclasses.data.TestElementData;
 import fiftyone.pipeline.core.testclasses.services.TestService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 
-import static fiftyone.common.testhelpers.ClassPath.addToClassPath;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@RunWith(BuilderClassPathTestRunner.class)
 public class PipelineBuilderTests {
     private PipelineBuilder builder;
 
@@ -59,8 +57,7 @@ public class PipelineBuilderTests {
     private int maxWarnings = 0;
 
     @Before
-    public void initialise() {
-        addToClassPath(MultiplyByElement.class);
+    public void initialise() throws ClassNotFoundException {
         ILoggerFactory internalLogger = mock(ILoggerFactory.class);
         when(internalLogger.getLogger(anyString())).thenReturn(mock(Logger.class));
         loggerFactory = new TestLoggerFactory(internalLogger);

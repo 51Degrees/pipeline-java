@@ -133,30 +133,22 @@ public interface DataUpdateService extends Closeable, PipelineService {
     }
 
     class DataUpdateCompleteArgs {
-        private boolean updateApplied;
         private AspectEngineDataFile dataFile;
+        private AutoUpdateStatus status;
 
         public DataUpdateCompleteArgs(
-            boolean updateApplied,
+            AutoUpdateStatus status,
             AspectEngineDataFile dataFile) {
-            this.updateApplied = updateApplied;
+            this.status = status;
             this.dataFile = dataFile;
         }
 
-        public boolean getUpdateApplied() {
-            return updateApplied;
-        }
-
-        public void setUpdateApplied(boolean applied) {
-            this.updateApplied = applied;
+        public AutoUpdateStatus getStatus() {
+            return status;
         }
 
         public AspectEngineDataFile getDataFile() {
             return dataFile;
-        }
-
-        public void setConfiguration(AspectEngineDataFile dataFile) {
-            this.dataFile = dataFile;
         }
     }
 

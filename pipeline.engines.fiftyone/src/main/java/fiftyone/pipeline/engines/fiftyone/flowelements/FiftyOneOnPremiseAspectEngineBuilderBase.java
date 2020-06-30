@@ -24,6 +24,7 @@ package fiftyone.pipeline.engines.fiftyone.flowelements;
 
 import fiftyone.pipeline.engines.data.AspectEngineDataFile;
 import fiftyone.pipeline.engines.fiftyone.data.FiftyOneDataFileDefault;
+import fiftyone.pipeline.engines.fiftyone.data.FiftyOneUrlFormatter;
 import fiftyone.pipeline.engines.flowelements.SingleFileAspectEngineBuilderBase;
 import fiftyone.pipeline.engines.services.DataUpdateService;
 import org.slf4j.ILoggerFactory;
@@ -46,7 +47,7 @@ public abstract class FiftyOneOnPremiseAspectEngineBuilderBase<
      * returned by {@link LoggerFactory#getILoggerFactory()}.
      */
     public FiftyOneOnPremiseAspectEngineBuilderBase() {
-        super();
+        this(LoggerFactory.getILoggerFactory());
     }
 
     /**
@@ -54,7 +55,7 @@ public abstract class FiftyOneOnPremiseAspectEngineBuilderBase<
      * @param loggerFactory the logger factory to use
      */
     public FiftyOneOnPremiseAspectEngineBuilderBase(ILoggerFactory loggerFactory) {
-        super(loggerFactory);
+        this(loggerFactory, null);
     }
 
     /**
@@ -68,6 +69,8 @@ public abstract class FiftyOneOnPremiseAspectEngineBuilderBase<
         ILoggerFactory loggerFactory,
         DataUpdateService dataUpdateService) {
         super(loggerFactory, dataUpdateService);
+        setDataUpdateUrl("https://distributor.51degrees.com/api/v2/download");
+        setDataUpdateUrlFormatter(new FiftyOneUrlFormatter());
     }
 
     @Override
