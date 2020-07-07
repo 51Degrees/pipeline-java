@@ -23,6 +23,7 @@
 package fiftyone.pipeline.engines.fiftyone.flowelements;
 
 import fiftyone.pipeline.engines.data.AspectEngineDataFile;
+import fiftyone.pipeline.engines.fiftyone.data.FiftyOneDataFile;
 import fiftyone.pipeline.engines.fiftyone.data.FiftyOneDataFileDefault;
 import fiftyone.pipeline.engines.fiftyone.data.FiftyOneUrlFormatter;
 import fiftyone.pipeline.engines.flowelements.SingleFileAspectEngineBuilderBase;
@@ -42,6 +43,8 @@ public abstract class FiftyOneOnPremiseAspectEngineBuilderBase<
     TEngine extends FiftyOneAspectEngine> extends
     SingleFileAspectEngineBuilderBase<TBuilder, TEngine> {
 
+    private String dataDownloadType;
+    
     /**
      * Default constructor which uses the {@link ILoggerFactory} implementation
      * returned by {@link LoggerFactory#getILoggerFactory()}.
@@ -75,7 +78,9 @@ public abstract class FiftyOneOnPremiseAspectEngineBuilderBase<
 
     @Override
     protected AspectEngineDataFile newAspectEngineDataFile() {
-        return new FiftyOneDataFileDefault();
+        FiftyOneDataFile dataFile = new FiftyOneDataFileDefault();
+        dataFile.setDataUpdateDownloadType(dataDownloadType != null ? dataDownloadType : getDefaultDataDownloadType());
+        return dataFile; 
     }
 
     /**
@@ -86,4 +91,27 @@ public abstract class FiftyOneOnPremiseAspectEngineBuilderBase<
      * @return this builder
      */
     public abstract TBuilder setConcurrency(int concurrency);
+    
+    /**
+     * The default value to use for the 'Type' parameter when sending
+     * a request to the Distributor
+     * @return default data download type;
+     */
+    protected abstract String getDefaultDataDownloadType();
+    
+    /**
+     * Set the 'type' string that will be sent to the 'distributor' 
+     * service when downloading a new data file.
+     * Note that this is only needed if using UpdateOnStartup. 
+     * Otherwise, the update service will use the type name from the 
+     * existing data file.
+     * The default value is provided by the specific engine builder 
+     * implementation. 
+     * @param typeName The download type to use. For example 'HashV4'.
+     * @return This builder.
+     */
+    protected TBuilder setDefaultDataDownloadType(String typeName){
+        dataDownloadType = typeName;
+        return (TBuilder)this;
+    }
 }
