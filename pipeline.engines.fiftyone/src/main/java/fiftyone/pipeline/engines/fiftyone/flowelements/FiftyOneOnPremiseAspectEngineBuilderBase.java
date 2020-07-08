@@ -76,6 +76,11 @@ public abstract class FiftyOneOnPremiseAspectEngineBuilderBase<
         setDataUpdateUrlFormatter(new FiftyOneUrlFormatter());
     }
 
+    /**
+     * Create a new empty data file instance to be populated with the details of
+     * the data file to be used.
+     * @return new {@link AspectEngineDataFile} instance
+     */
     @Override
     protected AspectEngineDataFile newAspectEngineDataFile() {
         FiftyOneDataFile dataFile = new FiftyOneDataFileDefault();
