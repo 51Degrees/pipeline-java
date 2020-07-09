@@ -61,6 +61,11 @@ public class FiftyOneDegreesOnPremiseAspectEngineBuilderBaseTests {
             dataFile.setEngine(engine);
             return engine;
         }
+
+        @Override
+        protected String getDefaultDataDownloadType() {
+            return downloadType;
+        }
     }
 
     @Before
