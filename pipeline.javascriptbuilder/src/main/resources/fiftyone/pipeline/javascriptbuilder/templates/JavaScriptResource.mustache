@@ -20,6 +20,9 @@ fiftyoneDegreesManager = function() {
     // by 1.
     var callbackCounter = 0;
 
+    // Array of JavaScript properties that have started evaluation.
+    var jsPropertiesStarted = [];
+
     // startsWith polyfill.
     var startsWith = function(source, searchValue){
         return source.lastIndexOf(searchValue, 0) === 0;
@@ -63,8 +66,11 @@ fiftyoneDegreesManager = function() {
     // Fetch a value safely from the json object. If a key somewhere down the
     // '.' separated hierarchy of keys is not present then 'undefined' is
     // returned rather than letting an exception occur.
-    var getFromJson = function(key) {
+    var getFromJson = function(key, allowObjects, allowBooleans) {
         var result = undefined;
+        if(typeof allowObjects === 'undefined') { allowObjects = false; }
+        if(typeof allowBooleans === 'undefined') { allowBooleans = false; }
+
         if (typeof(key) === 'string') {
             var functions = json;
             var segments = key.split('.');
@@ -73,6 +79,10 @@ fiftyoneDegreesManager = function() {
                 functions = functions[segments[i++]];
             }
             if (typeof(functions) === "string") {
+                result = functions;
+            } else if (allowBooleans && typeof(functions) === "boolean") {
+                result = functions;
+            } else if (allowObjects && typeof functions === 'object' && functions !== null) {
                 result = functions;
             }
         }
@@ -95,56 +105,66 @@ fiftyoneDegreesManager = function() {
 
     // Executes any Javascript contained in the json data. Sets the processedJs
     // flag to true when there is no further Javascript to be processed.
-    var processJSproperties = function(resolve, reject) {
+    var processJsProperties = function(resolve, reject, jsProperties, ignoreDelayFlag) {
         var executeCallback = true;
+        var started = 0;
 
-        if (json.javascriptProperties !== undefined &&
-            json.javascriptProperties.length > 0) {
+        if (jsProperties !== undefined &&
+            jsProperties.length > 0) {
 
             // Execute each of the Javascript property code snippets using the
             // index of the value to access the value to avoid problems with
             // JavaScript returning erroneous values.
             for(var index = 0;
-                index < json.javascriptProperties.length;
+                index < jsProperties.length;
                 index++) {
 
-                var name = json.javascriptProperties[index];
+                var name = jsProperties[index];
 
-                // Create new function bound to this instance and execute it.
-                // This is needed to ensure the scope of the function is
-                // associated with this instance if any members are altered or
-                // added. Avoids global scoped variables.
-                var body = getFromJson(name);
+                if(jsPropertiesStarted.includes(name) === false) {
+                    // Create new function bound to this instance and execute it.
+                    // This is needed to ensure the scope of the function is
+                    // associated with this instance if any members are altered or
+                    // added. Avoids global scoped variables.
+                    var body = getFromJson(name);
+                    var delay = getFromJson(name + 'delayexecution', false, true);
 
-                if (body !== undefined) {
-                    var func = undefined;
-                    var searchString = '// 51D replace this comment with callback function.';
+                    if ((ignoreDelayFlag || (delay === undefined || delay === false)) &&
+                        body !== undefined) {
+                        var func = undefined;
+                        var searchString = '// 51D replace this comment with callback function.';
+                        completed = false;
+                        jsPropertiesStarted.push(name);
+                        started++;
 
-                    if(body.indexOf(searchString) !== -1){
-                        callbackCounter++;
-                        body = body.replace(/\/\/ 51D replace this comment with callback function./g, 'callbackFunc(resolveFunc, rejectFunc);');
-                        func = new Function('callbackFunc', 'resolveFunc', 'rejectFunc',
-                            "try {\n" +
-                            body + "\n" +
-                            "} catch (err) {\n" +
-                            "console.log(err);" +
-                            "}"
-                        );
-                        func(completedCallback, resolve, reject);
-                        executeCallback = false;
-                    } else {
-                        func = new Function(
-                            "try {\n" +
-                            body + "\n" +
-                            "} catch (err) {\n" +
-                            "console.log(err);" +
-                            "}"
-                        );
-                        func();
+                        if(body.indexOf(searchString) !== -1){
+                            callbackCounter++;
+                            body = body.replace(/\/\/ 51D replace this comment with callback function./g, 'callbackFunc(resolveFunc, rejectFunc);');
+                            func = new Function('callbackFunc', 'resolveFunc', 'rejectFunc',
+                                "try {\n" +
+                                body + "\n" +
+                                "} catch (err) {\n" +
+                                "console.log(err);" +
+                                "}"
+                            );
+                            func(completedCallback, resolve, reject);
+                            executeCallback = false;
+                        } else {
+                            func = new Function(
+                                "try {\n" +
+                                body + "\n" +
+                                "} catch (err) {\n" +
+                                "console.log(err);" +
+                                "}"
+                            );
+                            func();
+                        }
                     }
                 }
             }
-        } else {
+        }
+
+        if(started === 0) {
             executeCallback = false;
             completed = true;
         }
@@ -198,7 +218,7 @@ fiftyoneDegreesManager = function() {
 
     // Process the JavaScript properties.
     var process = function(resolve, reject){
-        processJSproperties(resolve, reject);
+        processJsProperties(resolve, reject, json.javascriptProperties, false);
     }
 
     var fireChangeFuncs = function(json) {
@@ -308,6 +328,59 @@ fiftyoneDegreesManager = function() {
         });
     }
 
+{{#_hasDelayedProperties}}
+    // Get the JS property(s) that, when evaluated, will populate
+    // evidence that can be used to determine the value of the
+    // supplied property.
+    // The supplied name can either be a complete property name or a top level
+    // aspect name.
+    // Where the aspect name is given, ALL evidence properties under that
+    // key will be returned.
+    // Example property names are 'location.country' or 'devices.profiles.hardwarename'
+    // Example aspect names are 'location' or 'devices'
+    var getEvidenceProperties = function (name) {
+        var evidenceProperties = getFromJson(name + 'evidenceproperties');
+        if(typeof evidenceProperties === "undefined") {
+            var item = getFromJson(name, true);
+            evidenceProperties = getEvidencePropertiesFromObject(item);
+        }
+        return evidenceProperties;
+    }
+
+    // Get all values in any 'evidenceproperty' fields on this object
+    // or sub-objects.
+    var getEvidencePropertiesFromObject = function (dataObject) {
+        evidenceProperties = [];
+
+        for (var prop in dataObject) {
+            if (dataObject.hasOwnProperty(prop)) {
+                var value = dataObject[prop];
+                // Property name ends with 'evidenceproperties' so is
+                // what we're looking for.
+                // Add the values to the array if we don't already have it.
+                if (value !== null && Array.isArray(value) && prop.endsWith('evidenceproperties')) {
+                    value.forEach(function(item, index) {
+                        if(evidenceProperties.includes(item) === false) {
+                            evidenceProperties.push(item);
+                        }
+                    });
+                }
+                // Item is an object so recursively call this method
+                // and add any resulting evidence properties to the list.
+                else if(typeof value === 'object' && value !== null) {
+                    getEvidencePropertiesFromObject(value).forEach(function(item, index) {
+                        if(evidenceProperties.includes(item) === false) {
+                            evidenceProperties.push(item);
+                        }
+                    });
+                }
+            }
+        }
+
+        return evidenceProperties;
+    }
+{{/_hasDelayedProperties}}
+
 {{#_supportsPromises}}
     this.promise = new Promise(function(resolve, reject) {
         process(resolve,reject);
@@ -318,7 +391,28 @@ fiftyoneDegreesManager = function() {
 		changeFuncs.push(resolve);
 	}
 
-    this.complete = function(resolve) {
+    this.complete = function(resolve, properties) {
+{{#_hasDelayedProperties}}
+        // If properties is set then check if we need to kick off
+        // processing of anything.
+        if(typeof properties !== "undefined") {
+            // If properties is a string then split on comma to produce
+            // an array of one or more key names.
+            if(typeof properties === "string") {
+                properties = properties.split(',');
+            }
+            if(Array.isArray(properties)) {
+                properties.forEach(function(key, i) {
+                    // We pass an empty function rather than 'resolve' because we
+                    // don't want to call resolve when a single evidence function
+                    // evaluates but after all of them have completed.
+                    // This is handled by the 'if(complete)' code below.
+                    processJsProperties(function(json) {}, catchError, getEvidenceProperties(key), true);
+                });
+            }
+        }
+
+{{/_hasDelayedProperties}}
         if(completed){
             resolve(json);
         }else{
@@ -337,7 +431,6 @@ fiftyoneDegreesManager = function() {
     this.promise.then(function(value) {
         // JSON has been updated so replace the current instance.
         update.call(parent, value);
-        resolve(parent);
         completed = true;
     }).catch(catchError);
 {{/_supportsPromises}}

@@ -268,14 +268,20 @@ public class JavaScriptBuilderElement
         }
 
         boolean updateEnabled = url != null && url.isEmpty() == false;
-        
+
+        // This check won't be 100% fool-proof but it only needs to be
+        // reasonably accurate and not take too long.
+        boolean hasDelayedProperties = jsonObject != null &&
+            jsonObject.contains("delayexecution");
+
         JavaScriptResource javaScriptObj = new JavaScriptResource(
             objectName,
             jsonObject,
             supportsPromises,
             url,
             enableCookies,    
-            updateEnabled);
+            updateEnabled,
+            hasDelayedProperties);
       
         StringWriter stringWriter = new StringWriter();
         mustache.execute(stringWriter, javaScriptObj.asMap());

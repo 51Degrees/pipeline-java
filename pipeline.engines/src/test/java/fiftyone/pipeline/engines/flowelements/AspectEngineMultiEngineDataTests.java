@@ -91,7 +91,7 @@ public class AspectEngineMultiEngineDataTests {
 
         EmptyEngineData result = data.get(EmptyEngineData.class);
         assertEquals(1, result.getValueOne());
-        assertEquals(50, result.getValueTwo());
+        assertEquals(2, result.getValueTwo());
     }
 
     @Test
@@ -109,6 +109,6 @@ public class AspectEngineMultiEngineDataTests {
 
         EmptyEngineData result = data.get(EmptyEngineData.class);
         assertEquals(1, result.getValueOne());
-        assertEquals(50, result.getValueTwo());
+        assertEquals(2, result.getValueTwo());
     }
 }
