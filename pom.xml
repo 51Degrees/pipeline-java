@@ -12,6 +12,10 @@
     <url>https:51degrees.com</url>
     <description>Java implementation of 51Degrees Pipeline API</description>
 
+    <organization>
+        <name>51Degrees</name>
+        <url>51degrees.com</url>
+    </organization>
     <developers>
         <developer>
             <name>51Degrees</name>
@@ -49,6 +53,17 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
