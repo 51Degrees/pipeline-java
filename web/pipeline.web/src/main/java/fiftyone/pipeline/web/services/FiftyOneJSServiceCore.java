@@ -49,6 +49,18 @@ public interface FiftyOneJSServiceCore {
         throws IOException;
 
     /**
+     * Check if the 51Degrees JSON is being requested and
+     * write it to the response if it is
+     * @param request the {@link HttpServletRequest} to get the {@link FlowData}
+     *                from
+     * @param response the {@link HttpServletResponse} to write the JSON
+     *                 to
+     * @return true if JSON was written to the response, false otherwise
+     */
+    boolean serveJson(HttpServletRequest request, HttpServletResponse response)
+        throws IOException;
+
+    /**
      * Default implementation of the {@link FiftyOneJSServiceCore} service.
      */
     class Default implements FiftyOneJSServiceCore {
@@ -86,6 +98,36 @@ public interface FiftyOneJSServiceCore {
             HttpServletResponse response) throws IOException {
             if (enabled) {
                 clientsidePropertyServiceCore.serveJavascript(request, response);
+            }
+        }
+
+        @Override
+        public boolean serveJson(
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+            if (request == null) {
+                throw new IllegalArgumentException("request");
+            }
+            if (response == null) {
+                throw new IllegalArgumentException("response");
+            }
+
+
+            boolean result = false;
+            if (request.getRequestURL().toString().toLowerCase()
+                .endsWith("51dpipeline/json")) {
+                serveCoreJson(request, response);
+                result = true;
+            }
+
+            return result;
+        }
+
+        private void serveCoreJson(
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+            if (enabled) {
+                clientsidePropertyServiceCore.serveJson(request, response);
             }
         }
     }

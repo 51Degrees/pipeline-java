@@ -114,9 +114,10 @@ public class PipelineFilter implements Filter {
         // HttpContext.
         resultService.process((HttpServletRequest)request);
 
-        // If 51Degrees JavaScript is being requested then serve it.
+        // If 51Degrees JavaScript or JSON is being requested then serve it.
         // Otherwise continue down the filter Pipeline.
-        if (jsService.serveJS((HttpServletRequest)request, (HttpServletResponse) response) == false) {
+        if (jsService.serveJS((HttpServletRequest)request, (HttpServletResponse) response) == false &&
+            jsService.serveJson((HttpServletRequest)request, (HttpServletResponse) response) == false) {
             chain.doFilter(request, response);//sends request to next resource
         }
     }
