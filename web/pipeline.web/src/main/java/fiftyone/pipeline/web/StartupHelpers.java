@@ -88,6 +88,7 @@ public class StartupHelpers {
                     // There is already a javascript builder element
                     // so insert the json builder before it.
                     options.elements.add(jsIndex, jsonBuilderElement);
+                    jsIndex++;
                 }
                 else {
                     options.elements.add(jsonBuilderElement);
@@ -98,9 +99,17 @@ public class StartupHelpers {
                 // The json builder element is not included so add it.
                 ElementOptions javaScriptBuilderElement = new ElementOptions();
                 javaScriptBuilderElement.builderName = JavaScriptBuilderElement.class.getSimpleName();
-                options.pipelineBuilderParameters.put("EnableCookies", true);
+                options.pipelineBuilderParameters.put("EndPoint", "/51dpipeline/json");
                 options.elements.add(javaScriptBuilderElement);
             }
+            else {
+                // There is already a JavaScript builder config so check if
+                // the endpoint is specified. If not, add it.
+                if (options.elements.get(jsIndex).buildParameters.containsKey("EndPoint") == false) {
+                    options.elements.get(jsIndex).buildParameters.put("EndPont", "/51dpipeline/json");
+                }
+            }
+
         }
 
         return builder.buildFromConfiguration(options);

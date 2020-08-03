@@ -28,7 +28,7 @@ import fiftyone.pipeline.jsonbuilder.data.JsonBuilderData;
 import org.slf4j.Logger;
 
 //! [class]
-class JsonBuilderDataInternal extends ElementDataBase implements JsonBuilderData {
+public class JsonBuilderDataInternal extends ElementDataBase implements JsonBuilderData {
     
     public JsonBuilderDataInternal(Logger logger, FlowData flowData) {
         super(logger, flowData);

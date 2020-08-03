@@ -41,6 +41,9 @@ public interface ClientsidePropertyService extends ClientsidePropertyServiceCore
     void serveJavascript(
         HttpServletRequest request,
         HttpServletResponse response) throws IOException;
+    void serveJson(
+        HttpServletRequest request,
+        HttpServletResponse response) throws IOException;
 
     @Service
     class Default extends ClientsidePropertyServiceCore.Default implements ClientsidePropertyService {

@@ -22,6 +22,7 @@
 
 package fiftyone.pipeline.core.data;
 
+import fiftyone.pipeline.core.data.types.JavaScript;
 import fiftyone.pipeline.core.flowelements.FlowElement;
 
 import java.util.List;
@@ -82,4 +83,33 @@ public interface ElementPropertyMetaData {
      * element within that list.
      */
     List<ElementPropertyMetaData> getItemProperties();
+
+
+    /**
+     * Only relevant if the type is {@link JavaScript}. Defaults to false.
+     * If set to true then the JavaScript in this property will
+     * not be executed automatically on the client device.
+     * This is used where executing the JavaScript would result in
+     * undesirable behavior.
+     * For example, attempting to access the location of the device
+     * will cause the browser to show a pop-up confirming if the
+     * user is happy too allow the website access to their location.
+     * In general, we don't want this to happen immediately when a
+     * user enters a website, but when they try to use a feature that
+     * requires location data (e.g. show restaurants near me).
+     * @return true if execution should be delayed
+     */
+    boolean getDelayExecution();
+
+    /**
+     * Get the names of any {@link JavaScript} properties that, when executed,
+     * will obtain additional evidence that can help in determining the value of
+     * this property. For example, the ScreenPixelsWidthJavaScript property will
+     * get the pixel width of the client-device's screen.
+     * This is used to update the ScreenPixelsWidth property.
+     * As such, ScreenPixelsWidth will have ScreenPixelWidthJavaScript
+     * in its list of evidence properties.
+     * @return list of evidence properties
+     */
+    List<String> getEvidenceProperties();
 }

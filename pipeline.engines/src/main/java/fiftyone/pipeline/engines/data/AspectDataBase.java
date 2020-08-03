@@ -193,6 +193,12 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
             future);
     }
 
+    @Override
+    public Map<String, Object> asKeyMap() {
+        waitOnAllProcessFutures();
+        return super.asKeyMap();
+    }
+
     /**
      * Gets the value stored using the specified key with full checks
      * against the {@link MissingPropertyService}.
