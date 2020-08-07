@@ -28,6 +28,11 @@ public class Constants {
      * The name of the core JavaScript served to the client.
      */
     public static final String CORE_JS_NAME = "51Degrees.core.js";
+    
+    /**
+     * The name of the JSON served to the client.
+     */
+    public static final String CORE_JSON_NAME = "51Degrees.core.json";
 
     /**
      * Key prefix used for 51Degrees data stored in the HTTP context.

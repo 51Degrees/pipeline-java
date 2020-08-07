@@ -30,7 +30,7 @@
     <parent>
         <groupId>com.51degrees</groupId>
         <artifactId>pipeline</artifactId>
-        <version>4.1.7-SNAPSHOT</version>
+        <version>4.1.8-SNAPSHOT</version>
     </parent>
 
     <artifactId>pipeline.core</artifactId>

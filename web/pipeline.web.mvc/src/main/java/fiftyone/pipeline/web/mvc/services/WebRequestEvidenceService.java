@@ -22,8 +22,12 @@
 
 package fiftyone.pipeline.web.mvc.services;
 
+import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.web.services.WebRequestEvidenceServiceCore;
+import javax.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
+
+import static fiftyone.pipeline.core.Constants.*;
 
 /**
  * Spring framework service for the {@link WebRequestEvidenceServiceCore}.
@@ -33,6 +37,13 @@ public interface WebRequestEvidenceService extends WebRequestEvidenceServiceCore
 
     @Service
     class Default extends WebRequestEvidenceServiceCore.Default implements WebRequestEvidenceService {
-
+        @Override
+        public void addEvidenceFromRequest(
+            FlowData flowData,
+            HttpServletRequest request) {
+            
+            super.checkAndAdd(flowData, EVIDENCE_WEB_CONTEXT_ROOT, request.getContextPath());
+            super.addEvidenceFromRequest(flowData, request);
+        }
     }
 }

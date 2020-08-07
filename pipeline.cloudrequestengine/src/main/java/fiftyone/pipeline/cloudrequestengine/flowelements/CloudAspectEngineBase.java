@@ -196,7 +196,9 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
                         item.getPropertyType(),
                         new ArrayList<String>(),
                         true,
-                        loadElementProperties(item.itemProperties));
+                        loadElementProperties(item.itemProperties),
+                        item.delayExecution != null ? item.delayExecution : false,
+                        item.evidenceProperties != null ? item.evidenceProperties : new ArrayList<String>());
                     properties.add(property);
                 }
                 aspectProperties = properties;

@@ -22,11 +22,9 @@
 
 package fiftyone.pipeline.web.services;
 
-import fiftyone.pipeline.core.data.ElementPropertyMetaData;
 import fiftyone.pipeline.core.data.EvidenceKeyFilter;
 import fiftyone.pipeline.core.data.EvidenceKeyFilterWhitelist;
 import fiftyone.pipeline.core.data.FlowData;
-import fiftyone.pipeline.core.data.types.JavaScript;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.core.flowelements.Pipeline;

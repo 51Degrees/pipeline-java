@@ -47,6 +47,7 @@ import javax.xml.bind.Unmarshaller;
 import java.io.File;
 
 import static fiftyone.pipeline.web.Constants.CORE_JS_NAME;
+import static fiftyone.pipeline.web.Constants.CORE_JSON_NAME;
 
 /**
  * The 51Degrees middleware component.
@@ -107,12 +108,14 @@ public class FiftyOneInterceptor extends HandlerInterceptorAdapter {
 
     public static void enableClientsideProperties(ViewControllerRegistry viewControllerRegistry) {
         viewControllerRegistry.addViewController("/" + CORE_JS_NAME);
+        viewControllerRegistry.addViewController("/" + CORE_JSON_NAME);
     }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         resultService.process(request);
-        if (fiftyOneJsService.serveJS(request,  response) == false) {
+        if (fiftyOneJsService.serveJS(request,  response) == false &&
+                fiftyOneJsService.serveJson(request, response) == false) {
             return super.preHandle(request, response, handler);
         }
         return false;

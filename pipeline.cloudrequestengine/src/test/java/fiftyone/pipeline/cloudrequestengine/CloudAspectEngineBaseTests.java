@@ -160,7 +160,6 @@ public class CloudAspectEngineBaseTests {
         assertTrue(propertiesContainName(engine.getProperties(), "ismobile"));
         assertTrue(propertiesContainName(engine.getProperties(), "hardwarevendor"));
         assertTrue(propertiesContainName(engine.getProperties(), "hardwarevariants"));
-
     }
 
     @Test
@@ -185,6 +184,30 @@ public class CloudAspectEngineBaseTests {
         assertTrue(propertiesContainName(engine.getProperties().get(0).getItemProperties(), "ismobile"));
         assertTrue(propertiesContainName(engine.getProperties().get(0).getItemProperties(), "hardwarevendor"));
         assertTrue(propertiesContainName(engine.getProperties().get(0).getItemProperties(), "hardwarevariants"));
+    }
+    
+    @Test
+    public void loadProperties_delayedProperties() throws Exception {
+        List<String> evidenceProperties = new ArrayList<>();
+        evidenceProperties.add("javascript");
+        
+        List<AccessiblePropertyMetaData.PropertyMetaData> properties = new ArrayList<>();
+        properties.add(new AccessiblePropertyMetaData.PropertyMetaData("javascript", "JavaScript", null, null, true, null));
+        properties.add(new AccessiblePropertyMetaData.PropertyMetaData("hardwarevendor", "String", null, null, null, evidenceProperties));
+        properties.add(new AccessiblePropertyMetaData.PropertyMetaData("hardwarevariants", "Array", null, null, null, evidenceProperties));
+        AccessiblePropertyMetaData.ProductMetaData devicePropertyData = new AccessiblePropertyMetaData.ProductMetaData();
+        devicePropertyData.properties = properties;
+        propertiesReturnedByRequestEngine.put("test", devicePropertyData);
+
+        createPipeline();
+
+        assertEquals(3, engine.getProperties().size());
+        assertTrue(propertiesContainName(engine.getProperties(), "javascript"));
+        assertTrue(propertiesContainName(engine.getProperties(), "hardwarevendor"));
+        assertTrue(propertiesContainName(engine.getProperties(), "hardwarevariants"));
+        assertTrue(engine.getProperty("javascript").getDelayExecution());
+        assertEquals(1, engine.getProperty("hardwarevendor").getEvidenceProperties().size());
+        assertEquals(1, engine.getProperty("hardwarevariants").getEvidenceProperties().size());
     }
 
     private void createPipeline() throws Exception {

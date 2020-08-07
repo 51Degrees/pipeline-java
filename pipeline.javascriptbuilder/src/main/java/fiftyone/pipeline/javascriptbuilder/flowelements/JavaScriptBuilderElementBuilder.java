@@ -45,6 +45,7 @@ public class JavaScriptBuilderElementBuilder {
     protected String host = "";
     protected String endpoint = "";
     protected String protocol = "";
+    protected String contextRoot = "";
     protected String objName = "";
     private boolean enableCookies = false;
 
@@ -77,6 +78,11 @@ public class JavaScriptBuilderElementBuilder {
      */
     public JavaScriptBuilderElementBuilder setEndpoint(String endpoint) {
         this.endpoint = endpoint;
+        return this;
+    }
+
+    public JavaScriptBuilderElementBuilder setContextRoot(String contextRoot) {
+        this.contextRoot = contextRoot;
         return this;
     }
 
@@ -162,7 +168,8 @@ public class JavaScriptBuilderElementBuilder {
             objName,
             enableCookies,
             host,
-            protocol);
+            protocol,
+            contextRoot);
     } 
 }
 //! [class]

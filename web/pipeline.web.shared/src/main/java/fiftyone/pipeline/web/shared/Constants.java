@@ -25,5 +25,4 @@ package fiftyone.pipeline.web.shared;
 public class Constants {
     public static final String CLIENTSIDE_JAVASCRIPT_DATA_KEY = "clientside-javascript";
     public static final String CLIENTSIDE_JAVASCRIPT_PROPERTY_NAME = "javascript";
-
 }

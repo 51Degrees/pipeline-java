@@ -72,7 +72,7 @@ public class ElementOptions {
      */
     @XmlElement(name = "BuildParameters")
     @XmlJavaTypeAdapter(MapAdapter.class)
-    public Map<String, Object> buildParameters = new HashMap<>();
+    public Map<String, Object> buildParameters;
 
     /**
      * If this property is populated, the flow element is a
@@ -86,11 +86,13 @@ public class ElementOptions {
      */
     @XmlElementWrapper(name = "SubElements")
     @XmlElement(name = "Element")
-    public List<ElementOptions> subElements = new ArrayList<>();
+    public List<ElementOptions> subElements;
 
     /**
      * Public constructor needed for XML binding.
      */
     public ElementOptions() {
+        buildParameters = new HashMap<>();
+        subElements = new ArrayList<>();
     }
 }

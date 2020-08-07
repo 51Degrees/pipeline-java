@@ -114,6 +114,34 @@ public class AccessiblePropertyMetaData {
             this.type = type;
             this.category = category;
             this.itemProperties = itemProperties;
+            this.delayExecution = false;
+            this.evidenceProperties = null;
+        }
+        
+        /**
+         * Construct a new instance of {@link PropertyMetaData}.
+         * @param name the name of the property
+         * @param type the data type which values of the property have
+         * @param category the category the property belongs to
+         * @param itemProperties list of sub-properties contained within the
+         *                       property
+         * @param delayExecution delay execution flag
+         * @param evidenceProperties a list of properties which supplement 
+         *                           evidence for this property
+         */
+        public PropertyMetaData(
+            String name,
+            String type,
+            String category,
+            List<PropertyMetaData> itemProperties,
+            Boolean delayExecution,
+            List<String> evidenceProperties) {
+            this.name = name;
+            this.type = type;
+            this.category = category;
+            this.itemProperties = itemProperties;
+            this.delayExecution = delayExecution;
+            this.evidenceProperties = evidenceProperties;
         }
 
         /**
@@ -129,6 +157,16 @@ public class AccessiblePropertyMetaData {
                 this.itemProperties = new ArrayList<>();
                 for (int i = 0; i < array.length(); i++) {
                     this.itemProperties.add(new PropertyMetaData(array.getJSONObject(i)));
+                }
+            }
+            if (json.has("DelayExecution")) {
+                this.delayExecution = json.getBoolean("DelayExecution");    
+            }
+            if(json.has("EvidenceProperties")) {
+                JSONArray array = json.getJSONArray("EvidenceProperties");
+                this.evidenceProperties = new ArrayList<>();
+                for (int i = 0; i < array.length(); i++) {
+                    this.evidenceProperties.add(array.getString(i));
                 }
             }
         }
@@ -152,6 +190,16 @@ public class AccessiblePropertyMetaData {
          * Sub-properties of the property if any.
          */
         public List<PropertyMetaData> itemProperties;
+        
+        /**
+         * Delay execution flag.
+         */
+        public Boolean delayExecution;
+        
+        /**
+         * Evidence properties.
+         */
+        public List<String> evidenceProperties;
 
         /**
          * Parse the {@link #type} string to the {@link Class} which it
