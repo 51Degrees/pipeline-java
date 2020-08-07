@@ -76,9 +76,10 @@ public class PipelineFilter implements Filter {
         else {
             clientsideEnabled = Boolean.parseBoolean(clientsideEnabledString);
         }
+        
+        ServletContext context = config.getServletContext();
 
-        File configFile = new File(config.getServletContext()
-            .getRealPath(configFileName));
+        File configFile = new File(context.getRealPath(configFileName));
         PipelineBuilder builder = new PipelineBuilder()
             .addService(new DataUpdateServiceDefault(
                 LoggerFactory.getLogger(DataUpdateService.class.getSimpleName()),
@@ -89,7 +90,9 @@ public class PipelineFilter implements Filter {
             Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
             // Bind the configuration to a pipeline options instance
             PipelineOptions options = (PipelineOptions) unmarshaller.unmarshal(configFile);
-            pipeline = StartupHelpers.buildFromConfiguration(builder, options, clientsideEnabled);
+
+            pipeline = StartupHelpers.buildFromConfiguration(builder, options, 
+                clientsideEnabled, context.getContextPath());
         } catch (Exception e) {
             throw new ServletException(e);
         }
@@ -110,6 +113,7 @@ public class PipelineFilter implements Filter {
         ServletRequest request,
         ServletResponse response,
         FilterChain chain) throws IOException, ServletException {
+
         // Populate the request properties and store against the
         // HttpContext.
         resultService.process((HttpServletRequest)request);

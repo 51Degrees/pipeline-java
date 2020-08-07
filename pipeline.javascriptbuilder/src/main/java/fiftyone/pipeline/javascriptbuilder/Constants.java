@@ -28,11 +28,6 @@ public class Constants {
             fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR +
             "Host";
     
-    public static final String EVIDENCE_PROTOCOL = 
-            fiftyone.pipeline.core.Constants.EVIDENCE_HTTPHEADER_PREFIX +
-            fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR +
-            "protocol";
-    
     public static final String EVIDENCE_OBJECT_NAME_SUFFIX =
             "fod-js-object-name";
     

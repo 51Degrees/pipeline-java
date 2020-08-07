@@ -36,6 +36,7 @@ public class Constants {
 
     // Evidence Suffixes
     public static final String EVIDENCE_USERAGENT = "user-agent";
+    public static final String EVIDENCE_WEB_CONTEXT_ROOT_SUFFIX = "contextroot";
 
     // Evidence Keys
     public static final String EVIDENCE_CLIENTIP_KEY = EVIDENCE_SERVER_PREFIX + EVIDENCE_SEPERATOR + "client-ip";
@@ -43,4 +44,8 @@ public class Constants {
     public static final String EVIDENCE_QUERY_USERAGENT_KEY = EVIDENCE_QUERY_PREFIX + EVIDENCE_SEPERATOR + EVIDENCE_USERAGENT;
 
     public static final String EVIDENCE_HEADER_USERAGENT_KEY = EVIDENCE_HTTPHEADER_PREFIX + EVIDENCE_SEPERATOR + EVIDENCE_USERAGENT;
+    
+    public static final String EVIDENCE_WEB_CONTEXT_ROOT = EVIDENCE_SERVER_PREFIX + EVIDENCE_SEPERATOR + EVIDENCE_WEB_CONTEXT_ROOT_SUFFIX;
+    
+    public static final String EVIDENCE_PROTOCOL = EVIDENCE_HTTPHEADER_PREFIX + EVIDENCE_SEPERATOR + "protocol";
 }

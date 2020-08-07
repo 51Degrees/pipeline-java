@@ -52,6 +52,31 @@ public class StartupHelpers {
         PipelineOptions options,
         boolean clientSideEvidenceEnabled) throws Exception {
 
+        return StartupHelpers.buildFromConfiguration(builder, options, 
+            clientSideEvidenceEnabled, null);
+    }
+
+    /**
+     * Configure the extra web elements required and build the Pipeline using
+     * the {@link PipelineBuilder#buildFromConfiguration(PipelineOptions)}
+     * method.
+     * @param builder to build the Pipeline
+     * @param options to build the Pipeline with
+     * @param clientSideEvidenceEnabled true if client-side evidence is enabled
+     *                                  in the configuration. This will add JSON
+     *                                  and JavaScript elements to the Pipeline
+     * @param contextRoot The context-root setting from the web.xml. This is
+     *                    needed in order to create the correct callback URL
+     *                    for the JavascriptBuilder.
+     * @return new {@link Pipeline} instance
+     * @throws Exception if there was an error building the Pipeline
+     */
+    public static Pipeline buildFromConfiguration(
+        PipelineBuilder builder,
+        PipelineOptions options,
+        boolean clientSideEvidenceEnabled,
+        String contextRoot) throws Exception {
+
         if (options == null ||
             options.elements == null ||
             options.elements.size() == 0) {
@@ -96,17 +121,25 @@ public class StartupHelpers {
             }
 
             if (jsIndex == -1) {
-                // The json builder element is not included so add it.
+                // The js builder element is not included so add it.
                 ElementOptions javaScriptBuilderElement = new ElementOptions();
                 javaScriptBuilderElement.builderName = JavaScriptBuilderElement.class.getSimpleName();
-                options.pipelineBuilderParameters.put("EndPoint", "/51dpipeline/json");
+                javaScriptBuilderElement.buildParameters.put("Endpoint", "/" + Constants.CORE_JSON_NAME);
+                if(contextRoot != null) {
+                    javaScriptBuilderElement.buildParameters.put("ContextRoot", contextRoot);
+                }
                 options.elements.add(javaScriptBuilderElement);
             }
             else {
                 // There is already a JavaScript builder config so check if
                 // the endpoint is specified. If not, add it.
-                if (options.elements.get(jsIndex).buildParameters.containsKey("EndPoint") == false) {
-                    options.elements.get(jsIndex).buildParameters.put("EndPont", "/51dpipeline/json");
+                if (options.elements.get(jsIndex).buildParameters.containsKey("Endpoint") == false) {
+                    options.elements.get(jsIndex).buildParameters.put("Endpoint", "/" + Constants.CORE_JSON_NAME);
+                }
+                // Same for context root.
+                if(options.elements.get(jsIndex).buildParameters.containsKey("ContextRoot") == false &&
+                    contextRoot != null) {
+                        options.elements.get(jsIndex).buildParameters.put("ContextRoot", contextRoot);
                 }
             }
 

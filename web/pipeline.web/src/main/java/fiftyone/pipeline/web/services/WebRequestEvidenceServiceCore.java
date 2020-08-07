@@ -113,6 +113,8 @@ public interface WebRequestEvidenceServiceCore {
             }
 
             checkAndAdd(flowData, EVIDENCE_CLIENTIP_KEY, request.getLocalAddr());
+            
+            checkAndAdd(flowData, EVIDENCE_PROTOCOL, request.getScheme());
         }
 
         /**
@@ -122,7 +124,7 @@ public interface WebRequestEvidenceServiceCore {
          * @param key the key to check and add
          * @param value the value to add if the check passes
          */
-        private void checkAndAdd(FlowData flowData, String key, Object value) {
+        protected void checkAndAdd(FlowData flowData, String key, Object value) {
             if (flowData.getEvidenceKeyFilter().include(key)) {
                 flowData.addEvidence(key, value);
             }

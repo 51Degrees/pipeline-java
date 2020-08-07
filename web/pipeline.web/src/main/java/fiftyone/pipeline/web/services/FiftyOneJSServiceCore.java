@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 import static fiftyone.pipeline.web.Constants.CORE_JS_NAME;
+import static fiftyone.pipeline.web.Constants.CORE_JSON_NAME;
 
 /**
  * Service that provides the 51Degrees javascript when requested.
@@ -114,8 +115,8 @@ public interface FiftyOneJSServiceCore {
 
 
             boolean result = false;
-            if (request.getRequestURL().toString().toLowerCase()
-                .endsWith("51dpipeline/json")) {
+            if (request.getRequestURI().toString().toLowerCase()
+                .endsWith(CORE_JSON_NAME.toLowerCase())) {
                 serveCoreJson(request, response);
                 result = true;
             }

@@ -126,7 +126,7 @@ public class JavaScriptBuilderTests {
 
         final Map<String, Object> evidence = new HashMap<>(); 
         evidence.put( fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_HOST_KEY, "localhost" );
-        evidence.put(fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_PROTOCOL, "https" );
+        evidence.put(fiftyone.pipeline.core.Constants.EVIDENCE_PROTOCOL, "https" );
         
         Evidence evidenceObj = mock(Evidence.class);
         when(evidenceObj.asKeyMap()).thenReturn(evidence);
@@ -178,7 +178,7 @@ public class JavaScriptBuilderTests {
         
         final Map<String, Object> evidence = new HashMap<>(); 
         evidence.put(fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_HOST_KEY, "localhost" );
-        evidence.put(fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_PROTOCOL, "https" );
+        evidence.put(fiftyone.pipeline.core.Constants.EVIDENCE_PROTOCOL, "https" );
         
         Evidence evidenceObj = mock(Evidence.class);
         when(evidenceObj.asKeyMap()).thenReturn(evidence);
@@ -252,7 +252,7 @@ public class JavaScriptBuilderTests {
 
         final Map<String, Object> evidence = new HashMap<>();
         evidence.put(fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_HOST_KEY, "localhost" );
-        evidence.put(fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_PROTOCOL, "https" );
+        evidence.put(fiftyone.pipeline.core.Constants.EVIDENCE_PROTOCOL, "https" );
 
         Evidence evidenceObj = mock(Evidence.class);
         when(evidenceObj.asKeyMap()).thenReturn(evidence);

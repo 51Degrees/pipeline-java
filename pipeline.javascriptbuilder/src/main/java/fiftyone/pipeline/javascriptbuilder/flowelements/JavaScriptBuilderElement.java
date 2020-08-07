@@ -61,6 +61,7 @@ public class JavaScriptBuilderElement
     protected String host;
     protected String endpoint;
     protected String protocol;
+    protected String contextRoot;
     protected final String objName;
     protected final boolean enableCookies;
     
@@ -92,6 +93,38 @@ public class JavaScriptBuilderElement
             boolean enableCookies,
             String host,
             String protocol) {
+        this(logger, elementDataFactory, endpoint, objName, enableCookies, host, protocol, null);        
+    }
+    //! [constructor]
+    
+    //! [constructor]
+    /**
+     * Default constructor.
+     * @param logger The logger.
+     * @param elementDataFactory The element data factory.
+     * @param endpoint Set the endpoint which will be queried on the host.
+     *                 e.g /api/v4/json
+     * @param objName The default name of the object instantiated by the client
+     *                JavaScript.
+     * @param enableCookies Set whether the client JavaScript stored results of
+     * client side processing in cookies.
+     * @param host The host that the client JavaScript should query for updates.
+     * If null or blank then the host from the request will be used
+     * @param protocol The protocol (HTTP or HTTPS) that the client JavaScript
+     *                 will use when querying for updates. If null or blank
+     *                 then the protocol from the request will be used
+     * @param contextRoot The <context-root> setting from the web.xml.
+     *                 This is needed when creating the callback URL.
+     */
+    public JavaScriptBuilderElement(
+            Logger logger,
+            ElementDataFactory<JavaScriptBuilderData> elementDataFactory,
+            String endpoint,
+            String objName,
+            boolean enableCookies,
+            String host,
+            String protocol,
+            String contextRoot) {
         super(logger, elementDataFactory);
         
         MustacheFactory mf = new DefaultMustacheFactory();
@@ -104,9 +137,10 @@ public class JavaScriptBuilderElement
         this.protocol = protocol;
         this.objName = objName.isEmpty() ? "fod" : objName;
         this.enableCookies = enableCookies;
+        this.contextRoot = contextRoot;
     }
     //! [constructor]
-    
+
     @Override
     protected void processInternal(FlowData data) throws Exception {
         String reqHost = this.host;
@@ -123,12 +157,23 @@ public class JavaScriptBuilderElement
                 reqHost = hostEvidence.getValue();
             }
         }
+        
+        // Try and get the web server context root evidence so it can be 
+        // used to contruct the correct path for the Json refresh.
+        if(this.contextRoot == null || this.contextRoot.isEmpty()) {
+            TryGetResult<String> contextRoot = data.tryGetEvidence(
+                fiftyone.pipeline.core.Constants.EVIDENCE_WEB_CONTEXT_ROOT,
+                String.class);
+            if(contextRoot.hasValue()) {
+                this.contextRoot = contextRoot.getValue();
+            }
+        }
 
         // Try and get the request protocol so it can be used to request
         // the JSON refresh in the JavaScript code.
         if (reqProtocol == null || reqProtocol.isEmpty()) {
             TryGetResult<String> protocolEvidence = data.tryGetEvidence(
-                Constants.EVIDENCE_PROTOCOL,
+                fiftyone.pipeline.core.Constants.EVIDENCE_PROTOCOL,
                 String.class);
             if (protocolEvidence.hasValue()) {
                 reqProtocol = protocolEvidence.getValue();
@@ -191,19 +236,28 @@ public class JavaScriptBuilderElement
         if(reqProtocol != null && reqProtocol.isEmpty() == false &&
             reqHost != null && reqHost.isEmpty() == false &&
             endpoint != null && endpoint.isEmpty() == false) {
-            boolean endpointHasSlash = endpoint.charAt(0) == '/';
-            boolean hostHasSlash = reqHost.charAt(reqHost.length() - 1) == '/';
-            // if there is no slash between host and endpoint then add one.
-            if (endpointHasSlash == false && hostHasSlash == false) {
+            boolean contextRootPopulated = contextRoot != null && 
+                contextRoot.isEmpty() == false && contextRoot != "/";
+
+            // Make sure that each part of the URL except host starts with a '/'
+            // and each part except endpoint does NOT end with one. 
+            if (endpoint.charAt(0) != '/') {
                 endpoint = "/" + endpoint;
             }
-            // if there are two slashes between host and endpoint then remove one.
-            else if (endpointHasSlash == true && hostHasSlash == true) {
-                endpoint = endpoint.substring(1);
+            if (contextRootPopulated && contextRoot.charAt(0) != '/') {
+                contextRoot = "/" + contextRoot;
             }
-            url = reqProtocol + "://" + reqHost + endpoint +
-                (queryParams.isEmpty() ? "" : "?" + queryParams);
+            if (reqHost.charAt(reqHost.length() - 1) == '/') {
+                reqHost = reqHost.substring(0, reqHost.length() - 1);
+            }
+            if (contextRootPopulated && contextRoot.charAt(contextRoot.length() - 1) == '/') {
+                contextRoot = contextRoot.substring(0, contextRoot.length() - 1);
+            }
 
+            url = reqProtocol + "://" + reqHost + 
+                (contextRootPopulated ? contextRoot : "") + 
+                endpoint +
+                (queryParams.isEmpty() ? "" : "?" + queryParams);
         }
 
         // With the gathered resources, build a new JavaScriptResource.
@@ -219,8 +273,9 @@ public class JavaScriptBuilderElement
     public EvidenceKeyFilter getEvidenceKeyFilter() {
         return new EvidenceKeyFilterWhitelist(Arrays.asList(
                 Constants.EVIDENCE_HOST_KEY,
-                Constants.EVIDENCE_PROTOCOL,
-                EVIDENCE_OBJECT_NAME),
+                fiftyone.pipeline.core.Constants.EVIDENCE_PROTOCOL,
+                EVIDENCE_OBJECT_NAME,
+                fiftyone.pipeline.core.Constants.EVIDENCE_WEB_CONTEXT_ROOT),
             String.CASE_INSENSITIVE_ORDER);
     }
 
