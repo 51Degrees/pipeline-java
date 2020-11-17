@@ -36,23 +36,28 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static fiftyone.pipeline.util.CheckArgument.checkNotNull;
 
+/**
+ * Default implementation of the {@link FlowData} interface. This class is
+ * package private, and should only be created by the
+ * {@link FlowDataFactoryDefault} class.
+ */
 class FlowDataDefault implements FlowData {
 
     private final Logger logger;
 
-    private volatile Object lock = new Object();
+    private final Object lock = new Object();
 
-    private PipelineInternal pipeline;
+    private final PipelineInternal pipeline;
 
-    private Collection<FlowError> errors;
+    private final Collection<FlowError> errors;
 
-    private TypedKeyMap data;
+    private final TypedKeyMap data;
 
-    private Evidence evidence;
+    private final Evidence evidence;
 
     private boolean stop = false;
 
-    private AtomicBoolean processed = new AtomicBoolean(false);
+    private final AtomicBoolean processed = new AtomicBoolean(false);
 
     FlowDataDefault(Logger logger, Pipeline pipeline, Evidence evidence) {
         this.logger = logger;
@@ -133,12 +138,16 @@ class FlowDataDefault implements FlowData {
     public <T> TryGetResult<T> tryGetEvidence(String key, Class<T> type) {
         TryGetResult<T> result = new TryGetResult<>();
         if (evidence.asKeyMap().containsKey(key)) {
+            Object obj;
             try {
-                Object obj = evidence.get(key);
+                obj = evidence.get(key);
                 T value = type.cast(obj);
                 result.setValue(value);
             } catch (ClassCastException e) {
-
+                logger.debug("Evidence for the key '" + key + "' was found, " +
+                    "but was the wrong type (should have been " +
+                    type.getSimpleName() + ")",
+                    e);
             }
         }
         return result;
@@ -198,7 +207,7 @@ class FlowDataDefault implements FlowData {
     }
 
     @Override
-    public <T extends Object> T getAs(String key, Class<T> type) {
+    public <T> T getAs(String key, Class<T> type) {
 
         T result;
 
@@ -262,10 +271,15 @@ class FlowDataDefault implements FlowData {
     }
 
     @Override
-    public <T extends ElementData> T getOrAdd(String elementDataKey, FlowElement.DataFactory<T> dataFactory) {
+    @SuppressWarnings("unchecked")
+    public <T extends ElementData> T getOrAdd(
+        String elementDataKey,
+        FlowElement.DataFactory<T> dataFactory) {
         ElementData result = null;
 
-        TypedKey<ElementData> typedKey = new TypedKeyDefault<>(elementDataKey, ElementData.class);
+        TypedKey<ElementData> typedKey = new TypedKeyDefault<>(
+            elementDataKey,
+            ElementData.class);
         if (data.containsKey(elementDataKey) == false) {
             if (pipeline.isConcurrent() == true) {
                 synchronized (this.lock) {
@@ -281,10 +295,14 @@ class FlowDataDefault implements FlowData {
     }
 
     @Override
-    public <T extends ElementData> T getOrAdd(TypedKey<T> key, FlowElement.DataFactory<T> dataFactory) {
-        T result = null;
+    public <T extends ElementData> T getOrAdd(
+        TypedKey<T> key,
+        FlowElement.DataFactory<T> dataFactory) {
+        T result;
 
-        TypedKey<Object> untypedKey = new TypedKeyDefault<>(key.getName(), Object.class);
+        TypedKey<Object> untypedKey = new TypedKeyDefault<>(
+            key.getName(),
+            Object.class);
         if (data.containsKey(key) == false) {
             if (pipeline.isConcurrent() == true) {
                 synchronized (this.lock) {
@@ -300,7 +318,7 @@ class FlowDataDefault implements FlowData {
             result = data.get(key);
         } catch (ClassCastException e) {
             String message = "Failed to cast data '" + key.getName() + "'. " +
-                "Expected data type is '" + result.getClass().getSimpleName() + "'";
+                "Expected data type is '" + key.getType().getSimpleName() + "'";
             logger.error(message);
             throw e;
         }
@@ -325,11 +343,17 @@ class FlowDataDefault implements FlowData {
     public Map<String, String> getWhere(PropertyMatcher matcher) {
         Map<String, String> map = new HashMap<>();
         for (FlowElement element : pipeline.getFlowElements()) {
-            for (ElementPropertyMetaData property : (List<ElementPropertyMetaData>)element.getProperties()) {
+            // We know the property has extends ElementPropertyMetaData as it
+            // is a constraint of the FlowElement interface, so don't check this
+            // cast
+            for (Object propertyObject : element.getProperties()) {
+                ElementPropertyMetaData property =
+                    (ElementPropertyMetaData)propertyObject;
                 if (property.isAvailable() && matcher.isMatch(property)) {
                     map.put(
                         element.getElementDataKey() + "." + property.getName(),
-                        get(element.getElementDataKey()).get(property.getName().toLowerCase()).toString());
+                        get(element.getElementDataKey())
+                            .get(property.getName().toLowerCase()).toString());
                 }
             }
         }

@@ -25,8 +25,9 @@ package fiftyone.pipeline.web.mvc.components;
 import fiftyone.pipeline.web.services.FlowDataProviderCore;
 import org.springframework.stereotype.Component;
 
-
-
+/**
+ * Spring framework component for the {@link FlowDataProviderCore}.
+ */
 @Component
 public interface FlowDataProvider extends FlowDataProviderCore {
 

@@ -27,7 +27,6 @@ import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
 import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.core.exceptions.*;
-import fiftyone.pipeline.javascriptbuilder.Constants;
 import fiftyone.pipeline.javascriptbuilder.data.JavaScriptBuilderData;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,7 +35,7 @@ import org.slf4j.Logger;
 
 //! [class]
 /**
- * Builder for the @see JavaScriptBuilderElement
+ * Builder for the {@link JavaScriptBuilderElement}
  */
 @ElementBuilder
 public class JavaScriptBuilderElementBuilder {
@@ -46,34 +45,44 @@ public class JavaScriptBuilderElementBuilder {
     protected String host = "";
     protected String endpoint = "";
     protected String protocol = "";
+    protected String contextRoot = "";
     protected String objName = "";
     private boolean enableCookies = false;
 
+    /**
+     * Construct a new instance.
+     * @param loggerFactory the {@link ILoggerFactory} to use when creating
+     *                      loggers for the element
+     */
     public JavaScriptBuilderElementBuilder(ILoggerFactory loggerFactory) {
         this.loggerFactory = loggerFactory;
-        this.logger = loggerFactory.getLogger(JavaScriptBuilderElementBuilder.class.getName());
+        this.logger = loggerFactory.getLogger(
+            JavaScriptBuilderElementBuilder.class.getName());
     }
     
     /**
      * Set the host that the client JavaScript should query for updates.
      * By default, the host from the request will be used.
-     * @param host the hostname.
-     * @return JavaScriptBuilderElementBuilder
+     * @param host the hostname
+     * @return this builder
      */
-    public JavaScriptBuilderElementBuilder setHost(String host)
-    {
+    public JavaScriptBuilderElementBuilder setHost(String host) {
         this.host = host;
         return this;
     }
 
     /**
      * Set the endpoint which will be queried on the host. e.g /api/v4/json
-     * @param endpoint The endpoint.
-     * @return JavaScriptBuilderElementBuilder
+     * @param endpoint the endpoint
+     * @return this builder
      */
-    public JavaScriptBuilderElementBuilder setEndpoint(String endpoint)
-    {
+    public JavaScriptBuilderElementBuilder setEndpoint(String endpoint) {
         this.endpoint = endpoint;
+        return this;
+    }
+
+    public JavaScriptBuilderElementBuilder setContextRoot(String contextRoot) {
+        this.contextRoot = contextRoot;
         return this;
     }
 
@@ -82,10 +91,9 @@ public class JavaScriptBuilderElementBuilder {
      * for updates. By default, the protocol from the request will be
      * used.
      * @param protocol The protocol to use (http / https)
-     * @return JavaScriptBuilderElementBuilder
+     * @return this builder
      */
-    public JavaScriptBuilderElementBuilder setProtocol(String protocol)
-    {
+    public JavaScriptBuilderElementBuilder setProtocol(String protocol) {
         if (protocol.equalsIgnoreCase("http") ||
             protocol.equalsIgnoreCase("https")) {
             this.protocol = protocol;
@@ -102,11 +110,10 @@ public class JavaScriptBuilderElementBuilder {
     /**
      * The default name of the object instantiated by the client
      * JavaScript.
-     * @param objName The object name to use.
-     * @return JavaScriptBuilderElementBuilder
+     * @param objName the object name to use
+     * @return this builder
      */
-    public JavaScriptBuilderElementBuilder setObjectName(String objName)
-    {
+    public JavaScriptBuilderElementBuilder setObjectName(String objName) {
         Pattern pattern = Pattern.compile("[a-zA-Z_$][0-9a-zA-Z_$]*");
         Matcher match = pattern.matcher(objName);
         if (match.matches())
@@ -115,7 +122,8 @@ public class JavaScriptBuilderElementBuilder {
         }
         else
         {
-            PipelineConfigurationException ex = new PipelineConfigurationException("JavaScriptBuilder" +
+            PipelineConfigurationException ex =
+                new PipelineConfigurationException("JavaScriptBuilder" +
                 " ObjectName is invalid. This must be a valid JavaScript" +
                 " type identifier.");
 
@@ -129,18 +137,18 @@ public class JavaScriptBuilderElementBuilder {
     /**
      * Set whether the client JavaScript stores results of client side
      * processing in cookies.
-     * @param enableCookies Should enable cookies?
-     * @return JavaScriptBuilderElementBuilder
+     * @param enableCookies should enable cookies?
+     * @return this builder
      */
-    public JavaScriptBuilderElementBuilder setEnableCookies(boolean enableCookies)
-    {
+    public JavaScriptBuilderElementBuilder setEnableCookies(
+        boolean enableCookies) {
         this.enableCookies = enableCookies;
         return this;
     }
 
     /**
-     * Build the @see JavaScriptBuilderElement
-     * @return JavaScriptBuilderElement
+     * Build the {@link JavaScriptBuilderElement}
+     * @return new {@link JavaScriptBuilderElement} instance
      */
     public JavaScriptBuilderElement build() {
         return new JavaScriptBuilderElement(
@@ -151,7 +159,8 @@ public class JavaScriptBuilderElementBuilder {
                     FlowData flowData,
                     FlowElement<JavaScriptBuilderData, ?> flowElement) {
                     return new JavaScriptBuilderDataInternal(
-                        loggerFactory.getLogger(JavaScriptBuilderDataInternal.class.getName()),
+                        loggerFactory.getLogger(
+                            JavaScriptBuilderDataInternal.class.getName()),
                         flowData);
                 }
             },
@@ -159,7 +168,8 @@ public class JavaScriptBuilderElementBuilder {
             objName,
             enableCookies,
             host,
-            protocol);
+            protocol,
+            contextRoot);
     } 
 }
 //! [class]

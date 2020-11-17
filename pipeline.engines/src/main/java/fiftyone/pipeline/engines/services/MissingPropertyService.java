@@ -39,7 +39,7 @@ public interface MissingPropertyService extends PipelineService {
      * found, then the behaviour is undefined.
      *
      * @param propertyName name of the {@link AspectPropertyMetaData}
-     * @param engine       where the property should be found
+     * @param engine where the property should be found
      * @return reason the property was not found
      */
     MissingPropertyResult getMissingPropertyReason(
@@ -51,7 +51,7 @@ public interface MissingPropertyService extends PipelineService {
      * found, then the behaviour is undefined.
      *
      * @param propertyName name of the {@link AspectPropertyMetaData}
-     * @param engine       where the property should be found
+     * @param engines where the property should be found
      * @return reason the property was not found
      */
     MissingPropertyResult getMissingPropertyReason(

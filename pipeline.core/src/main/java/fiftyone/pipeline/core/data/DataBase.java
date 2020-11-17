@@ -25,21 +25,37 @@ package fiftyone.pipeline.core.data;
 import org.slf4j.Logger;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import static fiftyone.pipeline.util.CheckArgument.checkNotNull;
 
+/**
+ * This implementation of {@link Data} stores data values as key/value pairs in
+ * a {@link Map} where the key is a string and the value can be any type.
+ */
 public abstract class DataBase implements Data {
 
     protected final Logger logger;
 
-    private Map<String, Object> data;
+    private final Map<String, Object> data;
 
+    /**
+     * Construct a new instance with the default case insensitive {@link Map} as
+     * the underlying storage.
+     * @param logger used for logging
+     */
     public DataBase(Logger logger) {
         this(logger, new TreeMap<>(String.CASE_INSENSITIVE_ORDER));
     }
 
+    /**
+     * Construct a new instance with a custom implementation of {@link Map} as
+     * the underlying storage.
+     * @param logger used for logging
+     * @param data the {@link Map} to use as the underlying storage
+     */
     public DataBase(Logger logger, Map<String, Object> data) {
         this.logger = logger;
         this.data = checkNotNull(data, "Data supplied must not be null");
@@ -76,7 +92,25 @@ public abstract class DataBase implements Data {
         }
     }
 
-    protected <T> T getAs(String key, Class<T> type, Class<?>... parameterisedTypes) {
+    /**
+     * Get the value from the underlying storage using the key provided. The
+     * value will be case to the requested type.
+     * @param key to get the value of
+     * @param type the class which the value must be cast to
+     * @param parameterisedTypes any perameterised types. For example,
+     *                           {@link List<String>} would use {@link List} as
+     *                           the type, and {@link String} as the only
+     *                           parameterised type
+     *
+     * @param <T> type which is returned (the same as the 'type' parameter)
+     * @return value for the key provided, or null if the key does not exist
+     * @throws ClassCastException if the key was found, but the value could not
+     * be cast to the required type
+     */
+    protected <T> T getAs(
+        String key,
+        Class<T> type,
+        Class<?>... parameterisedTypes) throws ClassCastException {
         checkNotNull(key, "Supplied key must not be null");
         logger.debug("Data '" + getClass().getSimpleName() + "'-'" +
             hashCode() + "' property value requested for key '" +
@@ -89,7 +123,10 @@ public abstract class DataBase implements Data {
     }
 
     /**
-     * The string representation of the specified object.
+     * Get the string representation of the specified object, truncated to 50
+     * characters
+     * @param value to get the string of
+     * @return value as string truncated to 50 characters
      */
     private String asTruncatedString(Object value) {
         String str = value == null ? "NULL" : value.toString();

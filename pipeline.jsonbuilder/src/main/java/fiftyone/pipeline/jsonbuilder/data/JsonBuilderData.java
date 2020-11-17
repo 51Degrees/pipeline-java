@@ -23,7 +23,18 @@
 package fiftyone.pipeline.jsonbuilder.data;
 
 import fiftyone.pipeline.core.data.ElementData;
+import fiftyone.pipeline.core.data.FlowData;
+import fiftyone.pipeline.jsonbuilder.flowelements.JsonBuilderElement;
 
+/**
+ * Data containing the result of a {@link JsonBuilderElement}s processing.
+ */
 public interface JsonBuilderData extends ElementData {
+
+    /**
+     * The JSON string containing key value pairs of the properties in the
+     * {@link FlowData}.
+     * @return JSON string
+     */
     String getJson();
 }

@@ -22,11 +22,10 @@
 
 package fiftyone.pipeline.web.services;
 
-import fiftyone.pipeline.core.data.ElementPropertyMetaData;
 import fiftyone.pipeline.core.data.EvidenceKeyFilter;
 import fiftyone.pipeline.core.data.EvidenceKeyFilterWhitelist;
 import fiftyone.pipeline.core.data.FlowData;
-import fiftyone.pipeline.core.data.types.JavaScript;
+import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.javascriptbuilder.flowelements.*;
@@ -35,33 +34,95 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static fiftyone.pipeline.core.Constants.EVIDENCE_HTTPHEADER_PREFIX;
 import static fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR;
 import fiftyone.pipeline.javascriptbuilder.data.JavaScriptBuilderData;
+import fiftyone.pipeline.jsonbuilder.data.JsonBuilderData;
+import fiftyone.pipeline.jsonbuilder.flowelements.JsonBuilderElement;
+
 import static fiftyone.pipeline.util.StringManipulation.stringJoin;
 
+/**
+ * Class that provides functionality for the 'Client side overrides' feature.
+ * Client side overrides allow JavaScript running on the client device to
+ * provide additional evidence in the form of cookies or query string parameters
+ * to the pipeline on subsequent requests. This enables more detailed
+ * information to be supplied to the application. (e.g. iPhone model for device
+ * detection).
+ */
 public interface ClientsidePropertyServiceCore {
 
+    /**
+     * Add the JavaScript from the {@link FlowData} object to the
+     * {@link HttpServletResponse}
+     * @param request the {@link HttpServletRequest} containing the
+     * {@link FlowData}
+     * @param response the {@link HttpServletResponse} to add the JavaScript to
+     * @throws IOException
+     */
     void serveJavascript(
         HttpServletRequest request,
         HttpServletResponse response) throws IOException;
 
+    /**
+     * Add the JSON from the {@link FlowData} object to the
+     * {@link HttpServletResponse}
+     * @param request the {@link HttpServletRequest} containing the
+     * {@link FlowData}
+     * @param response the {@link HttpServletResponse} to add the JSON to
+     * @throws IOException
+     */
+    void serveJson(
+        HttpServletRequest request,
+        HttpServletResponse response) throws IOException;
 
-        class Default implements ClientsidePropertyServiceCore {
+    /**
+     * Default implementation of the {@link ClientsidePropertyServiceCore}
+     * interface.
+     */
+    class Default implements ClientsidePropertyServiceCore {
+
+        private enum ContentTypes {
+            JavaScript,
+            Json
+        }
+
+        /**
+         * Character used by profile override logic to separate profile IDs.
+         */
         protected static final char PROFILE_OVERRIDES_SPLITTER = '|';
 
-        private FlowDataProviderCore flowDataProviderCore;
+        /**
+         * Provider to get the {@link FlowData} from.
+         */
+        private final FlowDataProviderCore flowDataProviderCore;
 
+        /**
+         * The Pipeline in the server instance.
+         */
         protected Pipeline pipeline;
 
+        /**
+         * A list of all the HTTP headers that are requested evidence for
+         * elements that populate JavaScript properties.
+         */
         private List<String> headersAffectingJavaScript;
 
-        private List<String> cacheControl = Arrays.asList(
+        /**
+         * The cache control values that will be set for the JavaScript.
+         */
+        private final List<String> cacheControl = Collections.singletonList(
             "max-age=0");
 
+        /**
+         * Create a new instance.
+         * @param flowDataProviderCore the provider to the {@link FlowData} for
+         *                             a request from
+         * @param pipeline the Pipeline in the server instance
+         */
         public Default(
             FlowDataProviderCore flowDataProviderCore,
             Pipeline pipeline) {
@@ -72,22 +133,15 @@ public interface ClientsidePropertyServiceCore {
             }
         }
 
+        /**
+         * Initialise the service.
+         */
         protected void init() {
             headersAffectingJavaScript = new ArrayList<>();
-            // Get evidence filters for all elements that have
-            // JavaScript properties.
+            // Get evidence filters for all elements.
             List<EvidenceKeyFilter> filters = new ArrayList<>();
             for (FlowElement element : pipeline.getFlowElements()) {
-                boolean hasJavaScript = false;
-                for (ElementPropertyMetaData property : (List<ElementPropertyMetaData>) element.getProperties()) {
-                    if (property.getType().equals(JavaScript.class)) {
-                        hasJavaScript = true;
-                        break;
-                    }
-                }
-                if (hasJavaScript) {
-                    filters.add(element.getEvidenceKeyFilter());
-                }
+                filters.add(element.getEvidenceKeyFilter());
             }
 
             for (EvidenceKeyFilter filter : filters) {
@@ -110,6 +164,20 @@ public interface ClientsidePropertyServiceCore {
         public void serveJavascript(
             HttpServletRequest request,
             HttpServletResponse response) throws IOException {
+            serveContent(request, response, ContentTypes.JavaScript);
+        }
+
+        @Override
+        public void serveJson(
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+            serveContent(request, response, ContentTypes.Json);
+        }
+
+        public void serveContent(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            ContentTypes contentType) throws IOException {
             // Get the hash code.
             FlowData flowData = flowDataProviderCore.getFlowData(request);
             // TODO: Should this use a Guid version of the hash code to
@@ -122,19 +190,67 @@ public interface ClientsidePropertyServiceCore {
                 // The response hasn't changed so respond with a 304.
                 response.setStatus(304);
             } else {
-                JavaScriptBuilderElement builder = flowData.getPipeline().getElement(JavaScriptBuilderElement.class);
-                JavaScriptBuilderData builderData = flowData.getFromElement(builder);
+                // Otherwise, return the requested content to the client.
+                String content = null;
+                switch (contentType) {
+                    case JavaScript:
+                        JavaScriptBuilderElement jsElement = flowData.getPipeline().getElement(JavaScriptBuilderElement.class);
+                        if (jsElement == null) {
+                            throw new PipelineConfigurationException(
+                                "Client-side JavaScript has been requested from " +
+                                    "the Pipeline. However, the JavaScriptBuilderElement " +
+                                    "is not present. To resolve this error, " +
+                                    "either disable client-side evidence or ensure " +
+                                    "the JavaScriptBuilderElement is added to " +
+                                    "your Pipeline.");
+                        }
+                        JavaScriptBuilderData jsData = flowData.getFromElement(jsElement);
+                        content = jsData == null ? null : jsData.getJavaScript();
+                        break;
+                    case Json:
+                        JsonBuilderElement jsonElement = flowData.getPipeline().getElement(JsonBuilderElement.class);
+                        if (jsonElement == null) {
+                            throw new PipelineConfigurationException(
+                                "JSON data has been requested from the Pipeline. " +
+                                    "However, the JsonBuilderElement is not " +
+                                    "present. To resolve this error, either " +
+                                    "disable client-side evidence or ensure " +
+                                    "the JsonBuilderElement is added to your " +
+                                    "Pipeline."
+                            );
+                        }
+                        JsonBuilderData jsonData = flowData.getFromElement(jsonElement);
+                        content = jsonData == null ? null : jsonData.getJson();
+                        break;
+                    default:
+                        break;
+                }
+                response.getWriter().write(content);
 
-                // Otherwise, return the minified script to the client.
-                response.getWriter().write(builderData.getJavaScript());
-
-                setHeaders(response, hash, builderData.getJavaScript().length());
+                setHeaders(
+                    response,
+                    hash,
+                    content == null ? 0 : content.length(),
+                    contentType == ContentTypes.JavaScript ? "x-javascript" : "json");
             }
 
         }
 
-        private void setHeaders(HttpServletResponse response, int hash, int contentLength) {
-            response.setContentType("application/x-javascript");
+        /**
+         * Set various HTTP headers on the JavaScript response.
+         * @param response the {@link HttpServletResponse} to add the response
+         *                 headers to
+         * @param hash the hash to use for the ETag
+         * @param contentLength the length of the returned content. This is used
+         *                      for the 'Content-Length' header
+         * @param contentType the type of content
+         */
+        private void setHeaders(
+            HttpServletResponse response,
+            int hash,
+            int contentLength,
+            String contentType) {
+            response.setContentType("application/" + contentType);
             response.setContentLength(contentLength);
             response.setStatus(200);
             response.setHeader("Cache-Control", stringJoin(cacheControl, ","));

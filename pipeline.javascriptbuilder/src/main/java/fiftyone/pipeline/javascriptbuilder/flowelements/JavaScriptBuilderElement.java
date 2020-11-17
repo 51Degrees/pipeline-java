@@ -45,14 +45,25 @@ import org.slf4j.Logger;
 
 import java.util.*;
 
+import static fiftyone.pipeline.core.Constants.EVIDENCE_QUERY_PREFIX;
+import static fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR;
+import static fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_OBJECT_NAME;
+
 //! [class]
-public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderData, ElementPropertyMetaData>{
+
+/**
+ * JavaScript Builder Element generates a JavaScript include to be run on the
+ * client device.
+ */
+public class JavaScriptBuilderElement
+    extends FlowElementBase<JavaScriptBuilderData, ElementPropertyMetaData> {
 
     protected String host;
     protected String endpoint;
     protected String protocol;
-    protected String objName;
-    protected boolean enableCookies;
+    protected String contextRoot;
+    protected final String objName;
+    protected final boolean enableCookies;
     
     private boolean lastRequestWasError;
     private final Mustache mustache;
@@ -66,7 +77,7 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
      *                 e.g /api/v4/json
      * @param objName The default name of the object instantiated by the client
      *                JavaScript.
-     * @param enableCookes Set whether the client JavaScript stored results of 
+     * @param enableCookies Set whether the client JavaScript stored results of
      * client side processing in cookies.
      * @param host The host that the client JavaScript should query for updates.
      * If null or blank then the host from the request will be used
@@ -79,9 +90,41 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
             ElementDataFactory<JavaScriptBuilderData> elementDataFactory,
             String endpoint,
             String objName,
-            boolean enableCookes,
+            boolean enableCookies,
             String host,
             String protocol) {
+        this(logger, elementDataFactory, endpoint, objName, enableCookies, host, protocol, null);        
+    }
+    //! [constructor]
+    
+    //! [constructor]
+    /**
+     * Default constructor.
+     * @param logger The logger.
+     * @param elementDataFactory The element data factory.
+     * @param endpoint Set the endpoint which will be queried on the host.
+     *                 e.g /api/v4/json
+     * @param objName The default name of the object instantiated by the client
+     *                JavaScript.
+     * @param enableCookies Set whether the client JavaScript stored results of
+     * client side processing in cookies.
+     * @param host The host that the client JavaScript should query for updates.
+     * If null or blank then the host from the request will be used
+     * @param protocol The protocol (HTTP or HTTPS) that the client JavaScript
+     *                 will use when querying for updates. If null or blank
+     *                 then the protocol from the request will be used
+     * @param contextRoot The <context-root> setting from the web.xml.
+     *                 This is needed when creating the callback URL.
+     */
+    public JavaScriptBuilderElement(
+            Logger logger,
+            ElementDataFactory<JavaScriptBuilderData> elementDataFactory,
+            String endpoint,
+            String objName,
+            boolean enableCookies,
+            String host,
+            String protocol,
+            String contextRoot) {
         super(logger, elementDataFactory);
         
         MustacheFactory mf = new DefaultMustacheFactory();
@@ -93,10 +136,11 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
         this.endpoint = endpoint;
         this.protocol = protocol;
         this.objName = objName.isEmpty() ? "fod" : objName;
-        enableCookies = enableCookes;
+        this.enableCookies = enableCookies;
+        this.contextRoot = contextRoot;
     }
     //! [constructor]
-    
+
     @Override
     protected void processInternal(FlowData data) throws Exception {
         String reqHost = this.host;
@@ -106,18 +150,33 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
         // Try and get the request host name so it can be used to request
         // the Json refresh in the JavaScript code.
         if (reqHost == null || reqHost.isEmpty()) {
-            TryGetResult<String> hostEvidence = data.tryGetEvidence(Constants.EVIDENCE_HOST_KEY, String.class);
+            TryGetResult<String> hostEvidence = data.tryGetEvidence(
+                Constants.EVIDENCE_HOST_KEY,
+                String.class);
             if (hostEvidence.hasValue()) {
-                host = hostEvidence.getValue();
+                reqHost = hostEvidence.getValue();
+            }
+        }
+        
+        // Try and get the web server context root evidence so it can be 
+        // used to contruct the correct path for the Json refresh.
+        if(this.contextRoot == null || this.contextRoot.isEmpty()) {
+            TryGetResult<String> contextRoot = data.tryGetEvidence(
+                fiftyone.pipeline.core.Constants.EVIDENCE_WEB_CONTEXT_ROOT,
+                String.class);
+            if(contextRoot.hasValue()) {
+                this.contextRoot = contextRoot.getValue();
             }
         }
 
         // Try and get the request protocol so it can be used to request
         // the JSON refresh in the JavaScript code.
         if (reqProtocol == null || reqProtocol.isEmpty()) {
-            TryGetResult<String> protocolEvidence = data.tryGetEvidence(Constants.EVIDENCE_PROTOCOL, String.class);
+            TryGetResult<String> protocolEvidence = data.tryGetEvidence(
+                fiftyone.pipeline.core.Constants.EVIDENCE_PROTOCOL,
+                String.class);
             if (protocolEvidence.hasValue()) {
-                protocol = protocolEvidence.getValue();
+                reqProtocol = protocolEvidence.getValue();
             }
         }
 
@@ -129,7 +188,7 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
         // If device detection is enabled then try and get whether the
         // requesting browser supports promises. If not then default to false.
         try {
-            AspectPropertyValue<String> supportsPromisesValue =
+            AspectPropertyValue supportsPromisesValue =
                 data.getAs("Promise", AspectPropertyValue.class);
             supportsPromises = supportsPromisesValue.hasValue() &&
                 supportsPromisesValue.getValue() == "Full";
@@ -156,8 +215,10 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
             .asKeyMap();
         
         for(Map.Entry<String, Object> entry : queryEvidence.entrySet()){
-            if(entry.getKey().startsWith(fiftyone.pipeline.core.Constants.EVIDENCE_QUERY_PREFIX)){
-                parameters.add(entry.getKey().substring(entry.getKey().indexOf(fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR) + 1) + "=" + entry.getValue());
+            if(entry.getKey().startsWith(EVIDENCE_QUERY_PREFIX)){
+                parameters.add(entry.getKey().substring(
+                    entry.getKey().indexOf(EVIDENCE_SEPERATOR) + 1) +
+                    "=" + entry.getValue());
             }
         }
 
@@ -175,23 +236,32 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
         if(reqProtocol != null && reqProtocol.isEmpty() == false &&
             reqHost != null && reqHost.isEmpty() == false &&
             endpoint != null && endpoint.isEmpty() == false) {
-            boolean endpointHasSlash = endpoint.charAt(0) == '/';
-            boolean hostHasSlash = reqHost.charAt(reqHost.length() - 1) == '/';
-            // if there is no slash between host and endpoint then add one.
-            if (endpointHasSlash == false && hostHasSlash == false) {
+            boolean contextRootPopulated = contextRoot != null && 
+                contextRoot.isEmpty() == false && contextRoot != "/";
+
+            // Make sure that each part of the URL except host starts with a '/'
+            // and each part except endpoint does NOT end with one. 
+            if (endpoint.charAt(0) != '/') {
                 endpoint = "/" + endpoint;
             }
-            // if there are two slashes between host and endpoint then remove one.
-            else if (endpointHasSlash == true && hostHasSlash == true) {
-                endpoint = endpoint.substring(1);
+            if (contextRootPopulated && contextRoot.charAt(0) != '/') {
+                contextRoot = "/" + contextRoot;
             }
-            url = reqProtocol + "://" + reqHost + endpoint +
-                (queryParams.isEmpty() ? "" : "?" + queryParams);
+            if (reqHost.charAt(reqHost.length() - 1) == '/') {
+                reqHost = reqHost.substring(0, reqHost.length() - 1);
+            }
+            if (contextRootPopulated && contextRoot.charAt(contextRoot.length() - 1) == '/') {
+                contextRoot = contextRoot.substring(0, contextRoot.length() - 1);
+            }
 
+            url = reqProtocol + "://" + reqHost + 
+                (contextRootPopulated ? contextRoot : "") + 
+                endpoint +
+                (queryParams.isEmpty() ? "" : "?" + queryParams);
         }
 
         // With the gathered resources, build a new JavaScriptResource.
-        BuildJavaScript(data, jsonObject, supportsPromises, url);
+        buildJavaScript(data, jsonObject, supportsPromises, url);
     }
 
     @Override
@@ -203,15 +273,16 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
     public EvidenceKeyFilter getEvidenceKeyFilter() {
         return new EvidenceKeyFilterWhitelist(Arrays.asList(
                 Constants.EVIDENCE_HOST_KEY,
-                Constants.EVIDENCE_PROTOCOL,
-                Constants.EVIDENCE_OBJECT_NAME),
+                fiftyone.pipeline.core.Constants.EVIDENCE_PROTOCOL,
+                EVIDENCE_OBJECT_NAME,
+                fiftyone.pipeline.core.Constants.EVIDENCE_WEB_CONTEXT_ROOT),
             String.CASE_INSENSITIVE_ORDER);
     }
 
     @Override
     public List<ElementPropertyMetaData> getProperties() {
-        return Arrays.asList(
-            (ElementPropertyMetaData)new ElementPropertyMetaDataDefault(
+        return Collections.singletonList(
+            (ElementPropertyMetaData) new ElementPropertyMetaDataDefault(
                 "javascript",
                 this,
                 "javascript",
@@ -229,12 +300,21 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
         // Nothing to clean up here.
     }
 
-    private void BuildJavaScript(FlowData data, String jsonObject, boolean supportsPromises, String url) {
-        JavaScriptBuilderDataInternal elementData = (JavaScriptBuilderDataInternal)data.getOrAdd(getElementDataKey(),getDataFactory());
+    private void buildJavaScript(
+        FlowData data,
+        String jsonObject,
+        boolean supportsPromises,
+        String url) {
+        JavaScriptBuilderDataInternal elementData =
+            (JavaScriptBuilderDataInternal)data.getOrAdd(
+                getElementDataKey(),
+                getDataFactory());
 
         String objectName;
         // Try and get the requested object name from evidence.
-        TryGetResult<String> res = data.tryGetEvidence(Constants.EVIDENCE_OBJECT_NAME, String.class );
+        TryGetResult<String> res = data.tryGetEvidence(
+            EVIDENCE_OBJECT_NAME,
+            String.class );
         if (res.hasValue() == false ||
             res.getValue().isEmpty()) {
             objectName = objName;
@@ -243,14 +323,20 @@ public class JavaScriptBuilderElement extends FlowElementBase<JavaScriptBuilderD
         }
 
         boolean updateEnabled = url != null && url.isEmpty() == false;
-        
+
+        // This check won't be 100% fool-proof but it only needs to be
+        // reasonably accurate and not take too long.
+        boolean hasDelayedProperties = jsonObject != null &&
+            jsonObject.contains("delayexecution");
+
         JavaScriptResource javaScriptObj = new JavaScriptResource(
             objectName,
             jsonObject,
             supportsPromises,
             url,
             enableCookies,    
-            updateEnabled);
+            updateEnabled,
+            hasDelayedProperties);
       
         StringWriter stringWriter = new StringWriter();
         mustache.execute(stringWriter, javaScriptObj.asMap());

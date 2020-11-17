@@ -22,11 +22,24 @@
 
 package fiftyone.pipeline.core.data;
 
+import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 
+/**
+ * Represents property values that have be determined by a specific
+ * {@link FlowElement} based on the supplied evidence.
+ */
 public interface ElementData extends Data {
 
-    Pipeline getPipline();
+    /**
+     * Get the {@link Pipeline} instance which this instance is associated with.
+     * @return pipeline instance
+     */
+    Pipeline getPipeline();
 
-    void setPipline(Pipeline pipeline);
+    /**
+     * Set the {@link Pipeline} instance which this instance is associated with.
+     * @param pipeline pipeline instance
+     */
+    void setPipeline(Pipeline pipeline);
 }

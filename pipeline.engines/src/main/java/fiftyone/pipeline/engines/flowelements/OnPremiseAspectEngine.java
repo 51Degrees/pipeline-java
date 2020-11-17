@@ -22,12 +22,20 @@
 
 package fiftyone.pipeline.engines.flowelements;
 
+import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.engines.data.AspectData;
 import fiftyone.pipeline.engines.data.AspectEngineDataFile;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 
 import java.util.List;
 
+/**
+ * Aspect engine interface which processes data internally using a data file and
+ * populates the results.
+ * @param <TData> the type of aspect data that the flow element will write to
+ * @param <TProperty> the type of meta data that the flow element will supply
+ *                    about the properties it populates.
+ */
 public interface OnPremiseAspectEngine<
     TData extends AspectData,
     TProperty extends AspectPropertyMetaData>
@@ -42,17 +50,16 @@ public interface OnPremiseAspectEngine<
 
     /**
      * Causes the engine to reload data from the file at
-     * AspectEngineDataFile.getDataFilePath() for the
-     * data file matching the given identifier.
-     * Where the engine is built from a byte[], the overload with the
-     * byte[] parameter should be called instead.
-     * This method is thread-safe so parallel calls to 'Process' will
+     * {@link AspectEngineDataFile#getDataFilePath()} for the data file matching
+     * the given identifier. Where the engine is built from a byte[], the
+     * overload with the byte[] parameter should be called instead. This method
+     * is thread-safe so parallel calls to {@link #process(FlowData)} will
      * resolve as normal.
-     * @param dataFileIdentifier The identifier of the data file to update.
+     * @param dataFileIdentifier the identifier of the data file to update.
      *                           Must match the value in
-     *                           AspectEngineDataFile.getIdentifier(). If the
-     *                           engine only has a single data file, this
-     *                           parameter is ignored.
+     *                           {@link AspectEngineDataFile#getIdentifier()}.
+     *                           If the engine only has a single data file, this
+     *                           parameter is ignored
      */
     void refreshData(String dataFileIdentifier);
 
@@ -62,42 +69,42 @@ public interface OnPremiseAspectEngine<
      * also update the data file with the new data.
      * This method is thread-safe so parallel calls to 'Process' will
      * resolve as normal.
-     * <param name="dataFileIdentifier">
-     * @param dataFileIdentifier The identifier of the data file to update. Must
+     * @param dataFileIdentifier the identifier of the data file to update. Must
      *                           match the value in
-     *                           IAspectEngineDataFile.getIdentifier(). If the
-     *                           engine only has a single data file, this
-     *                           parameter is ignored.
-     * @param data  An in-memory representation of the new data file contents.
+     *                           {@link AspectEngineDataFile#getIdentifier()}.
+     *                           If the engine only has a single data file, this
+     *                           parameter is ignored
+     * @param data an in-memory representation of the new data file contents
      */
     void refreshData(String dataFileIdentifier, byte[] data);
 
     /**
      * The complete file path to the directory that is used by the
      * engine to store temporary copies of any data files that it uses.
+     * @return temporary data directory
      */
     String getTempDataDirPath();
 
     /**
      * Get the details of a specific data file used by this engine.
-     * @param dataFileIdentifier  The identifier of the data file to get meta
+     * @param dataFileIdentifier  the identifier of the data file to get meta
      *                            data for. This parameter is ignored if the
-     *                            engine only has one data file.
-     * @return The meta data associated with the specified data file.
-     * Returns null if the engine has no associated data files.
+     *                            engine only has one data file
+     * @return the meta data associated with the specified data file, or null if
+     * the engine has no associated data files
      */
     AspectEngineDataFile getDataFileMetaData(String dataFileIdentifier);
 
     /**
      * Get the details the default data file used by this engine.
-     * @return The meta data associated with the specified data file.
-     * Returns null if the engine has no associated data files.
+     * @return the meta data associated with the specified data file, or null if
+     * the engine has no associated data files
      */
     AspectEngineDataFile getDataFileMetaData();
 
     /**
      * Add the specified data file to the engine.
-     * @param dataFile The data file to add.
+     * @param dataFile the data file to add
      */
     void addDataFile(AspectEngineDataFile dataFile);
 }

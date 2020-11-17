@@ -46,8 +46,8 @@ public class JsonBuilderElementBuilder {
     }
     
     /**
-     * Build the @see JsonBuilderElement
-     * @return 
+     * Build the {@link JsonBuilderElement}.
+     * @return new {@link JsonBuilderElement}
      */
     public JsonBuilderElement build() {
         return new JsonBuilderElement(
@@ -58,7 +58,8 @@ public class JsonBuilderElementBuilder {
                     FlowData flowData,
                     FlowElement<JsonBuilderData, ?> flowElement) {
                     return new JsonBuilderDataInternal(
-                        loggerFactory.getLogger(JsonBuilderDataInternal.class.getName()),
+                        loggerFactory.getLogger(
+                            JsonBuilderDataInternal.class.getName()),
                         flowData);
                 }
             });

@@ -30,31 +30,49 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Data created by a FlowElement within the FlowData. Properties can be
- * fetched using their name as a key.
- *
- * @see FlowElement
+ * Base implementation of {@link ElementData}.
+ * Represents property values that have be determined by a specific
+ * {@link FlowElement} based on the supplied evidence.
  */
 public abstract class ElementDataBase extends DataBase implements ElementData {
 
     private Pipeline pipeline;
 
+    /**
+     * Constructs a new instance with a non-thread-safe, case-insensitive
+     * {@link Map} as the underlying storage.
+     * @param logger used for logging
+     * @param flowData the {@link FlowData} instance this element data will be
+     *                 associated with
+     */
     public ElementDataBase(Logger logger, FlowData flowData) {
         this(logger, flowData, new TreeMap<>(String.CASE_INSENSITIVE_ORDER));
     }
 
-    public ElementDataBase(Logger logger, FlowData flowData, Map<String, Object> data) {
+    /**
+     * Constructs a new instance with a custom {@link Map} as the underlying
+     * storage.
+     * @param logger used for logging
+     * @param flowData the {@link FlowData} instance this element data will be
+     *                 associated with
+     * @param data the custom {@link Map} implementation to use as the
+     *             underlying storage
+     */
+    public ElementDataBase(
+        Logger logger,
+        FlowData flowData,
+        Map<String, Object> data) {
         super(logger, data);
         pipeline = flowData.getPipeline();
     }
 
     @Override
-    public Pipeline getPipline() {
+    public Pipeline getPipeline() {
         return pipeline;
     }
 
     @Override
-    public void setPipline(Pipeline pipeline) {
+    public void setPipeline(Pipeline pipeline) {
         this.pipeline = pipeline;
     }
 }

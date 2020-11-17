@@ -24,7 +24,13 @@ package fiftyone.pipeline.engines.flowelements;
 
 import org.slf4j.ILoggerFactory;
 
-public abstract class CloudPipelineBuilderBase<TBuilder extends CloudPipelineBuilderBase<TBuilder>>
+/**
+ * Base class for pipeline builders that will produce a pipeline with specific
+ * flow elements.
+ * @param <TBuilder> the builder type
+ */
+public abstract class CloudPipelineBuilderBase<
+    TBuilder extends CloudPipelineBuilderBase<TBuilder>>
     extends PrePackagedPipelineBuilderBase<TBuilder> {
 
     protected String url = "";
@@ -39,12 +45,25 @@ public abstract class CloudPipelineBuilderBase<TBuilder extends CloudPipelineBui
 
     protected String licenseKey = "";
 
+    /**
+     * Construct a new instance.
+     * @param loggerFactory the {@link ILoggerFactory} used to create any
+     *                      loggers required by instances being built by the
+     *                      builder
+     */
     public CloudPipelineBuilderBase(ILoggerFactory loggerFactory) {
         super(loggerFactory);
     }
 
-    public TBuilder setEndPoint(String url)
-    {
+    /**
+     * Set the endpoint to use when calling the cloud service. This will also
+     * set the data, properties, and evidence keys endpoints using this as the
+     * base URL.
+     * @param url endpoint URL
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
+    public TBuilder setEndPoint(String url) {
         if (url.endsWith("/") == false) {
             url += '/';
         }
@@ -52,26 +71,58 @@ public abstract class CloudPipelineBuilderBase<TBuilder extends CloudPipelineBui
         return (TBuilder)this;
     }
 
+    /**
+     * Set the URL for the data endpoint to be called during processing.
+     * @param url data URL
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
     public TBuilder setDataEndpoint(String url) {
         this.dataEndpoint = url;
         return (TBuilder)this;
     }
 
+    /**
+     * Set the URL for the properties endpoint to be called when setting up the
+     * engine.
+     * @param propertiesEndpoint properties URL
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
     public TBuilder setPropertiesEndpoint(String propertiesEndpoint) {
         this.propertiesEndpoint = propertiesEndpoint;
         return (TBuilder)this;
     }
 
+    /**
+     * Set the URL for the evidence keys endpoint to be called when setting up
+     * the engine.
+     * @param evidenceKeysEndpoint evidence keys URL
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
     public TBuilder setEvidenceKeysEndpoint(String evidenceKeysEndpoint) {
         this.evidenceKeysEndpoint = evidenceKeysEndpoint;
         return (TBuilder)this;
     }
 
+    /**
+     * Set the resource key to be used when calling the endpoints.
+     * @param key resource key
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
     public TBuilder setResourceKey(String key) {
         this.resourceKey = key;
         return (TBuilder)this;
     }
 
+    /**
+     * Set the license key to be used when calling the endpoints.
+     * @param key license key
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
     public TBuilder setLicenseKey(String key) {
         this.licenseKey = key;
         return (TBuilder)this;

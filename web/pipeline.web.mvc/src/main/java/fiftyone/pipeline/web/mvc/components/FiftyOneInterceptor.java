@@ -37,36 +37,39 @@ import fiftyone.pipeline.web.mvc.services.PipelineResultService;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import java.io.File;
 
 import static fiftyone.pipeline.web.Constants.CORE_JS_NAME;
+import static fiftyone.pipeline.web.Constants.CORE_JSON_NAME;
 
+/**
+ * The 51Degrees middleware component.
+ * This carries out the processing on the device making the request using the
+ * Pipeline which has been constructed, and intercepts requests for the
+ * 51Degrees JavaScript.
+ */
 @Component
 public class FiftyOneInterceptor extends HandlerInterceptorAdapter {
     public Pipeline pipeline;
 
-    private PipelineResultService resultService;
+    private final PipelineResultService resultService;
 
-    private FlowDataProvider flowDataProvider;
+    private final FlowDataProvider flowDataProvider;
 
-    private ClientsidePropertyService clientsidePropertyService;
+    private final ClientsidePropertyService clientsidePropertyService;
 
-    private FiftyOneJSService fiftyOneJsService;
+    private final FiftyOneJSService fiftyOneJsService;
 
     @Autowired
     public FiftyOneInterceptor(
         FiftyOneInterceptorConfig config,
-        //String configFileName,
-        //Boolean clientsidePropertiesEnabled,
         PipelineResultService resultService,
         FlowDataProvider flowDataProvider,
         ClientsidePropertyService clientsidePropertyService,
@@ -94,8 +97,6 @@ public class FiftyOneInterceptor extends HandlerInterceptorAdapter {
             // Bind the configuration to a pipeline options instance
             PipelineOptions options = (PipelineOptions) unmarshaller.unmarshal(configFile);
             pipeline = StartupHelpers.buildFromConfiguration(builder, options, config.getClientsidePropertiesEnabled());
-        } catch (JAXBException e) {
-            throw new RuntimeException(e);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -107,30 +108,16 @@ public class FiftyOneInterceptor extends HandlerInterceptorAdapter {
 
     public static void enableClientsideProperties(ViewControllerRegistry viewControllerRegistry) {
         viewControllerRegistry.addViewController("/" + CORE_JS_NAME);
+        viewControllerRegistry.addViewController("/" + CORE_JSON_NAME);
     }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         resultService.process(request);
-        if (fiftyOneJsService.serveJS(request,  response) == false) {
+        if (fiftyOneJsService.serveJS(request,  response) == false &&
+                fiftyOneJsService.serveJson(request, response) == false) {
             return super.preHandle(request, response, handler);
         }
         return false;
     }
-
-    @Override
-    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
-        super.postHandle(request, response, handler, modelAndView);
-    }
-
-    @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
-        super.afterCompletion(request, response, handler, ex);
-    }
-
-    @Override
-    public void afterConcurrentHandlingStarted(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        super.afterConcurrentHandlingStarted(request, response, handler);
-    }
-
 }

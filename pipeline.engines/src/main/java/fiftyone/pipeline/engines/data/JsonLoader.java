@@ -30,6 +30,11 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * JSON implementation of IDataLoader. This deserialises the data from a JSON
+ * file to the type T.
+ * @param <T> type of object to load
+ */
 public class JsonLoader<T> implements DataLoader<T> {
 
     private T loadData(Reader reader, Class<T> type) throws IOException, IllegalAccessException, InstantiationException, InvocationTargetException {

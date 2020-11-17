@@ -44,7 +44,7 @@ public class SimpleClientSideElement extends FlowElementBase<StarSignData, Eleme
     }
 //! [constructor]
 
-    private static String[][] starSignData = {
+    private static final String[][] starSignData = {
         {"Aries","21/03","19/04"},
         {"Taurus","20/04","20/05"},
         {"Gemini","21/05","20/06"},
@@ -95,7 +95,7 @@ public class SimpleClientSideElement extends FlowElementBase<StarSignData, Eleme
                 validDateOfBirth = true;
             }
             catch (Exception e) {
-
+                logger.warn("Exception getting the date of birth", e);
             }
         }
         if (validDateOfBirth) {
@@ -134,7 +134,8 @@ public class SimpleClientSideElement extends FlowElementBase<StarSignData, Eleme
     @Override
     public EvidenceKeyFilter getEvidenceKeyFilter() {
         // The only item of evidence needed is "date-of-birth".
-        return new EvidenceKeyFilterWhitelist(Arrays.asList("cookie.date-of-birth"),
+        return new EvidenceKeyFilterWhitelist(
+            Collections.singletonList("cookie.date-of-birth"),
             String.CASE_INSENSITIVE_ORDER);
     }
 
@@ -149,7 +150,7 @@ public class SimpleClientSideElement extends FlowElementBase<StarSignData, Eleme
                 "starsign",
                 String.class,
                 true),
-            (ElementPropertyMetaData)new ElementPropertyMetaDataDefault(
+            new ElementPropertyMetaDataDefault(
                 "dobjavascript",
                 this,
                 "javascript",

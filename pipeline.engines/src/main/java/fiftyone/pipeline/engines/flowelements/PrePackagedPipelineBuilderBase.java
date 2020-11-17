@@ -24,7 +24,13 @@ package fiftyone.pipeline.engines.flowelements;
 
 import fiftyone.pipeline.core.flowelements.PipelineBuilderBase;
 import org.slf4j.ILoggerFactory;
+import org.slf4j.LoggerFactory;
 
+/**
+ * Base class for pipeline builders that will produce a pipeline
+ * with specific flow elements.
+ * @param <TBuilder> the builder type
+ */
 public abstract class PrePackagedPipelineBuilderBase
     <TBuilder extends PrePackagedPipelineBuilderBase<TBuilder>>
     extends PipelineBuilderBase<TBuilder> {
@@ -37,30 +43,65 @@ public abstract class PrePackagedPipelineBuilderBase
 
     protected int resultsCacheSize = 1000;
 
+    /**
+     * Construct a new instance using the default {@link ILoggerFactory}
+     * implementation returned by the {@link LoggerFactory#getILoggerFactory()}
+     * method.
+     */
     public PrePackagedPipelineBuilderBase() {
         super();
     }
 
+    /**
+     * Construct a new instance.
+     * @param loggerFactory the {@link ILoggerFactory} used to create any
+     *                      loggers required by instances being built by the
+     *                      builder
+     */
     public PrePackagedPipelineBuilderBase(ILoggerFactory loggerFactory) {
         super(loggerFactory);
     }
 
+    /**
+     * Enable lazy loading of results. Uses a default timeout of 5 seconds.
+     * @return this builder instance
+     */
+    @SuppressWarnings("unchecked")
     public TBuilder useLazyLoading() {
         lazyLoading = true;
         return (TBuilder)this;
     }
 
+    /**
+     * Enable lazy loading of results.
+     * @param timeoutMillis the timeout to use when attempting to access
+     *                      lazy-loaded values. Default is 5 seconds
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
     public TBuilder useLazyLoading(long timeoutMillis) {
         lazyLoading = true;
         this.lazyLoadingTimeoutMillis = timeoutMillis;
         return (TBuilder)this;
     }
 
+    /**
+     * Enable caching of results. Uses a default cache size of 1000.
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
     public TBuilder useResultsCache() {
         resultsCache = true;
         return (TBuilder) this;
     }
 
+    /**
+     * Enable caching of results.
+     * @param size the maximum number of results to hold in the device detection
+     *             cache. Default is 1000
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
     public TBuilder useResultsCache(int size) {
         resultsCache = true;
         resultsCacheSize = size;

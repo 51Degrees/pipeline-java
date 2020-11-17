@@ -22,21 +22,40 @@
 
 package fiftyone.pipeline.core.data;
 
+/**
+ * Return value of a 'try get' method.  This class contains an indicator as to
+ * whether a valid value was returned, and the value if the indicator is true.
+ * @param <T> the type of value contained in the result
+ */
 public class TryGetResult<T> {
 
     private T value = null;
 
     private boolean hasValue = false;
 
+    /**
+     * Get the value returned. The {@link #hasValue()} method should always be
+     * called before fetching the value.
+     * @return the returned value
+     */
     public T getValue() {
         return value;
     }
 
+    /**
+     * Set the value which is to be returned. This also sets {@link #hasValue()}
+     * to true.
+     * @param value the value to set
+     */
     public void setValue(T value) {
         this.value = value;
         this.hasValue = true;
     }
 
+    /**
+     * Returns true if a value has been set in this instance.
+     * @return true if there is a value
+     */
     public boolean hasValue() {
         return hasValue;
     }

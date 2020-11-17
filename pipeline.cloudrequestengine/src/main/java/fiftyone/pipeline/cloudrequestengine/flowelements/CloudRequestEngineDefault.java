@@ -51,6 +51,12 @@ import java.util.regex.Pattern;
 
 import static fiftyone.pipeline.util.StringManipulation.stringJoin;
 
+/**
+ * Engine that makes requests to the 51Degrees cloud service based on the
+ * details passed at creation and the evidence in the FlowData instance. The
+ * unprocessed JSON response is stored in the FlowData for other engines to make
+ * use of.
+ */
 public class CloudRequestEngineDefault
     extends AspectEngineBase<CloudRequestData, AspectPropertyMetaData>
     implements CloudRequestEngine {
@@ -154,8 +160,9 @@ public class CloudRequestEngineDefault
         return evidenceKeyFilter;
     }
 
-
-    public Map<String, AccessiblePropertyMetaData.ProductMetaData> getPublicProperties() {
+    @Override
+    public Map<String, AccessiblePropertyMetaData.ProductMetaData>
+    getPublicProperties() {
         return publicProperties;
     }
 
@@ -203,16 +210,35 @@ public class CloudRequestEngineDefault
     }
 
     private void getCloudProperties() {
-        String jsonResult = "";
+        int response;
+        String jsonResult;
 
         try {
             HttpURLConnection connection = httpClient.connect(new URL(propertiesEndpoint.trim()));
             jsonResult = httpClient.getResponseString(connection);
+            response = connection.getResponseCode();
         }
         catch (Exception ex) {
             throw new RuntimeException("Failed to retrieve available properties " +
                 "from cloud service at " + propertiesEndpoint + ".", ex);
         }
+        
+        if (response >= 400)
+        {
+            RuntimeException exception = new RuntimeException();
+            if (jsonResult.isEmpty() == false)
+            {
+                JSONObject jsonObj = new JSONObject(jsonResult);
+                for (Object o : jsonObj.getJSONArray("errors"))
+                {
+                    if(o instanceof String){
+                        exception.addSuppressed(new Exception(o.toString()));
+                    }
+                }
+            }
+            throw exception;
+        }
+
 
         if (jsonResult != null && jsonResult.isEmpty() == false) {
             JSONObject jsonObj = new JSONObject(jsonResult);
@@ -241,8 +267,8 @@ public class CloudRequestEngineDefault
         if (jsonResult != null && jsonResult.isEmpty() == false) {
             JSONArray jsonArray = new JSONArray(jsonResult);
             List<String> keys = new ArrayList<>();
-            for (Object item : jsonArray) {
-                keys.add(item.toString());
+            for (int i = 0; i < jsonArray.length(); i++) {
+                keys.add(jsonArray.get(i).toString());
             }
             evidenceKeyFilter = new EvidenceKeyFilterWhitelist(keys,
                 String.CASE_INSENSITIVE_ORDER);

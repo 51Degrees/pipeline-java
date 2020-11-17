@@ -33,20 +33,42 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public abstract class AspectEngineBuilderBase<TBuilder extends AspectEngineBuilderBase<TBuilder, TEngine>, TEngine extends AspectEngine> {
+/**
+ * Abstract base class that exposes the common options that all 51Degrees engine
+ * builders should make use of.
+ * @param <TBuilder> the specific builder type to use as the return type from
+ *                  the fluent builder methods
+ * @param <TEngine> the type of the engine that this builder will build
+ */
+public abstract class AspectEngineBuilderBase<
+    TBuilder extends AspectEngineBuilderBase<TBuilder, TEngine>,
+    TEngine extends AspectEngine> {
     protected final ILoggerFactory loggerFactory;
-    private List<String> properties = new ArrayList<>();
+    private final List<String> properties = new ArrayList<>();
     private CacheConfiguration cacheConfig = null;
     private LazyLoadingConfiguration lazyLoadingConfig = null;
 
+    /**
+     * Default constructor which uses the {@link ILoggerFactory} implementation
+     * returned by {@link LoggerFactory#getILoggerFactory()}.
+     */
     public AspectEngineBuilderBase() {
         this(LoggerFactory.getILoggerFactory());
     }
 
+    /**
+     * Construct a new instance using the {@link ILoggerFactory} supplied.
+     * @param loggerFactory the logger factory to use
+     */
     public AspectEngineBuilderBase(ILoggerFactory loggerFactory) {
         this.loggerFactory = loggerFactory;
     }
 
+    /**
+     * Ad a property to the list of properties if it does not already exist in
+     * the list.
+     * @param property to add
+     */
     private void tryAddProperty(String property) {
         if (properties.contains(property) == false) {
             properties.add(property);
@@ -65,6 +87,13 @@ public abstract class AspectEngineBuilderBase<TBuilder extends AspectEngineBuild
         return properties;
     }
 
+    /**
+     * Configure the properties that the engine will populate in the response.
+     * By default all properties will be populated.
+     * @param set The properties that we want the engine to populate
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
     public TBuilder setProperties(Set<AspectPropertyMetaData> set) {
         for (AspectPropertyMetaData property : set) {
             tryAddProperty(property.getName());
@@ -72,26 +101,60 @@ public abstract class AspectEngineBuilderBase<TBuilder extends AspectEngineBuild
         return (TBuilder) this;
     }
 
+    /**
+     * Add a property to the list of properties that the engine will populate in
+     * the response. By default all properties will be populated.
+     * @param s the property that we want the engine to populate
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
     public TBuilder setProperty(String s) {
         tryAddProperty(s);
         return (TBuilder) this;
     }
 
+    /**
+     * Add a property to the list of properties that the engine will populate in
+     * the response. By default all properties will be populated.
+     * @param aspectProperty the property that we want the engine to populate
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
     public TBuilder setProperty(AspectPropertyMetaData aspectProperty) {
         tryAddProperty(aspectProperty.getName());
         return (TBuilder) this;
     }
 
+    /**
+     * Configure lazy loading of results.
+     * @param configuration the configuration to use
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
     public TBuilder setLazyLoading(LazyLoadingConfiguration configuration) {
         this.lazyLoadingConfig = configuration;
         return (TBuilder)this;
     }
 
+    /**
+     * Configure the results cache that will be used by the Pipeline to cache
+     * results from this engine.
+     * @param cacheConfiguration the cache configuration to use
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
     public TBuilder setCache(CacheConfiguration cacheConfiguration) {
         this.cacheConfig = cacheConfiguration;
         return (TBuilder) this;
     }
 
+    /**
+     * Called by the {@link #buildEngine()} method to handle configuration of
+     * the engine after it is built. Can be overridden by derived classes to add
+     * additional configuration, but the base method should always be called.
+     * @param engine the engine to configure
+     * @throws Exception if an exception occurred which configuring the engine
+     */
     protected void configureEngine(TEngine engine) throws Exception {
         if (cacheConfig != null) {
             engine.setCache(new FlowCacheDefault(cacheConfig));
@@ -102,18 +165,18 @@ public abstract class AspectEngineBuilderBase<TBuilder extends AspectEngineBuild
     }
 
     /**
-     * Called by the buildEngine() method to handle anything that needs doing
-     * before the engine is built. By default, nothing needs to be done.
+     * Called by the {@link #buildEngine()} method to handle anything that needs
+     * doing before the engine is built. By default, nothing needs to be done.
      */
     protected void preCreateEngine() {
 
     }
 
     /**
-     * Called by the buildEngine() method to handle creation of
+     * Called by the {@link #buildEngine()} method to handle creation of
      * the engine instance.
-     * @param properties
-     * @return an AspectEngine
+     * @param properties the properties list to create the engine with
+     * @return an {@link AspectEngine}
      */
     protected abstract TEngine newEngine(List<String> properties);
 
@@ -121,7 +184,7 @@ public abstract class AspectEngineBuilderBase<TBuilder extends AspectEngineBuild
      * Build an engine using the configured options. Derived classes should call
      * this method when building an engine to ensure it is configured correctly
      * all down the class hierarchy.
-     * @return an AspectEngine
+     * @return an {@link AspectEngine}
      */
     protected TEngine buildEngine() throws Exception {
         preCreateEngine();
@@ -129,5 +192,4 @@ public abstract class AspectEngineBuilderBase<TBuilder extends AspectEngineBuild
         configureEngine(engine);
         return engine;
     }
-
 }

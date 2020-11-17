@@ -22,14 +22,37 @@
 
 package fiftyone.pipeline.engines.trackers;
 
+import fiftyone.pipeline.core.data.DataKey;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.engines.caching.DataKeyedCacheBase;
 import fiftyone.pipeline.engines.configuration.CacheConfiguration;
 
+/**
+ * The abstract base class for trackers.
+ * A tracker is a data structure that stores meta-data relating to a key derived
+ * from a given {@link FlowData} instance.
+ * The details of key creation and the specifics of the meta-data are
+ * determined by the tracker implementation.
+ * The key will always be a {@link FlowData} instance as defined
+ * by {@link DataKeyedCacheBase}.
+ * The meta-data can be any type and is specified using the generic type
+ * parameter {@link <T>}.
+ *
+ * As an example, a tracker could create a key using the source IP address from
+ * the {@link FlowData} evidence and use the associated meta-data to store a
+ * count of the number of times a given source IP has been seen.
+ * @param <T> the type of the meta-data object that the tracker stores with each
+ * key value.
+ */
 public abstract class TrackerBase<T>
     extends DataKeyedCacheBase<T>
     implements Tracker {
 
+    /**
+     * Construct a new instance
+     * @param config the cache configuration to use when building the cache that
+     *              is used internally by the tracker
+     */
     public TrackerBase(CacheConfiguration config) {
         super(config);
     }
@@ -52,7 +75,25 @@ public abstract class TrackerBase<T>
         return result;
     }
 
+    /**
+     * Create a tracker value instance.
+     * Called when a new key is added to the tracker.
+     * The {@link FlowData} that is being added to the tracker.
+     * @param data the {@link FlowData} that is being added to the tracker
+     * @return a new meta-data instance to be stored with the {@link DataKey}
+     * created from the flow data instance
+     */
     protected abstract T newValue(FlowData data);
 
+    /**
+     * Update the tracker value with relevant details.
+     * Called when a tracked item matches an instance already in the tracker.
+     * @param data the {@link FlowData} that has matched an existing entry in
+     *             the tracker
+     * @param value the meta-data instance that the tracker holds for the key
+     *              generated from the data
+     * @return true if the tracker's logic allows further processing of this
+     * flow data instance, false otherwise
+     */
     protected abstract boolean match(FlowData data, T value);
 }

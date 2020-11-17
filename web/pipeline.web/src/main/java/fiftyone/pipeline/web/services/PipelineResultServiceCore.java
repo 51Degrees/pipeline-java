@@ -29,16 +29,41 @@ import javax.servlet.http.HttpServletRequest;
 
 import static fiftyone.pipeline.web.Constants.HTTPCONTEXT_FLOWDATA;
 
+/**
+ * Service used to process web requests through the Pipeline. This handles
+ * populating the evidence and processing it. The results of the processing can
+ * be retrieved using the {@link FlowDataProviderCore} service.
+ */
 public interface PipelineResultServiceCore {
 
+    /**
+     * Populate the evidence from the request and process through the Pipeline.
+     * @param request the {@link HttpServletRequest} to process
+     */
     void process(HttpServletRequest request);
 
+    /**
+     * Default implementation of the {@link PipelineResultServiceCore} service.
+     */
     class Default implements PipelineResultServiceCore {
 
+        /**
+         * Service used to populate the evidence from an
+         * {@link HttpServletRequest}.
+         */
         private final WebRequestEvidenceServiceCore evidenceService;
 
+        /**
+         * Pipeline used to process the evidence.
+         */
         protected Pipeline pipeline;
 
+        /**
+         * Create a new instance.
+         * @param evidenceService the service used to populate the evidence from
+         *                        an {@link HttpServletRequest}
+         * @param pipeline the Pipeline used to process the evidence
+         */
         public Default(
             WebRequestEvidenceServiceCore evidenceService,
             Pipeline pipeline) {

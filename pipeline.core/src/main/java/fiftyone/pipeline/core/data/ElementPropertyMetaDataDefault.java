@@ -22,10 +22,14 @@
 
 package fiftyone.pipeline.core.data;
 
+import fiftyone.pipeline.core.data.types.JavaScript;
 import fiftyone.pipeline.core.flowelements.FlowElement;
 
 import java.util.List;
 
+/**
+ * Default implementation of the {@link ElementPropertyMetaData} interface.
+ */
 public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
 
     private final String name;
@@ -34,7 +38,17 @@ public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
     private final Class type;
     private final boolean available;
     private final List<ElementPropertyMetaData> itemProperties;
+    private final boolean delayExecution;
+    private final List<String> evidenceProperties;
 
+    /**
+     * Construct a new instance of {@link ElementPropertyMetaDataDefault}.
+     * @param name the name of the property
+     * @param element the element which the property belongs to
+     * @param category the category the property belongs to
+     * @param type the data type which values of the property have
+     * @param available true if the property is available
+     */
     public ElementPropertyMetaDataDefault(
         String name,
         FlowElement element,
@@ -47,9 +61,22 @@ public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
             category,
             type,
             available,
+            null,
+            false,
             null);
     }
 
+    /**
+     * Construct a new instance of {@link ElementPropertyMetaDataDefault}.
+     * @param name name of the property
+     * @param element the element which the property belongs to
+     * @param category the category which the property belongs to
+     * @param type the type of value returned by the property
+     * @param dataTiersWherePresent data tiers which contain this property
+     * @param available true if the property is available
+     * @param itemProperties list of sub-properties contained within the
+     *                       property
+     */
     public ElementPropertyMetaDataDefault(
         String name,
         FlowElement element,
@@ -57,12 +84,57 @@ public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
         Class type,
         boolean available,
         List<ElementPropertyMetaData> itemProperties) {
+        this(
+            name,
+            element,
+            category,
+            type,
+            available,
+            itemProperties,
+            false,
+            null);
+    }
+
+    /**
+     * Construct a new instance of {@link ElementPropertyMetaDataDefault}.
+     * @param name the name of the property
+     * @param element the element which the property belongs to
+     * @param category the category the property belongs to
+     * @param type the data type which values of the property have
+     * @param available true if the property is available
+     * @param itemProperties list of sub-properties contained within the
+     *                       property
+     * @param delayExecution only relevant if the type is {@link JavaScript}.
+     *                       Defaults to false. If set to true then the
+     *                       JavaScript in this property will not be executed
+     *                       automatically on the client device.
+     * @param evidenceProperties the names of any {@link JavaScript} properties
+     *                           that, when executed, will obtain additional
+     *                           evidence that can help in determining the value
+     *                           of this property. Note that these names should
+     *                           include any parts after the element data key.
+     *                           I.e. if the complete property name is
+     *                           'devices.profiles.screenwidthpixelsjavascript'
+     *                           then the/ name in this list must be
+     *                           'profiles.screenwidthpixelsjavascript'
+     */
+    public ElementPropertyMetaDataDefault(
+        String name,
+        FlowElement element,
+        String category,
+        Class type,
+        boolean available,
+        List<ElementPropertyMetaData> itemProperties,
+        boolean delayExecution,
+        List<String> evidenceProperties) {
         this.name = name;
         this.element = element;
         this.category = category;
         this.type = type;
         this.available = available;
         this.itemProperties = itemProperties;
+        this.delayExecution = delayExecution;
+        this.evidenceProperties = evidenceProperties;
     }
 
     @Override
@@ -93,5 +165,15 @@ public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
     @Override
     public List<ElementPropertyMetaData> getItemProperties() {
         return itemProperties;
+    }
+
+    @Override
+    public boolean getDelayExecution() {
+        return delayExecution;
+    }
+
+    @Override
+    public List<String> getEvidenceProperties() {
+        return evidenceProperties;
     }
 }

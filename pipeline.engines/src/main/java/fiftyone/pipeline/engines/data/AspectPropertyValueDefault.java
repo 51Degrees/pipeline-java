@@ -39,10 +39,18 @@ public class AspectPropertyValueDefault<T> implements AspectPropertyValue<T> {
     private T value;
     private String noValueMessage = "The instance does not have a set value.";
 
+    /**
+     * Construct a new instance with no value set.
+     */
     public AspectPropertyValueDefault() {
 
     }
 
+    /**
+     * Construct a new instance and set the value. This also result in the
+     * 'hasValue' property being set to true.
+     * @param value the value to set
+     */
     public AspectPropertyValueDefault(T value) {
         setValue(value);
     }

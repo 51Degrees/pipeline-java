@@ -32,7 +32,6 @@ import fiftyone.pipeline.core.data.TryGetResult;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.core.exceptions.PipelineDataException;
 import fiftyone.pipeline.core.flowelements.FlowElement;
-import fiftyone.pipeline.engines.data.AspectPropertyValue;
 import fiftyone.pipeline.engines.data.AspectPropertyValueDefault;
 import fiftyone.pipeline.javascriptbuilder.data.JavaScriptBuilderData;
 import fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElement;
@@ -46,16 +45,21 @@ import java.util.Map;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
+
+import fiftyone.pipeline.jsonbuilder.flowelements.JsonBuilderDataInternal;
 import org.json.JSONObject;
-import static org.junit.Assert.assertTrue;
-import org.junit.Before;
-import org.junit.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.slf4j.ILoggerFactory;
@@ -76,7 +80,7 @@ public class JavaScriptBuilderTests {
         loggerFactory = new TestLoggerFactory(internalLogger);
     }
     
-    @Before
+    @BeforeEach
     public void Init() {
         flowData = mock(FlowData.class);
         
@@ -97,7 +101,7 @@ public class JavaScriptBuilderTests {
         
         doReturn(data).when(elementDataMock).asKeyMap();
     }
-    
+
     @Test
     public void Valid_Js() throws Exception {
         json = new JSONObject();
@@ -122,7 +126,7 @@ public class JavaScriptBuilderTests {
 
         final Map<String, Object> evidence = new HashMap<>(); 
         evidence.put( fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_HOST_KEY, "localhost" );
-        evidence.put(fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_PROTOCOL, "https" );
+        evidence.put(fiftyone.pipeline.core.Constants.EVIDENCE_PROTOCOL, "https" );
         
         Evidence evidenceObj = mock(Evidence.class);
         when(evidenceObj.asKeyMap()).thenReturn(evidence);
@@ -156,10 +160,10 @@ public class JavaScriptBuilderTests {
         
         javaScriptBuilderElement.process(flowData);
      
-        assertTrue(IsValidFodObject(result.getJavaScript(), "device", "ismobile", true));
+        assertTrue(isValidFodObject(result.getJavaScript(), "device", "ismobile", true));
     }
     
-    @Test(expected = PipelineConfigurationException.class)
+    @Test
     public void JavaScriptBuilder_NoJson() throws Exception {
         doAnswer(new Answer<Object>() { 
             @Override
@@ -173,8 +177,8 @@ public class JavaScriptBuilderTests {
         when(flowData.getAs(anyString(), any(Class.class))).thenReturn(new AspectPropertyValueDefault<>("None"));
         
         final Map<String, Object> evidence = new HashMap<>(); 
-        evidence.put( fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_HOST_KEY, "localhost" );
-        evidence.put(fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_PROTOCOL, "https" );
+        evidence.put(fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_HOST_KEY, "localhost" );
+        evidence.put(fiftyone.pipeline.core.Constants.EVIDENCE_PROTOCOL, "https" );
         
         Evidence evidenceObj = mock(Evidence.class);
         when(evidenceObj.asKeyMap()).thenReturn(evidence);
@@ -205,11 +209,90 @@ public class JavaScriptBuilderTests {
                 return result;
             }
         }).when(flowData).getOrAdd(anyString(), any(FlowElement.DataFactory.class));
-        
-        javaScriptBuilderElement.process(flowData);
+
+        assertThrows(
+            PipelineConfigurationException.class,
+            () -> javaScriptBuilderElement.process(flowData));
     }
-    
-    private boolean IsValidFodObject(String javaScript, String key, String property, Object value) throws Exception
+
+    /**
+     * Verify that valid JavaScript is produced when there are delayed execution
+     * properties in the payload.
+     */
+    @Test
+    public void JavaScriptBuilderElement_DelayExecution() throws Exception {
+        javaScriptBuilderElement =
+            new JavaScriptBuilderElementBuilder(loggerFactory)
+                .build();
+
+        final JSONObject json = new JSONObject();
+
+        JSONObject locationData = new JSONObject();
+        locationData.put("postcode", (String)null);
+        locationData.put("postcodenullreason",
+            "Evidence for this property has not been retrieved. Ensure the 'complete' method is called, passing the name of this property in the second parameter.");
+        locationData.put("postcodeevidenceproperties", new String[] { "location.javascript" });
+        locationData.put("javascript", "if (navigator.geolocation) { navigator.geolocation.getCurrentPosition(function() { // 51D replace this comment with callback function. }); }");
+        locationData.put("javascriptdelayexecution", true);
+        json.put("location", locationData);
+
+        final FlowData flowData = mock(FlowData.class);
+
+        when(flowData.get(JsonBuilderData.class)).thenAnswer(
+            new Answer<JsonBuilderData>() {
+                @Override
+                public JsonBuilderData answer(InvocationOnMock invocationOnMock) throws Throwable {
+                    JsonBuilderData d = new JsonBuilderDataInternal(mock(Logger.class), flowData);
+                    d.put("json", json.toString());
+                    return d;
+                }
+            }
+        );
+
+
+        final Map<String, Object> evidence = new HashMap<>();
+        evidence.put(fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_HOST_KEY, "localhost" );
+        evidence.put(fiftyone.pipeline.core.Constants.EVIDENCE_PROTOCOL, "https" );
+
+        Evidence evidenceObj = mock(Evidence.class);
+        when(evidenceObj.asKeyMap()).thenReturn(evidence);
+
+        when(flowData.getEvidence()).thenReturn(evidenceObj);
+        when(flowData.getAs(anyString(), any(Class.class))).thenReturn(new AspectPropertyValueDefault<>("None"));
+
+        when(flowData.tryGetEvidence(anyString(), any(Class.class))).thenAnswer(
+            new Answer<Object>() {
+                @Override
+                public Object answer(InvocationOnMock invocation) throws Throwable {
+                    TryGetResult<Object> result = new TryGetResult<>();
+                    if (evidence.containsKey((String)invocation.getArgument(0))) {
+                        result.setValue(evidence.get((String)invocation.getArgument(0)));
+                    }
+                    return result;
+                }
+            }
+        );
+
+        //configure(flowData, json);
+
+        final JavaScriptBuilderData[] result = {null};
+        when(flowData.getOrAdd(
+            any(String.class),
+            any(FlowElement.DataFactory.class)))
+            .thenAnswer((Answer<JavaScriptBuilderData>) invocationOnMock -> {
+                FlowElement.DataFactory dataFactory = invocationOnMock.getArgument(1);
+                result[0] = (JavaScriptBuilderData) dataFactory.create(flowData);
+                return result[0];
+            });
+        javaScriptBuilderElement.process(flowData);
+
+        assertTrue(
+            result[0].getJavaScript().contains("getEvidencePropertiesFromObject"),
+            "Expected the generated JavaScript to contain the " +
+                "'getEvidencePropertiesFromObject' function but it does not.");
+    }
+
+    private boolean isValidFodObject(String javaScript, String key, String property, Object value) throws Exception
     {
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("JavaScript");

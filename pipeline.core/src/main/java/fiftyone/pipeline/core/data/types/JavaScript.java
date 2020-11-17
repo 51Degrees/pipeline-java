@@ -22,7 +22,13 @@
 
 package fiftyone.pipeline.core.data.types;
 
+import fiftyone.pipeline.core.data.ElementData;
 
+/**
+ * JavaScript type which can be returned as a value by an {@link ElementData}.
+ * A value being of type JavaScript indicates that it is intended to be run on a
+ * client browser.
+ */
 public class JavaScript implements Comparable<String> {
 
     private final String value;

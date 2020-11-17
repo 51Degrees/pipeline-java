@@ -35,8 +35,8 @@ import pipeline.developerexamples.cloudengine.flowelements.SimpleCloudEngine;
 import pipeline.developerexamples.cloudengine.flowelements.SimpleCloudEngineBuilder;
 
 public class Main {
-    private static ILoggerFactory loggerFactory = LoggerFactory.getILoggerFactory();
-    private static HttpClient httpClient = new HttpClientDefault();
+    private static final ILoggerFactory loggerFactory = LoggerFactory.getILoggerFactory();
+    private static final HttpClient httpClient = new HttpClientDefault();
 
     public static class Example {
         public void run() throws Exception {

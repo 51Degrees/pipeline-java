@@ -27,9 +27,8 @@ import fiftyone.pipeline.core.flowelements.FlowElement;
 import java.util.Map;
 
 /**
- * Evidence used by a {@link FlowElement} when processing. This data can be read
- * but not written to. Items of evidence must be added via the
- * {@link FlowData#addEvidence(String, Object)} and
+ * Evidence used by a {@link FlowElement} when processing. Items of evidence
+ * should be added via the {@link FlowData#addEvidence(String, Object)} and
  * {@link FlowData#addEvidence(Map)} methods.
  */
 public interface Evidence extends Data {

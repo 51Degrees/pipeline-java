@@ -30,13 +30,12 @@ import java.util.Map;
 
 /**
  * Provides access to a type safe collection of data.
- * <p>
- * <p>The collection is not
- * necessarily stored in a type safe way, in other words, irrespective that
- * item a and b have same name and different type are not equal, they may
- * overwrite each other in the map.
- * <p>
- * <p>In any case, when accessed via the {@link #asStringKeyMap()} method, they will
+ *
+ * The collection is not necessarily stored in a type safe way, in other words,
+ * irrespective that item a and b have same name and different type are not
+ * equal, they may overwrite each other in the map.
+ *
+ * In any case, when accessed via the {@link #asStringKeyMap()} method, they will
  * arbitrarily overwrite each other.
  */
 public interface TypedKeyMap extends Closeable {
@@ -47,12 +46,12 @@ public interface TypedKeyMap extends Closeable {
      * @param <T>      type of the value
      * @return a value or null if not present
      */
-    <T extends Object> T get(TypedKey<T> typedKey);
+    <T> T get(TypedKey<T> typedKey);
 
 
-    <T extends Object> T get(Class<T> type);
+    <T> T get(Class<T> type);
 
-    <T extends Object> TryGetResult<T> tryGet(TypedKey<T> key);
+    <T> TryGetResult<T> tryGet(TypedKey<T> key);
 
     /**
      * Put a key and value. May overwrite a typedKey of the same name.
@@ -61,13 +60,13 @@ public interface TypedKeyMap extends Closeable {
      * @param value    the value
      * @param <T>      the type of the value
      */
-    <T extends Object> void put(TypedKey<T> typedKey, T value);
+    <T> void put(TypedKey<T> typedKey, T value);
 
-    <T extends Object> T removeIfExists(TypedKey<T> typedKey);
+    <T> T removeIfExists(TypedKey<T> typedKey);
 
     boolean containsKey(String key);
 
-    <T extends Object> boolean containsKey(TypedKey<T> typedKey);
+    <T> boolean containsKey(TypedKey<T> typedKey);
 
     Map<String, Object> asStringKeyMap();
 

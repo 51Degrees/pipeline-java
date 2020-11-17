@@ -32,6 +32,9 @@ import java.nio.file.Paths;
 import java.util.Date;
 import java.util.concurrent.ScheduledFuture;
 
+/**
+ * Default implementation of the {@link AspectEngineDataFile} interface.
+ */
 public class AspectEngineDataFileDefault implements AspectEngineDataFile {
     private String identifier;
     private OnPremiseAspectEngine engine;
@@ -69,12 +72,11 @@ public class AspectEngineDataFileDefault implements AspectEngineDataFile {
     @Override
     public String getTempDataFilePath() {
         if (tempDataFilePath == null &&
-            engine != null &&
-            engine.getTempDataDirPath() != null &&
+            getTempDataDirPath() != null &&
             getDataFilePath() != null) {
             // By default, use the temp path from the engine
             // combined with the name of the data file.
-            tempDataFilePath = Paths.get(engine.getTempDataDirPath(),
+            tempDataFilePath = Paths.get(getTempDataDirPath(),
                 new File(getDataFilePath()).getName()).toString();
         }
         return tempDataFilePath;
@@ -87,6 +89,12 @@ public class AspectEngineDataFileDefault implements AspectEngineDataFile {
 
     @Override
     public String getTempDataDirPath() {
+        if (tempDataDirPath == null &&
+            engine != null &&
+            engine.getTempDataDirPath() != null) {
+            // By default, use the temp path from the engine.
+            tempDataDirPath = engine.getTempDataDirPath();
+        }
         return tempDataDirPath;
     }
 
@@ -164,7 +172,7 @@ public class AspectEngineDataFileDefault implements AspectEngineDataFile {
         lastUpdateFileCreateTime = createTime;
     }
 
-    private Object syncLock = new Object();
+    private final Object syncLock = new Object();
 
     public Object getUpdateSyncLock() {
         return syncLock;

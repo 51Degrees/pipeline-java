@@ -31,21 +31,19 @@ import static fiftyone.pipeline.util.CheckArgument.checkNotNull;
  */
 public interface FlowError {
     /**
-     * The {@link Throwable} (if any) that caused the error
-     *
+     * The {@link Throwable} (if any) that caused the error.
      * @return a throwable or null
      */
     Throwable getThrowable();
 
     /**
-     * The {@link FlowElement} at which the error occurred
-     *
+     * The {@link FlowElement} at which the error occurred.
      * @return offending element
      */
     FlowElement getFlowElement();
 
     /**
-     * Default class for {@link FlowError}
+     * Default class for {@link FlowError}.
      */
     class Default implements FlowError {
         private final Throwable throwable;

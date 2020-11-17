@@ -22,6 +22,9 @@
 
 package fiftyone.pipeline.engines.configuration;
 
+/**
+ * Builder class for {@link DataFileConfiguration} instances.
+ */
 public class DataFileConfigurationBuilder extends DataFileConfigurationBuilderBase<
     DataFileConfigurationBuilder,
     DataFileConfiguration> {

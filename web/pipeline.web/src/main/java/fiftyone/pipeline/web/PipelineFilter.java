@@ -35,7 +35,6 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +42,10 @@ import java.io.IOException;
 import static fiftyone.pipeline.web.Constants.DEFAULT_CLIENTSIDE_ENABLED;
 import static fiftyone.pipeline.web.Constants.DEFAULT_CONFIG_FILE;
 
+/**
+ * Servlet filter used to intercept HTTP requests and process them using the
+ * 51Degrees Pipeline.
+ */
 public class PipelineFilter implements Filter {
     private Pipeline pipeline;
 
@@ -73,9 +76,10 @@ public class PipelineFilter implements Filter {
         else {
             clientsideEnabled = Boolean.parseBoolean(clientsideEnabledString);
         }
+        
+        ServletContext context = config.getServletContext();
 
-        File configFile = new File(config.getServletContext()
-            .getRealPath(configFileName));
+        File configFile = new File(context.getRealPath(configFileName));
         PipelineBuilder builder = new PipelineBuilder()
             .addService(new DataUpdateServiceDefault(
                 LoggerFactory.getLogger(DataUpdateService.class.getSimpleName()),
@@ -86,9 +90,9 @@ public class PipelineFilter implements Filter {
             Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
             // Bind the configuration to a pipeline options instance
             PipelineOptions options = (PipelineOptions) unmarshaller.unmarshal(configFile);
-            pipeline = StartupHelpers.buildFromConfiguration(builder, options, clientsideEnabled);
-        } catch (JAXBException e) {
-            throw new ServletException(e);
+
+            pipeline = StartupHelpers.buildFromConfiguration(builder, options, 
+                clientsideEnabled, context.getContextPath());
         } catch (Exception e) {
             throw new ServletException(e);
         }
@@ -109,13 +113,15 @@ public class PipelineFilter implements Filter {
         ServletRequest request,
         ServletResponse response,
         FilterChain chain) throws IOException, ServletException {
+
         // Populate the request properties and store against the
         // HttpContext.
         resultService.process((HttpServletRequest)request);
 
-        // If 51Degrees JavaScript is being requested then serve it.
+        // If 51Degrees JavaScript or JSON is being requested then serve it.
         // Otherwise continue down the filter Pipeline.
-        if (jsService.serveJS((HttpServletRequest)request, (HttpServletResponse) response) == false) {
+        if (jsService.serveJS((HttpServletRequest)request, (HttpServletResponse) response) == false &&
+            jsService.serveJson((HttpServletRequest)request, (HttpServletResponse) response) == false) {
             chain.doFilter(request, response);//sends request to next resource
         }
     }

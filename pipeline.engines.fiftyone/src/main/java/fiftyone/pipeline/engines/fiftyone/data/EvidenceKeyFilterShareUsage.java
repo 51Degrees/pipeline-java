@@ -24,6 +24,8 @@ package fiftyone.pipeline.engines.fiftyone.data;
 
 import fiftyone.pipeline.core.data.EvidenceKeyFilter;
 import fiftyone.pipeline.engines.Constants;
+import fiftyone.pipeline.engines.fiftyone.flowelements.ShareUsageElement;
+import fiftyone.pipeline.engines.fiftyone.trackers.ShareUsageTracker;
 
 import java.util.HashSet;
 import java.util.List;
@@ -31,16 +33,60 @@ import java.util.Set;
 
 import static fiftyone.pipeline.core.Constants.*;
 
+/**
+ * This filter is used by the {@link ShareUsageElement}.
+ * It will include anything that is:
+ * 1) An HTTP header that is not blocked by the constructor parameter.
+ * 2) A cookie that starts with {@link Constants#FIFTYONE_COOKIE_PREFIX} or is
+ *     the session cookie (if configured in the constructor).
+ * 3) An query string parameters that have been configured to be shared
+ *     using the constructor parameter.
+ * 4) Not a header, cookie or query string parameter.
+ *
+ * As this filter is generally inclusive, it will often cause far more
+ * evidence to be passed into a pipeline than the engine-specific
+ * filters, which tend to be based on a white list
+ */
 public class EvidenceKeyFilterShareUsage implements EvidenceKeyFilter {
 
-    private boolean includeSession;
+    /**
+     * If true then the session cookie will be included in the filter.
+     * The session cookie is used by the {@link ShareUsageTracker} but we do not
+     * actually want to share it.
+     */
+    private final boolean includeSession;
 
-    private String sessionCookieName;
+    /**
+     * The cookie name being used to store the Java session id.
+     */
+    private final String sessionCookieName;
 
-    private Set<String> blockedHttpHeaders = new HashSet<>();
+    /**
+     * The content of HTTP headers in this array will not be included in the
+     * request information sent to 51degrees. Any header names added here are
+     * hard-coded to be blocked regardless of the settings passed to the
+     * constructor.
+     */
+    private final Set<String> blockedHttpHeaders = new HashSet<>();
 
-    private Set<String> includedQueryStringParams = new HashSet<>();
+    /**
+     * Query string parameters will not be shared by default. Any query string
+     * parameters to be shared must be added to this collection.
+     */
+    private final Set<String> includedQueryStringParams = new HashSet<>();
 
+    /**
+     * Constructor.
+     * @param blockedHttpHeaders a list of the names of the HTTP headers that
+     *                           share usage should not send to 51Degrees
+     * @param includedQueryStringParams a list of the names of query string
+     *                                  parameters that share usage should send
+     *                                  to 51Degrees
+     * @param includeSession if true then the session cookie will be included in
+     *                       the filter
+     * @param sessionCookieName the name of the cookie that contains the session
+     *                          id
+     */
     public EvidenceKeyFilterShareUsage(
         List<String> blockedHttpHeaders,
         List<String> includedQueryStringParams,
@@ -65,29 +111,35 @@ public class EvidenceKeyFilterShareUsage implements EvidenceKeyFilter {
 
     @Override
     public boolean include(String key) {
-        boolean result = false;
+        boolean result;
         String[] parts = key.toLowerCase().split("\\.");
         if (parts.length == 2) {
-            if (parts[0].equals(EVIDENCE_HTTPHEADER_PREFIX)) {
-                // Add the header to the list if the header name does not
-                // appear in the list of blocked headers.
-                result = blockedHttpHeaders.contains(parts[1]) == false;
-            } else if (parts[0].equals(EVIDENCE_COOKIE_PREFIX)) {
-                // Only add cookies that start with the 51Degrees cookie
-                // prefix.
-                result = parts[1].startsWith(Constants.FIFTYONE_COOKIE_PREFIX) ||
-                    (includeSession && parts[1].equals(sessionCookieName));
-            } else if (parts[0].equals(EVIDENCE_SESSION_PREFIX)) {
-                // Only add session values that start with the 51Degrees cookie
-                // prefix.
-                result = parts[1].startsWith(Constants.FIFTYONE_COOKIE_PREFIX);
-            } else if (parts[0].equals(EVIDENCE_QUERY_PREFIX)) {
-                // Only include query string parameters that have been
-                // specified in the constructor.
-                result = includedQueryStringParams.contains(parts[1]);
-            } else {
-                // Add anything that is not a cookie or a header.
-                result = true;
+            switch (parts[0]) {
+                case EVIDENCE_HTTPHEADER_PREFIX:
+                    // Add the header to the list if the header name does not
+                    // appear in the list of blocked headers.
+                    result = blockedHttpHeaders.contains(parts[1]) == false;
+                    break;
+                case EVIDENCE_COOKIE_PREFIX:
+                    // Only add cookies that start with the 51Degrees cookie
+                    // prefix.
+                    result = parts[1].startsWith(Constants.FIFTYONE_COOKIE_PREFIX) ||
+                        (includeSession && parts[1].equals(sessionCookieName));
+                    break;
+                case EVIDENCE_SESSION_PREFIX:
+                    // Only add session values that start with the 51Degrees cookie
+                    // prefix.
+                    result = parts[1].startsWith(Constants.FIFTYONE_COOKIE_PREFIX);
+                    break;
+                case EVIDENCE_QUERY_PREFIX:
+                    // Only include query string parameters that have been
+                    // specified in the constructor.
+                    result = includedQueryStringParams.contains(parts[1]);
+                    break;
+                default:
+                    // Add anything that is not a cookie or a header.
+                    result = true;
+                    break;
             }
         } else {
             result = true;

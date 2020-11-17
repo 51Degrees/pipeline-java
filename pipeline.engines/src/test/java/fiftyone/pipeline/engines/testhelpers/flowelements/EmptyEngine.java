@@ -100,6 +100,7 @@ public class EmptyEngine
         if (processCost > 0) {
             Thread.sleep(processCost);
         }
+        aspectData.setValueTwo(2);
     }
 
     @Override

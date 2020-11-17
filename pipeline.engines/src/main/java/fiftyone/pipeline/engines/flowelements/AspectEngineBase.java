@@ -62,16 +62,23 @@ public abstract class AspectEngineBase<
     protected FlowCache cache = null;
 
     /**
-     * Construct a new instance
+     * Construct a new instance of the {@link AspectEngine}.
+     * @param logger logger instance to use for logging
+     * @param aspectDataFactory the factory to use when creating a {@link TData}
+     *                          instance
      */
-    public AspectEngineBase(Logger logger, ElementDataFactory<TData> aspectDataFactory) {
+    public AspectEngineBase(
+        Logger logger,
+        ElementDataFactory<TData> aspectDataFactory) {
         super(logger, aspectDataFactory);
     }
 
     @Override
     public TypedKey<TData> getTypedDataKey() {
         if (typedKey == null) {
-            typedKey = new TypedKeyDefault<>(getElementDataKey(), Types.findSubClassParameterType(this, AspectEngineBase.class, 0));
+            typedKey = new TypedKeyDefault<>(
+                getElementDataKey(),
+                Types.findSubClassParameterType(this, AspectEngineBase.class, 0));
         }
         return typedKey;
 
@@ -105,21 +112,47 @@ public abstract class AspectEngineBase<
         return executor;
     }
 
+    /**
+     * Extending classes must implement this method. It should perform the
+     * required processing and update the specified aspect data instance.
+     * @param flowData the {@link FlowData} instance that provides the evidence
+     * @param aspectData the {@link AspectData} instance to populate with the
+     *                   results of processing
+     * @throws Exception if there was an exception during processing
+     */
     protected abstract void processEngine(FlowData flowData, TData aspectData) throws Exception;
 
+    /**
+     * Implementation of method from the base class {@link FlowElementBase}.
+     * This exists to centralise the results caching logic.
+     * @param flowData the {@link FlowData} instance that provides the evidence
+     *                 and holds the result.
+     * @throws Exception if there was an exception during processing
+     */
     @Override
     protected final void processInternal(FlowData flowData) throws Exception {
         processWithCache(flowData);
     }
 
+    /**
+     * Private method that checks if the result is already in the cache or not.
+     * If it is then the result is added to 'data', if not then
+     * {@link #processEngine(FlowData, AspectData)}is called to do so.
+     * @param flowData the {@link FlowData} instance that provides the evidence
+     *                 and holds the result.
+     * @throws Exception if there was an exception during processing
+     */
     private void processWithCache(final FlowData flowData) throws Exception {
         TData cacheResult = null;
 
         if (cache != null) {
-            try {
-                cacheResult = (TData) cache.get(flowData);
-            } catch (ClassCastException e) {
-                cacheResult = null;
+            Object cacheResultsObject = cache.get(flowData);
+            if (cacheResultsObject != null &&
+                getTypedDataKey().getType().isAssignableFrom(
+                    cacheResultsObject.getClass())) {
+                // This is checked.
+                //noinspection unchecked
+                cacheResult = (TData)cacheResultsObject;
             }
         }
         // If we don't have a result from the cache then
@@ -171,6 +204,7 @@ public abstract class AspectEngineBase<
             try {
                 cache.close();
             } catch (IOException e) {
+                logger.warn("Exception closing the cache", e);
             }
         }
         if (executor != null) {

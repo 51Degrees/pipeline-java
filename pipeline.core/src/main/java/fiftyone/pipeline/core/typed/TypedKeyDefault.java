@@ -25,20 +25,37 @@ package fiftyone.pipeline.core.typed;
 import static fiftyone.pipeline.util.CheckArgument.checkNotNull;
 import static fiftyone.pipeline.util.CheckArgument.guard;
 
-public class TypedKeyDefault<T extends Object> implements TypedKey<T> {
+/**
+ * Default implementation of {@link TypedKey}.
+ * @param <T> type of the key
+ */
+public class TypedKeyDefault<T> implements TypedKey<T> {
 
     private final String name;
 
     private final Class<T> type;
 
+    /**
+     *  Construct a new instance with the name provided, and {@link Object} as
+     *  the type
+     * @param name the name of the key
+     */
     public TypedKeyDefault(String name) {
         this(name, Object.class);
     }
 
+    /**
+     * Construct a new instance with the name and type provided.
+     * @param name the name of the key
+     * @param type the type of the key
+     */
+    @SuppressWarnings("unchecked")
     public TypedKeyDefault(String name, Class type) {
         //noinspection ConstantConditions
         this.name = checkNotNull(name, "Name must not be null").trim();
         guard(name.isEmpty(), "Name must not be empty");
+        // Not checked as argument cannot be constrained due to the non-typed
+        // constructor
         this.type = type;
     }
 

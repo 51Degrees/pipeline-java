@@ -22,7 +22,22 @@
 
 package fiftyone.pipeline.web.mvc.configuration;
 
+import fiftyone.pipeline.web.mvc.components.FiftyOneInterceptor;
+
+/**
+ * Configuration class for the {@link FiftyOneInterceptor}.
+ */
 public interface FiftyOneInterceptorConfig {
+
+    /**
+     * Get the path to the data file.
+     * @return data file path
+     */
     String getDataFilePath();
+
+    /**
+     * Get whether client-side properties are enabled.
+     * @return true if client-side properties are enabled
+     */
     boolean getClientsidePropertiesEnabled();
 }

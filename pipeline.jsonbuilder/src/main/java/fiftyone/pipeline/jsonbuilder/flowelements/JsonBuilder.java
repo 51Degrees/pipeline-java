@@ -26,5 +26,11 @@ import fiftyone.pipeline.core.data.ElementPropertyMetaData;
 import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.jsonbuilder.data.JsonBuilderData;
 
-public interface JsonBuilder extends FlowElement<JsonBuilderData, ElementPropertyMetaData>{
+/**
+ * The JsonBuilderElement takes accessible properties and adds the property
+ * key:values to the Json object. The element will also add any errors which
+ * have been recorded in the FlowData.
+ */
+public interface JsonBuilder
+    extends FlowElement<JsonBuilderData, ElementPropertyMetaData> {
 }

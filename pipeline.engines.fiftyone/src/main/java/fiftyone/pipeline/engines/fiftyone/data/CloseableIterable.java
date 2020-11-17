@@ -22,5 +22,9 @@
 
 package fiftyone.pipeline.engines.fiftyone.data;
 
+/**
+ * An iterable class which also implements auto-closable
+ * @param <T> the type being iterated
+ */
 public interface CloseableIterable<T> extends Iterable<T>, AutoCloseable {
 }

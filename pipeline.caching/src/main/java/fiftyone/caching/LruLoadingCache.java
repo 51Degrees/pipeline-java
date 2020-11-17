@@ -24,29 +24,59 @@ package fiftyone.caching;
 
 import java.io.IOException;
 
-public class LruLoadingCache<K, V> extends LruCacheBase<K, V> implements LoadingCache<K, V> {
+/**
+ * Uses the {@link LruCacheBase} to implement the {@link LoadingCache} interface.
+ * @param <K> the type of key
+ * @param <V> the type of value
+ */
+public class LruLoadingCache<K, V>
+    extends LruCacheBase<K, V>
+    implements LoadingCache<K, V> {
 
     private ValueLoader<K, V> loader;
 
+    /**
+     * Constructs a new instance of the cache.
+     * @param cacheSize the number of items to store in the cache
+     */
     LruLoadingCache(int cacheSize) {
         super(cacheSize, Runtime.getRuntime().availableProcessors(), false);
     }
 
+    /**
+     * Constructs a new instance of the cache.
+     * @param cacheSize the number of items to store in the cache
+     * @param concurrency the expected number of concurrent requests to the
+     *                    cache
+     */
     LruLoadingCache(int cacheSize, int concurrency) {
         super(cacheSize, concurrency, false);
     }
 
+    /**
+     * Constructs a new instance of the cache.
+     * @param cacheSize the number of items to store in the cache
+     * @param loader the loader used to fetch items not already in the cache
+     */
     public LruLoadingCache(int cacheSize, ValueLoader<K, V> loader) {
         this(cacheSize, loader, Runtime.getRuntime().availableProcessors());
     }
 
+    /**
+     * Constructs a new instance of the cache.
+     * @param cacheSize the number of items to store in the cache
+     * @param concurrency the expected number of concurrent requests to the
+     *                    cache
+     * @param loader the loader used to fetch items not already in the cache
+     */
     LruLoadingCache(int cacheSize, ValueLoader<K, V> loader, int concurrency) {
         super(cacheSize, concurrency, false);
         setCacheLoader(loader);
     }
 
     /**
-     * Loader used to fetch items not in the cache.
+     * Set the loader used to fetch items not in the cache.
+     * @param loader the loader to use
      */
     public void setCacheLoader(ValueLoader<K, V> loader) {
         this.loader = loader;
@@ -57,9 +87,9 @@ public class LruLoadingCache<K, V> extends LruCacheBase<K, V> implements Loading
      * in the cache then the Fetch method of the cache's loader is used to
      * retrieve the value.
      *
-     * @param key or the item required.
-     * @return An instance of the value associated with the key.
-     * @throws java.lang.IllegalStateException if there was a problem accessing data file.
+     * @param key of the item required.
+     * @return an instance of the value associated with the key
+     * @throws IllegalStateException if there was a problem accessing data file
      */
     @Override
     public V get(K key) {
@@ -76,10 +106,10 @@ public class LruLoadingCache<K, V> extends LruCacheBase<K, V> implements Loading
      * in the cache then the Fetch method is used to retrieve the value
      * from another loader.
      *
-     * @param key    or the item required
+     * @param key of the item required
      * @param loader to fetch the items from
-     * @return An instance of the value associated with the key
-     * @throws java.io.IOException if there was a problem accessing data file.
+     * @return an instance of the value associated with the key
+     * @throws java.io.IOException if there was a problem accessing data file
      */
     public V get(K key, ValueLoader<K, V> loader) throws IOException {
         boolean added = false;
@@ -92,11 +122,14 @@ public class LruLoadingCache<K, V> extends LruCacheBase<K, V> implements Loading
         return result;
     }
 
+    /**
+     * Implementation of {@link CacheBuilder} for {@link LruLoadingCache} caches.
+     */
     public static class Builder implements LoadingCacheBuilder {
 
         @Override
         public <K, V> Cache<K, V> build(Cache<K, V> c, int cacheSize) {
-            return new LruLoadingCache<K, V>(cacheSize);
+            return new LruLoadingCache<>(cacheSize);
         }
     }
 }

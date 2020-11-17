@@ -25,6 +25,13 @@ package fiftyone.pipeline.engines.flowelements;
 import fiftyone.pipeline.engines.data.AspectData;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 
+/**
+ * Aspect engine interface which is specific to a cloud engine. A cloud engine
+ * offloads the processing to a cloud service and interprets the results.
+ * @param <TData> the type of aspect data that the flow element will write to
+ * @param <TProperty> the type of meta data that the flow element will supply
+ *                    about the properties it populates.
+ */
 public interface CloudAspectEngine<
     TData extends AspectData,
     TProperty extends AspectPropertyMetaData>

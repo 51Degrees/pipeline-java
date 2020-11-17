@@ -24,9 +24,25 @@ package fiftyone.pipeline.engines.fiftyone.data;
 
 import fiftyone.pipeline.engines.data.AspectEngineDataFile;
 
+/**
+ * 51Degrees specific data file.
+ */
 public interface FiftyOneDataFile extends AspectEngineDataFile {
 
+    /**
+     * Get the type name to send when checking for data file updates e.g.
+     * HashV41.
+     * In general, this value should be pulled from the Engine, which will have
+     * read it from the data file. However, in some cases, we want to know the
+     * type name before the engine is created. (e.g. when UpdateOnStartup is
+     * set) This is why the value can also be set.
+     * @return download type
+     */
     String getDataUpdateDownloadType();
 
+    /**
+     * Set the data download type e.g. HashV41.
+     * @param type download type
+     */
     void setDataUpdateDownloadType(String type);
 }

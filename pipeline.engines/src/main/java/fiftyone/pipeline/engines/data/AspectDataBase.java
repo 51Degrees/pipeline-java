@@ -3,7 +3,7 @@
  * Copyright 2019 51 Degrees Mobile Experts Limited, 5 Charlotte Close,
  * Caversham, Reading, Berkshire, United Kingdom RG4 7BY.
  *
- * This Original Work is licensed under the European Union Public Licence (EUPL) 
+ * This Original Work is licensed under the European Union Public Licence (EUPL)
  * v.1.2 and is subject to its terms as set out below.
  *
  * If a copy of the EUPL was not distributed with this file, You can obtain
@@ -13,46 +13,56 @@
  * amended by the European Commission) shall be deemed incompatible for
  * the purposes of the Work and the provisions of the compatibility
  * clause in Article 5 of the EUPL shall not apply.
- * 
- * If using the Work as, or as part of, a network application, by 
+ *
+ * If using the Work as, or as part of, a network application, by
  * including the attribution notice(s) required under Article 5 of the EUPL
- * in the end user terms of the application under an appropriate heading, 
+ * in the end user terms of the application under an appropriate heading,
  * such notice(s) shall fulfill the requirements of that article.
  * ********************************************************************* */
 
 package fiftyone.pipeline.engines.data;
 
-import fiftyone.pipeline.core.data.ElementDataBase;
-import fiftyone.pipeline.core.data.FlowData;
-import fiftyone.pipeline.core.data.FlowError;
-import fiftyone.pipeline.core.data.TryGetResult;
-import fiftyone.pipeline.engines.exceptions.LazyLoadTimeoutException;
-import fiftyone.pipeline.engines.exceptions.PropertyMissingException;
-import fiftyone.pipeline.engines.flowelements.AspectEngine;
-import fiftyone.pipeline.engines.services.MissingPropertyResult;
-import fiftyone.pipeline.engines.services.MissingPropertyService;
-import fiftyone.pipeline.exceptions.AggregateException;
-import org.slf4j.Logger;
+    import fiftyone.pipeline.core.data.ElementDataBase;
+    import fiftyone.pipeline.core.data.FlowData;
+    import fiftyone.pipeline.core.data.FlowError;
+    import fiftyone.pipeline.core.data.TryGetResult;
+    import fiftyone.pipeline.engines.exceptions.LazyLoadTimeoutException;
+    import fiftyone.pipeline.engines.exceptions.PropertyMissingException;
+    import fiftyone.pipeline.engines.flowelements.AspectEngine;
+    import fiftyone.pipeline.engines.services.MissingPropertyResult;
+    import fiftyone.pipeline.engines.services.MissingPropertyService;
+    import fiftyone.pipeline.exceptions.AggregateException;
+    import org.slf4j.Logger;
 
-import java.util.*;
-import java.util.concurrent.*;
+    import java.util.*;
+    import java.util.concurrent.*;
 
-import static fiftyone.pipeline.util.CheckArgument.checkNotNull;
-import static fiftyone.pipeline.util.StringManipulation.stringJoin;
+    import static fiftyone.pipeline.util.CheckArgument.checkNotNull;
+    import static fiftyone.pipeline.util.StringManipulation.stringJoin;
 
 /**
  * Abstract base class for {@link AspectData} which overrides the
- * {@link AspectData#get(String) get} method to add null checks and determine
- * the reason for a value not being present.
+ * {@link AspectData#get(String)} method to add null checks and uses the
+ * {@link MissingPropertyService} to determine the reason for a value not being
+ * present. For example, if the user has excluded the property at the
+ * configuration stage.
  */
 public abstract class AspectDataBase extends ElementDataBase implements AspectData {
 
-    private MissingPropertyService missingPropertyService;
+    private final MissingPropertyService missingPropertyService;
 
-    private List<AspectEngine> engines;
+    private final List<AspectEngine> engines;
 
-    private Map<AspectEngine, Future<?>> processFutures;
+    private final Map<AspectEngine, Future<?>> processFutures;
 
+    /**
+     * Constructs a new instance with a non-thread-safe, case-insensitive
+     * {@link Map} as the underlying storage.
+     * @param logger used for logging
+     * @param flowData the {@link FlowData} instance this element data will be
+     *                 associated with
+     * @param engine the engine which created the instance
+     */
     public AspectDataBase(
         Logger logger,
         FlowData flowData,
@@ -60,6 +70,16 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
         this(logger, flowData, engine, null);
     }
 
+    /**
+     * Constructs a new instance with a non-thread-safe, case-insensitive
+     * {@link Map} as the underlying storage.
+     * @param logger used for logging
+     * @param flowData the {@link FlowData} instance this element data will be
+     *                 associated with
+     * @param engine the engine which created the instance
+     * @param missingPropertyService service used to determine the reason for
+     *                               a property value being missing
+     */
     public AspectDataBase(
         Logger logger,
         FlowData flowData,
@@ -72,6 +92,16 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
         this.missingPropertyService = missingPropertyService;
     }
 
+    /**
+     * Constructs a new instance with a custom {@link Map} as the underlying
+     * storage.
+     * @param logger used for logging
+     * @param flowData the {@link FlowData} instance this element data will be
+     *                 associated with
+     * @param engine the engine which created the instance
+     * @param missingPropertyService service used to determine the reason for
+     *                               a property value being missing
+     */
     public AspectDataBase(
         Logger logger,
         FlowData flowData,
@@ -131,7 +161,8 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
             }
 
             @Override
-            public Object get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+            public Object get(long timeout, TimeUnit unit)
+                throws InterruptedException, ExecutionException, TimeoutException {
                 for (Future<?> future : processFutures.values()) {
                     future.get(timeout, unit);
                 }
@@ -140,10 +171,21 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
         };
     }
 
+    /**
+     * Add an engine to the list of engines which have generated the data within
+     * this instance.
+     * @param engine engine adding data
+     */
     public void addEngine(AspectEngine engine) {
         engines.add(engine);
     }
 
+    /**
+     * Add a callable which will run a {@link AspectEngine#process(FlowData)}
+     * method to populate this instance. The property accessors will only
+     * complete once all such tasks have completed.
+     * @param runnable processing runnable
+     */
     public void addProcessCallable(ProcessCallable runnable) {
         Future<?> future = runnable.engine.getExecutor().submit(runnable);
         processFutures.put(
@@ -151,10 +193,15 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
             future);
     }
 
+    @Override
+    public Map<String, Object> asKeyMap() {
+        waitOnAllProcessFutures();
+        return super.asKeyMap();
+    }
+
     /**
      * Gets the value stored using the specified key with full checks
      * against the {@link MissingPropertyService}.
-     *
      * @param propertyName to get the value for
      * @return value of the property
      * @throws PropertyMissingException the property was not found
@@ -173,7 +220,7 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
                 key + "'.");
         }
         TryGetResult<T> result;
-        List<FlowError> errors = null;
+        List<FlowError> errors;
         if (anyLazyLoaded(engines) == false ||
             (errors = waitOnAllProcessFutures()).size() == 0) {
             result = tryGetValue(key, type, parameterisedTypes);
@@ -192,7 +239,7 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
                     missingReason.getDescription());
             }
         } else {
-            Throwable e = null;
+            Throwable e;
             if (errors.size() == 1) {
                 e = errors.get(0).getThrowable();
                 if (e instanceof CancellationException) {
@@ -215,8 +262,8 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
                     // occurred in the engine's process method
                     throw new RuntimeException(
                         "Failed to retrieve property '" + key + "' " +
-                        "because processing threw an exception in engine(s) " +
-                        stringJoin(getDistinctEngineNames(), ", ") + ".",
+                            "because processing threw an exception in engine(s) " +
+                            stringJoin(getDistinctEngineNames(), ", ") + ".",
                         e);
                 }
             }
@@ -225,8 +272,8 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
                 // occurred in the engine's process method
                 throw new AggregateException(
                     "Failed to retrieve property '" + key + "' " +
-                    "because processing threw multiple exceptions in engine(s) " +
-                    stringJoin(getDistinctEngineNames(), ", ") + ".",
+                        "because processing threw multiple exceptions in engine(s) " +
+                        stringJoin(getDistinctEngineNames(), ", ") + ".",
                     errors);
             }
         }
@@ -234,7 +281,20 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
 
     }
 
-    protected <T> TryGetResult<T> tryGetValue(String key, Class<T> type, Class<?>... parameterisedTypes) {
+    /**
+     * Get the value associated with the specified key. Inheriting classes can
+     * override this method where they access data in different ways.
+     * @param key the string key to retrieve the value for
+     * @param type will be populated with the value for the specified key
+     * @param parameterisedTypes any parameterised types the value has
+     * @param <T> the type of the value to be returned
+     * @return a 'true' {@link TryGetResult} if the key is present in the data
+     * store, a 'false' {@link TryGetResult} if not
+     */
+    protected <T> TryGetResult<T> tryGetValue(
+        String key,
+        Class<T> type,
+        Class<?>... parameterisedTypes) {
         TryGetResult<T> result = new TryGetResult<>();
         Map<String, Object> map = asKeyMap();
         if (map.containsKey(key)) {
@@ -252,6 +312,11 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
         return result;
     }
 
+    /**
+     * Returns true if any of the engines added have lazy loading configured.
+     * @param engines the engines to check
+     * @return true if any engines have lazy loading
+     */
     private static boolean anyLazyLoaded(List<AspectEngine> engines) {
         for (AspectEngine engine : engines) {
             if (engine.getLazyLoadingConfiguration() != null) {
@@ -261,6 +326,12 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
         return false;
     }
 
+    /**
+     * Waits for all the process futures in {@link #processFutures} to finish
+     * then returns a list containing any errors which were thrown by the
+     * futures.
+     * @return list of errors
+     */
     private List<FlowError> waitOnAllProcessFutures() {
         List<FlowError> errors = new ArrayList<>();
         for (Map.Entry<AspectEngine, Future<?>> entry :
@@ -276,6 +347,11 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
         return errors;
     }
 
+    /**
+     * Get a list of all the unique class names of the engines contained in the
+     * {@link #processFutures} map.
+     * @return list of distinct engine classes
+     */
     private List<String> getDistinctEngineNames() {
         List<String> strings = new ArrayList<>();
         for (AspectEngine engine : processFutures.keySet()) {

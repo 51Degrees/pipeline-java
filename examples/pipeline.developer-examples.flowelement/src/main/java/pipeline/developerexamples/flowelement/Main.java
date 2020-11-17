@@ -34,7 +34,8 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
 public class Main {
-    private static ILoggerFactory loggerFactory = LoggerFactory.getILoggerFactory();
+    private static final ILoggerFactory loggerFactory =
+        LoggerFactory.getILoggerFactory();
 
     public static class Example {
         public void run() throws Exception {

@@ -26,9 +26,9 @@ import java.util.Calendar;
 
 //! [class]
 public class StarSign {
-    private Calendar end;
-    private Calendar start;
-    private String name;
+    private final Calendar end;
+    private final Calendar start;
+    private final String name;
 
     public StarSign(String name, String start, String end) {
         this.name = name;

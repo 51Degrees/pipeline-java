@@ -28,7 +28,40 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-public abstract class LruCacheBase<K, V> implements Closeable {
+/**
+ * Many of the entities used by the detector are requested repeatably.
+ * The cache improves memory usage and reduces strain on the garbage collector
+ * by storing previously requested entities for a short period of time to avoid
+ * the need to re-fetch them from the underlying storage mechanism.
+ *
+ * The Least Recently Used (LRU) cache is used. LRU cache keeps track of what
+ * was used when in order to discard the least recently used items first.
+ * Every time a cache item is used the "age" of the item used is updated.
+ *
+ * This implementation supports concurrency by using multiple linked lists
+ * in place of a single linked list in the original implementation.
+ * The linked list to use is assigned at random and stored in the cached
+ * item. This will generate an even set of results across the different
+ * linked lists. The approach reduces the probability of the same linked
+ * list being locked when used in a environments with a high degree of
+ * concurrency. If the feature is not required then the constructor should be
+ * provided with a concurrency value of 1.
+ *
+ * Use for User-Agent caching.
+ * For a vast majority of the real life environments a constant stream of unique
+ * User-Agents is a fairly rare event. Usually the same User-Agent can be
+ * encountered multiple times within a fairly short period of time as the user
+ * is making a subsequent request. Caching frequently occurring User-Agents
+ * improved detection speed considerably.
+ *
+ * Some devices are also more popular than others and while the User-Agents for
+ * such devices may differ, the combination of components used would be very
+ * similar. Therefore internal caching is also used to take advantage of the
+ * more frequently occurring entities.
+ * @param <K> key for the cache items
+ * @param <V> value for the cache items
+ */
+public abstract class LruCacheBase<K, V> implements Cache<K,V>, Closeable {
 
     /**
      * A array of doubly linked lists. Not marked private so that the unit
@@ -47,7 +80,7 @@ public abstract class LruCacheBase<K, V> implements Closeable {
     private final AtomicLong misses = new AtomicLong(0);
     private final AtomicLong requests = new AtomicLong(0);
     private boolean closed = false;
-    private volatile Object lock = new Object();
+    private final Object lock = new Object();
     private int cacheSize;
     private final boolean updateExisting;
 
@@ -65,9 +98,13 @@ public abstract class LruCacheBase<K, V> implements Closeable {
         }
         this.cacheSize = cacheSize;
         this.updateExisting = updateExisting;
-        this.hashMap = new ConcurrentHashMap<K, CachedItem>(cacheSize);
-        linkedLists = (CacheLinkedList[]) Array.newInstance(
-            CacheLinkedList.class, concurrency);
+        this.hashMap = new ConcurrentHashMap<>(cacheSize);
+        @SuppressWarnings("unchecked")
+        CacheLinkedList[] linkedListsUnchecked =
+            (CacheLinkedList[]) Array.newInstance(
+                CacheLinkedList.class,
+                concurrency);
+        linkedLists = linkedListsUnchecked;
         for (int i = 0; i < linkedLists.length; i++) {
             linkedLists[i] = new CacheLinkedList(this);
         }
@@ -103,8 +140,8 @@ public abstract class LruCacheBase<K, V> implements Closeable {
         return misses.doubleValue() / requests.doubleValue();
     }
 
+    @Override
     public V get(K key) {
-        boolean added = false;
         requests.incrementAndGet();
         // First, try to get the item from the hashMap
         CachedItem node = hashMap.get(key);
@@ -112,7 +149,7 @@ public abstract class LruCacheBase<K, V> implements Closeable {
             misses.incrementAndGet();
             return null;
         }
-        if (added == false) {
+        else {
             // The item is in the dictionary.
             // Move the item to the head of it's LRU list.
             node.list.moveFirst(node);
@@ -245,7 +282,7 @@ public abstract class LruCacheBase<K, V> implements Closeable {
         /**
          * The cache that the list is part of.
          */
-        LruCacheBase cache = null;
+        LruCacheBase<K, V> cache = null;
 
         /**
          * The first item in the list.
@@ -260,7 +297,7 @@ public abstract class LruCacheBase<K, V> implements Closeable {
         /**
          * Constructs a new instance of the CacheLinkedList.
          */
-        public CacheLinkedList(LruCacheBase cache) {
+        public CacheLinkedList(LruCacheBase<K,V> cache) {
             this.cache = cache;
         }
 

@@ -38,16 +38,30 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * Base class for on-premise aspect engines.
+ * @param <TData> the type of aspect data that the flow element will write to
+ * @param <TProperty> the type of meta data that the flow element will supply
+ *                    about the properties it populates.
+ */
 public abstract class OnPremiseAspectEngineBase<
     TData extends AspectData,
     TProperty extends AspectPropertyMetaData>
     extends AspectEngineBase<TData, TProperty>
     implements OnPremiseAspectEngine<TData, TProperty> {
 
-    private List<AspectEngineDataFile> dataFiles;
+    private final List<AspectEngineDataFile> dataFiles;
+
     private String tempDataDirPath;
 
-
+    /**
+     * Construct a new instance of the {@link OnPremiseAspectEngine}.
+     * @param logger logger instance to use for logging
+     * @param aspectDataFactory the factory to use when creating a {@link TData}
+     *                          instance
+     * @param tempDataDirPath the directory where a temporary data file copy
+     *                        will be stored if one is created
+     */
     public OnPremiseAspectEngineBase(
         Logger logger,
         ElementDataFactory<TData> aspectDataFactory,
@@ -96,15 +110,17 @@ public abstract class OnPremiseAspectEngineBase<
 
     /**
      * Get the date/time that the specified data file was published
-     * @param dataFileIdentifier The identifier of the data file to get meta
+     * @param dataFileIdentifier the identifier of the data file to get meta
      *                           data for. This parameter is ignored if the
-     *                           engine only has one data file.
+     *                           engine only has one data files
+     * @return data the data file was published
      */
     public abstract Date getDataFilePublishedDate(String dataFileIdentifier);
 
     /**
-     * Get the date/time that the specified data file was published
-     * @return
+     * Get the date/time that the default data file was published. This takes no
+     * identifier and is designed for engines which only use a single data file.
+     * @return data the data file was published
      */
     public Date getDataFilePublishedDate() {
         return getDataFilePublishedDate(null);
@@ -113,17 +129,18 @@ public abstract class OnPremiseAspectEngineBase<
     /**
      * Get the date/time that an update is expected to be available
      * for the specified data file.
-     * @param dataFileIdentifier  The identifier of the data file to get meta
-     *                            data for. This parameter is ignored if the
-     *                            engine only has one data file.
-     * @return
+     * @param dataFileIdentifier the identifier of the data file to get meta
+     *                           data for. This parameter is ignored if the
+     *                           engine only has one data file
+     * @return date the next data file update is available
      */
     public abstract Date getDataFileUpdateAvailableTime(String dataFileIdentifier);
 
     /**
      * Get the date/time that an update is expected to be available for the
-     * default data file.
-     * @return
+     * default data file. This takes no identifier and is designed for engines
+     * which only use a single data file.
+     * @return date the next data file update is available
      */
     public Date getDataFileUpdateAvailableTime() {
         return getDataFileUpdateAvailableTime(null);
@@ -147,6 +164,7 @@ public abstract class OnPremiseAspectEngineBase<
         super.managedResourcesCleanup();
     }
 
+    @Override
     public void addDataFile(AspectEngineDataFile dataFile) {
         dataFiles.add(dataFile);
 
@@ -155,7 +173,9 @@ public abstract class OnPremiseAspectEngineBase<
             refreshData(dataFile.getIdentifier());
         }
         else if (dataFile.getConfiguration().getData() != null) {
-            refreshData(dataFile.getIdentifier(), dataFile.getConfiguration().getData());
+            refreshData(
+                dataFile.getIdentifier(),
+                dataFile.getConfiguration().getData());
         }
         else {
             throw new PipelineConfigurationException(
@@ -163,12 +183,16 @@ public abstract class OnPremiseAspectEngineBase<
                     "to have either the 'Data' property or 'DataFilePath' " +
                     "property populated but it has neither.");
         }
+        dataFile.setEngine(this);
 
     }
 
+    @Override
     public TypedKey<TData> getTypedDataKey() {
         if (typedKey == null) {
-            typedKey = new TypedKeyDefault<>(getElementDataKey(), Types.findSubClassParameterType(this, OnPremiseAspectEngineBase.class, 0));
+            typedKey = new TypedKeyDefault<>(
+                getElementDataKey(),
+                Types.findSubClassParameterType(this, OnPremiseAspectEngineBase.class, 0));
         }
         return typedKey;
     }

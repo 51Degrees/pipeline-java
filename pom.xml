@@ -5,13 +5,17 @@
 
     <groupId>com.51degrees</groupId>
     <artifactId>pipeline</artifactId>
-    <version>4.1.0-SNAPSHOT</version>
+    <version>4.1.8-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>51Degrees :: Pipeline</name>
     <url>https:51degrees.com</url>
     <description>Java implementation of 51Degrees Pipeline API</description>
 
+    <organization>
+        <name>51Degrees</name>
+        <url>51degrees.com</url>
+    </organization>
     <developers>
         <developer>
             <name>51Degrees</name>
@@ -21,13 +25,14 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.target>1.7</maven.compiler.target>
-        <maven.compiler.source>1.7</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
         <exec-maven-plugin.version>1.5.0</exec-maven-plugin.version>
         <junit.version>4.12</junit.version>
+        <junit.jupiter.version>5.6.2</junit.jupiter.version>
         <slf4j-api.version>1.7.25</slf4j-api.version>
         <slf4j-simple.version>1.7.21</slf4j-simple.version>
-        <mockito-core.version>2.16.0</mockito-core.version>
+        <mockito-core.version>2.22.0</mockito-core.version>
         <org.json.version>20180813</org.json.version>
         <snapshot-repository.id>ossrh</snapshot-repository.id>
         <publishrepository.id>ossrh</publishrepository.id>
@@ -48,6 +53,17 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>

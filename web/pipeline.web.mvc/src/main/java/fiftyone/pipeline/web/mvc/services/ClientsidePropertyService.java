@@ -31,10 +31,17 @@ import org.springframework.stereotype.Service;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+
+/**
+ * Spring framework service for the {@link ClientsidePropertyServiceCore}.
+ */
 @Service
 public interface ClientsidePropertyService extends ClientsidePropertyServiceCore {
     void setPipeline(Pipeline pipeline);
     void serveJavascript(
+        HttpServletRequest request,
+        HttpServletResponse response) throws IOException;
+    void serveJson(
         HttpServletRequest request,
         HttpServletResponse response) throws IOException;
 

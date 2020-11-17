@@ -25,8 +25,32 @@ package fiftyone.pipeline.engines.data;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 
+/**
+ * Used to load data from either a file or byte array into the format 'T'.
+ * @param <T> type of object to load
+ */
 public interface DataLoader<T> {
+    /**
+     * Load a new instance of T using the data in the file provided.
+     * @param filePath file to load from
+     * @param type the type of object to load
+     * @return new instance of T
+     * @throws IOException
+     * @throws IllegalAccessException
+     * @throws InvocationTargetException
+     * @throws InstantiationException
+     */
     T loadData(String filePath, Class<T> type) throws IOException, IllegalAccessException, InvocationTargetException, InstantiationException;
 
+    /**
+     * Load a new instance of T using the data in the byte array provided.
+     * @param data byte array to load from
+     * @param type the type of object to load
+     * @return new instance of T
+     * @throws IOException
+     * @throws IllegalAccessException
+     * @throws InvocationTargetException
+     * @throws InstantiationException
+     */
     T loadData(byte[] data, Class<T> type) throws IOException, IllegalAccessException, InvocationTargetException, InstantiationException;
 }

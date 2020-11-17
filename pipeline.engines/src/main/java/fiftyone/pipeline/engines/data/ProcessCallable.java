@@ -26,8 +26,23 @@ import fiftyone.pipeline.engines.flowelements.AspectEngine;
 
 import java.util.concurrent.Callable;
 
+/**
+ * A {@link Callable} implementation which stores an {@link AspectEngine} to be
+ * used by the {@link Callable#call()} method. The {@link Callable#call()}
+ * method is left to be implemented anonymously when using this class.
+ */
 public abstract class ProcessCallable implements Callable<Void> {
+
+    /**
+     * The engine which is doing the processing.
+     */
     public final AspectEngine engine;
+
+    /**
+     * Construct a new instance.
+     * @param engine the engine to make available to the {@link Callable#call()}
+     *               method
+     */
     public ProcessCallable(AspectEngine engine) {
         this.engine = engine;
     }

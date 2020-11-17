@@ -24,13 +24,18 @@ package fiftyone.caching;
 
 import java.io.IOException;
 
+/**
+ * Interface that provides a method to load a value for a key
+ * @param <K> key for the cache items
+ * @param <V> value for the cache items
+ */
 public interface ValueLoader<K, V> {
     /**
      * Returns the value associated with the key.
      *
      * @param key for the value required
-     * @return Value associated with the key
-     * @throws java.io.IOException if there was an IOException in the course of loading.
+     * @return value associated with the key
+     * @throws IOException if there was an exception in the course of loading
      */
     V load(K key) throws IOException;
 }

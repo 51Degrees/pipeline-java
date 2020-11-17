@@ -29,17 +29,29 @@ import fiftyone.pipeline.engines.trackers.TrackerBase;
 
 import java.util.Date;
 
+/**
+ * A tracker used by share usage to attempt to avoid repeatedly sending data
+ * relating to the same user session.
+ */
 public class ShareUsageTracker extends TrackerBase<Date> {
 
+    /**
+     * The filter that defines which evidence keys to use in the tracker.
+     */
     private final EvidenceKeyFilter filter;
 
+    /**
+     * The interval in milliseconds.
+     */
     private final long interval;
 
     /**
-     *
-     * @param configuration
-     * @param intervalMillis in millis
-     * @param filter
+     * Construct a new instance.
+     * @param configuration the cache configuration to use when building the
+     *                      internal cache used by this tracker
+     * @param intervalMillis interval between matched in millis
+     * @param filter the {@link EvidenceKeyFilter} that defines the evidence
+     *               values to use when creating a key from an {@link FlowData}
      */
     public ShareUsageTracker(
         CacheConfiguration configuration,
@@ -59,13 +71,7 @@ public class ShareUsageTracker extends TrackerBase<Date> {
     @Override
     protected boolean match(FlowData data, Date value) {
         Date now = new Date();
-        if (value.getTime() <= (now.getTime() - interval)) {
-            value = now;
-            return true;
-        }
-        else {
-            return false;
-        }
+        return value.getTime() <= (now.getTime() - interval);
     }
 
     @Override

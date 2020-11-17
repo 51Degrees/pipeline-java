@@ -24,18 +24,50 @@ package fiftyone.pipeline.engines.fiftyone.data;
 
 import java.io.Closeable;
 
+/**
+ * Meta data relating to a profile within the data set.
+ */
 public interface ProfileMetaData extends Closeable {
+
+    /**
+     * Get the unique id of the profile.
+     * @return unique id of the profile
+     */
     int getProfileId();
 
+    /**
+     * Get the values which are defined in the profile (for some Engines
+     * multiple profiles are required to build a full set of results).
+     * @return values defined in the profile
+     */
     Iterable<ValueMetaData> getValues();
 
+    /**
+     * Gets the values associated with the profile and the property name.
+     * @param propertyName to get the values for
+     * @return values matching the property
+     */
     Iterable<ValueMetaData> getValues(String propertyName);
 
+    /**
+     * If there is a value for the profile with the property name and value then
+     * return an instance of it.
+     * @param propertyName to get the value for
+     * @param valueName value to look for
+     * @return value instance for property and value, or null if it doesn't
+     * exist
+     */
     ValueMetaData getValue(String propertyName, String valueName);
 
-    int getSignatureCount();
-
+    /**
+     * The component which the profile belongs to.
+     * @return the component for the profile
+     */
     ComponentMetaData getComponent();
 
+    /**
+     * The name of the profile. Usually indicates the type of device.
+     * @return name of the profile
+     */
     String getName();
 }

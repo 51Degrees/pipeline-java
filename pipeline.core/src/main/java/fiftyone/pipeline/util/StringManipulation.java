@@ -26,7 +26,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Static helper methods for manipulating strings.
+ */
 public class StringManipulation {
+    /**
+     * Join a list of strings using the delimiter provided.
+     * @param strings to join
+     * @param delimiter to separate the strings
+     * @return the joined string
+     */
     public static String stringJoin(List<String> strings, String delimiter) {
         StringBuilder builder = new StringBuilder();
         boolean first = true;
@@ -41,11 +50,24 @@ public class StringManipulation {
         return builder.toString();
     }
 
+    /**
+     * Join a list of strings using the delimiter provided.
+     * @param strings to join
+     * @param delimiter to separate the strings
+     * @return the joined string
+     */
     public static String stringJoin(String[] strings, String delimiter) {
         return stringJoin(Arrays.asList(strings), delimiter);
     }
 
-    public static String stringJoin(Iterable<? extends Object> objects, String delimiter) {
+    /**
+     * Join a list of strings returned by the {@link Object#toString()} method
+     * using the delimiter provided.
+     * @param objects to join the values of {@link Object#toString()}
+     * @param delimiter to separate the strings
+     * @return the joined string
+     */
+    public static String stringJoin(Iterable<?> objects, String delimiter) {
         List<String> strings = new ArrayList<>();
         for (Object object : objects) {
             strings.add(object.toString());

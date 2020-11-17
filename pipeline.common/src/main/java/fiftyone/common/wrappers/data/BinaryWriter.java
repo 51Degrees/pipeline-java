@@ -31,7 +31,7 @@ public class BinaryWriter implements AutoCloseable {
     /**
      * Length of the byte buffer.
      */
-    private final int BUFFER_LENGTH = 2048;
+    private static final int BUFFER_LENGTH = 2048;
     /**
      * Buffer used to correctly format the bytes for writing to disk.
      */

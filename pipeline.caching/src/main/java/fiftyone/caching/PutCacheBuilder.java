@@ -33,5 +33,7 @@ public interface PutCacheBuilder extends CacheBuilder {
      * @return this builder
      */
     PutCacheBuilder setUpdateExisting(boolean update);
+
+    @Override
     <K, V> PutCache<K, V> build(Cache<K, V> c, int cacheSize);
 }

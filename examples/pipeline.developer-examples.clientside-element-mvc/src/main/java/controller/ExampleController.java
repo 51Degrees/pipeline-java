@@ -39,9 +39,9 @@ import java.util.Random;
 @RequestMapping("/")
 public class ExampleController {
 
-    private FlowDataProvider flowDataProvider;
+    private final FlowDataProvider flowDataProvider;
 
-    private Random rand = new Random();
+    private final Random rand = new Random();
 
     @Autowired
     public ExampleController(FlowDataProvider flowDataProvider) {

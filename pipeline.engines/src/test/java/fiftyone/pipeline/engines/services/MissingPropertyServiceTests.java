@@ -76,7 +76,7 @@ public class MissingPropertyServiceTests {
 
         // Assert
         assertEquals(
-            MissingPropertyReason.PropertyExculdedFromEngineConfiguration,
+            MissingPropertyReason.PropertyExcludedFromEngineConfiguration,
             result.getReason());
     }
 

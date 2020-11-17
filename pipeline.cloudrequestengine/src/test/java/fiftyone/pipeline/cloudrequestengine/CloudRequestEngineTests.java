@@ -47,6 +47,7 @@ import java.net.URL;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
@@ -59,6 +60,7 @@ public class CloudRequestEngineTests {
     private String evidenceKeysResponse = "['query.User-Agent']";
     private String accessiblePropertiesResponse =
             "{'Products': {'device': {'DataTier': 'tier','Properties': [{'Name': 'value','Type': 'String','Category': 'Device'}]}}}";
+    private int accessiblePropertiesResponseCode = 200;
 
     public CloudRequestEngineTests() throws MalformedURLException {
         ILoggerFactory internalLogger = mock(ILoggerFactory.class);
@@ -240,6 +242,50 @@ public class CloudRequestEngineTests {
         }
         return false;
     }
+       
+    
+    /** 
+     * Test cloud request engine handles errors from the cloud service 
+     * as expected.
+     * An AggregateException should be thrown by the cloud request engine
+     * containing the errors from the cloud service
+     * and the pipeline is configured to throw any exceptions up 
+     * the stack in an AggregateException.
+     * We also check that the exception message includes the content 
+     * from the JSON response.
+     */ 
+    @Test
+    public void validateErrorHandling_InvalidResourceKey() throws Exception
+    {
+        final String resourceKey = "resource_key";
+        accessiblePropertiesResponse = "{ \"errors\":[\"58982060: resource_key not a valid resource key\"]}";
+        accessiblePropertiesResponseCode = 400;
+
+        configureMockedClient();
+
+        Exception exception = null;
+
+        try { 
+            CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
+                .setResourceKey(resourceKey)
+                .build();
+        }
+        catch (Exception ex)
+        {
+            exception = ex;
+        }
+
+        assertNotNull("Expected exception to occur", exception);
+        assertTrue(exception instanceof RuntimeException);
+        Exception aggEx = (RuntimeException)exception;
+        assertEquals(1, aggEx.getSuppressed().length);
+        Throwable realEx = aggEx.getSuppressed()[0];
+        assertTrue(realEx instanceof Exception);
+        assertTrue("Exception message did not contain the expected text.", 
+                realEx.getMessage().contains(
+            "resource_key not a valid resource key"));
+    }
+    
 
     private void configureMockedClient() throws IOException {
         // ARRANGE
@@ -262,11 +308,18 @@ public class CloudRequestEngineTests {
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-                doReturn((URL)invocationOnMock.getArgument(0)).when(connection).getURL();
+                URL url = (URL)invocationOnMock.getArgument(0);
+                doReturn(url).when(connection).getURL();
+                if (url.getPath().endsWith("properties")) {
+                    doReturn(accessiblePropertiesResponseCode).when(connection).getResponseCode();
+                }
+                else {
+                    doReturn(200).when(connection).getResponseCode();
+                }
                 return (Object)connection;
             }
         }).when(httpClient).connect(any(URL.class));
-        doReturn(200).when(connection).getResponseCode();
+        
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {

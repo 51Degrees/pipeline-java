@@ -24,6 +24,15 @@ package fiftyone.pipeline.engines.configuration;
 
 import java.util.concurrent.ExecutorService;
 
+/**
+ * Factory used to create instances of {@link ExecutorService}s for use when
+ * processing property values which are configured to be lazily loaded.
+ */
 public interface ExecutorServiceFactory {
+
+    /**
+     * Create a new {@link ExecutorService}.
+     * @return a new {@link ExecutorService}
+     */
     ExecutorService create();
 }

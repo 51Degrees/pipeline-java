@@ -23,8 +23,8 @@
 package fiftyone.pipeline.core.exceptions;
 
 /**
- * Exception that can be thrown when an <see cref="IOnPremiseAspectEngine"/>
- * fails to reload from one or more of it's data sources.
+ * Exception that can be thrown when an on-premise aspect engine fails to reload
+ * from one or more of it's data sources.
  */
 public class EngineRefreshException extends RuntimeException {
 

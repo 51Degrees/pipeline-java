@@ -26,8 +26,18 @@ import fiftyone.pipeline.core.data.FlowError;
 
 import java.util.Collection;
 
+/**
+ * Aggregation of multiple exceptions. All exceptions which caused an instance
+ * of this are added to the {@link #suppressedExceptions} list and can be
+ * retrieved via the {@link #getSuppressed()} method.
+ */
 public class AggregateException extends RuntimeException {
 
+    /**
+     * Construct a new instance
+     * @param message the message to give to the exception
+     * @param causes multiple causes to be contained in the exception
+     */
     public AggregateException(String message, Collection<FlowError> causes) {
         super(message);
         for (FlowError cause : causes) {
@@ -35,6 +45,10 @@ public class AggregateException extends RuntimeException {
         }
     }
 
+    /**
+     * Construct a new instance with no message.
+     * @param causes multiple causes to be contained in the exception
+     */
     public AggregateException(Collection<FlowError> causes) {
         super();
         for (FlowError cause : causes) {

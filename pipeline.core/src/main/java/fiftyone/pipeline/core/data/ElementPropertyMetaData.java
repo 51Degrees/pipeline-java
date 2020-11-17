@@ -22,6 +22,7 @@
 
 package fiftyone.pipeline.core.data;
 
+import fiftyone.pipeline.core.data.types.JavaScript;
 import fiftyone.pipeline.core.flowelements.FlowElement;
 
 import java.util.List;
@@ -31,11 +32,11 @@ import java.util.List;
  * stored in the element itself, so if a property is not included for some reason
  * (e.g. not in a data file, or excluded from config) then the engine still has
  * knowledge of its existence.
- * <p>
- * An ElementPropertyMetaData is a property of an Element of a request. E.g. ‘HardwareModel’
- * is a property of the ‘Device’ aspect. They define meta-data such as property
- * name, data type, the data file types the property is present in and a flag
- * indicating if the property is disabled.
+ *
+ * An ElementPropertyMetaData is a property of an Element of a request. E.g.
+ * ‘HardwareModel’ is a property of the ‘Device’ aspect. They define meta-data
+ * such as property name, data type, the data file types the property is present
+ * in and a flag indicating if the property is disabled.
  */
 public interface ElementPropertyMetaData {
 
@@ -53,16 +54,24 @@ public interface ElementPropertyMetaData {
      */
     FlowElement getElement();
 
+    /**
+     * The category the property belongs to.
+     * @return property category
+     */
     String getCategory();
 
     /**
      * Get the type of data which the property refers to e.g. {@link String}.
-     *
      * @return variable type class
      */
     Class getType();
 
+    /**
+     * Get whether or not the property is available in the results // todo
+     * @return true if the property is available
+     */
     boolean isAvailable();
+
     /**
      * This is only relevant where Type is a collection of complex
      * objects.
@@ -74,4 +83,33 @@ public interface ElementPropertyMetaData {
      * element within that list.
      */
     List<ElementPropertyMetaData> getItemProperties();
+
+
+    /**
+     * Only relevant if the type is {@link JavaScript}. Defaults to false.
+     * If set to true then the JavaScript in this property will
+     * not be executed automatically on the client device.
+     * This is used where executing the JavaScript would result in
+     * undesirable behavior.
+     * For example, attempting to access the location of the device
+     * will cause the browser to show a pop-up confirming if the
+     * user is happy too allow the website access to their location.
+     * In general, we don't want this to happen immediately when a
+     * user enters a website, but when they try to use a feature that
+     * requires location data (e.g. show restaurants near me).
+     * @return true if execution should be delayed
+     */
+    boolean getDelayExecution();
+
+    /**
+     * Get the names of any {@link JavaScript} properties that, when executed,
+     * will obtain additional evidence that can help in determining the value of
+     * this property. For example, the ScreenPixelsWidthJavaScript property will
+     * get the pixel width of the client-device's screen.
+     * This is used to update the ScreenPixelsWidth property.
+     * As such, ScreenPixelsWidth will have ScreenPixelWidthJavaScript
+     * in its list of evidence properties.
+     * @return list of evidence properties
+     */
+    List<String> getEvidenceProperties();
 }

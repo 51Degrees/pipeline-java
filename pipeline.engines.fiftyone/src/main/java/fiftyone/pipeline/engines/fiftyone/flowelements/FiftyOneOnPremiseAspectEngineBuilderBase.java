@@ -23,33 +23,69 @@
 package fiftyone.pipeline.engines.fiftyone.flowelements;
 
 import fiftyone.pipeline.engines.data.AspectEngineDataFile;
+import fiftyone.pipeline.engines.fiftyone.data.FiftyOneDataFile;
 import fiftyone.pipeline.engines.fiftyone.data.FiftyOneDataFileDefault;
+import fiftyone.pipeline.engines.fiftyone.data.FiftyOneUrlFormatter;
 import fiftyone.pipeline.engines.flowelements.SingleFileAspectEngineBuilderBase;
 import fiftyone.pipeline.engines.services.DataUpdateService;
 import org.slf4j.ILoggerFactory;
+import org.slf4j.LoggerFactory;
 
+/**
+ * Abstract base class that exposes the common options that all 51Degrees
+ * on-premise engine builders using a single data file should make use of.
+ * @param <TBuilder> the specific builder type to use as the return type from
+ *                  the fluent builder methods
+ * @param <TEngine> the type of the engine that this builder will build
+ */
 public abstract class FiftyOneOnPremiseAspectEngineBuilderBase<
     TBuilder extends FiftyOneOnPremiseAspectEngineBuilderBase<TBuilder, TEngine>,
     TEngine extends FiftyOneAspectEngine> extends
     SingleFileAspectEngineBuilderBase<TBuilder, TEngine> {
 
+    private String dataDownloadType;
+    
+    /**
+     * Default constructor which uses the {@link ILoggerFactory} implementation
+     * returned by {@link LoggerFactory#getILoggerFactory()}.
+     */
     public FiftyOneOnPremiseAspectEngineBuilderBase() {
-        super();
+        this(LoggerFactory.getILoggerFactory());
     }
 
+    /**
+     * Construct a new instance using the {@link ILoggerFactory} supplied.
+     * @param loggerFactory the logger factory to use
+     */
     public FiftyOneOnPremiseAspectEngineBuilderBase(ILoggerFactory loggerFactory) {
-        super(loggerFactory);
+        this(loggerFactory, null);
     }
 
+    /**
+     * Construct a new instance using the {@link ILoggerFactory} and
+     * {@link DataUpdateService} supplied.
+     * @param loggerFactory the logger factory to use
+     * @param dataUpdateService the {@link DataUpdateService} to use when
+     *                          automatic updates happen on the data file
+     */
     public FiftyOneOnPremiseAspectEngineBuilderBase(
         ILoggerFactory loggerFactory,
         DataUpdateService dataUpdateService) {
         super(loggerFactory, dataUpdateService);
+        setDataUpdateUrl("https://distributor.51degrees.com/api/v2/download");
+        setDataUpdateUrlFormatter(new FiftyOneUrlFormatter());
     }
 
+    /**
+     * Create a new empty data file instance to be populated with the details of
+     * the data file to be used.
+     * @return new {@link AspectEngineDataFile} instance
+     */
     @Override
     protected AspectEngineDataFile newAspectEngineDataFile() {
-        return new FiftyOneDataFileDefault();
+        FiftyOneDataFile dataFile = new FiftyOneDataFileDefault();
+        dataFile.setDataUpdateDownloadType(dataDownloadType != null ? dataDownloadType : getDefaultDataDownloadType());
+        return dataFile; 
     }
 
     /**
@@ -60,4 +96,27 @@ public abstract class FiftyOneOnPremiseAspectEngineBuilderBase<
      * @return this builder
      */
     public abstract TBuilder setConcurrency(int concurrency);
+    
+    /**
+     * The default value to use for the 'Type' parameter when sending
+     * a request to the Distributor
+     * @return default data download type;
+     */
+    protected abstract String getDefaultDataDownloadType();
+    
+    /**
+     * Set the 'type' string that will be sent to the 'distributor' 
+     * service when downloading a new data file.
+     * Note that this is only needed if using UpdateOnStartup. 
+     * Otherwise, the update service will use the type name from the 
+     * existing data file.
+     * The default value is provided by the specific engine builder 
+     * implementation. 
+     * @param typeName The download type to use. For example 'HashV4'.
+     * @return This builder.
+     */
+    protected TBuilder setDefaultDataDownloadType(String typeName){
+        dataDownloadType = typeName;
+        return (TBuilder)this;
+    }
 }

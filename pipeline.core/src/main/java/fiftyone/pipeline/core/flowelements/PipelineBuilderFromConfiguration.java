@@ -24,6 +24,20 @@ package fiftyone.pipeline.core.flowelements;
 
 import fiftyone.pipeline.core.configuration.PipelineOptions;
 
+/**
+ * Pipeline builders implementing this interface are capable of building a
+ * {@link Pipeline} based on a supplied {@link PipelineOptions} instance.
+ */
 public interface PipelineBuilderFromConfiguration {
+
+    /**
+     * Build the pipeline using the specified configuration options.
+     * @param options a {@link PipelineOptions} instance describing how to build
+     *                the pipeline
+     * @return a new {@link Pipeline} instance containing the configured
+     * {@link FlowElement} instances
+     * @throws Exception if the configuration could not be used to build a valid
+     * {@link Pipeline}
+     */
     Pipeline buildFromConfiguration(PipelineOptions options) throws Exception;
 }
