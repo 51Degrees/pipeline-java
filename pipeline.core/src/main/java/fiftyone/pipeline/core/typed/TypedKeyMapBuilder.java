@@ -365,9 +365,7 @@ public class TypedKeyMapBuilder {
 
             public void closeValue() {
                 try {
-                    if (_value instanceof Closeable) {
-                        ((Closeable) _value).close();
-                    } else if (_value instanceof AutoCloseable) {
+                    if (_value instanceof AutoCloseable) {
                         ((AutoCloseable) _value).close();
                     }
                 } catch (Exception ex) {

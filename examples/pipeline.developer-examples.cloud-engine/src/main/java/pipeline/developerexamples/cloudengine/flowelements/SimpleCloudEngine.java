@@ -47,6 +47,8 @@ public class SimpleCloudEngine extends CloudAspectEngineBase<StarSignData> {
         Logger logger,
         ElementDataFactory<StarSignData> dataFactory) {
         super(logger, dataFactory);
+        // Create an empty list
+        aspectProperties = new ArrayList<AspectPropertyMetaData>();
     }
 //! [constructor]
 

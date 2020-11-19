@@ -51,15 +51,17 @@ public class Main {
             Calendar dob = Calendar.getInstance();
             dob.set(1992, Calendar.DECEMBER, 18);
 
-            FlowData flowData = pipeline.createFlowData();
-            flowData
-                .addEvidence("date-of-birth", dob.getTime())
-                .process();
-
-            System.out.println("With a date of birth of " +
-                new SimpleDateFormat("yyyy/MM/dd").format(dob.getTime()) +
-                ", your star sign is " +
-                flowData.getFromElement(starSignElement).getStarSign() + ".");
+            try (FlowData flowData = pipeline.createFlowData()) {
+	            flowData
+	                .addEvidence("date-of-birth", dob.getTime())
+	                .process();
+	
+	            System.out.println("With a date of birth of " +
+	                new SimpleDateFormat("yyyy/MM/dd").format(dob.getTime()) +
+	                ", your star sign is " +
+	                flowData.getFromElement(starSignElement).getStarSign() + 
+	                ".");
+            }
 //! [usage]
         }
     }

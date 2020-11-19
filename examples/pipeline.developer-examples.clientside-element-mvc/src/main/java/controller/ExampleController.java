@@ -50,14 +50,17 @@ public class ExampleController {
 
     @RequestMapping(method = RequestMethod.GET)
     public String get(ModelMap model, HttpServletRequest request) {
-        FlowData data = flowDataProvider.getFlowData(request);
-
-        model.addAttribute(
-            "message",
-            "With a date of birth of " +
-        data.getEvidence().get("cookie.date-of-birth") +
-        ", your star sign is " +
-        data.get(StarSignData.class).getStarSign());
+    	String message = "";
+        try (FlowData data = flowDataProvider.getFlowData(request)) {
+	        message = "With a date of birth of " +
+	        	data.getEvidence().get("cookie.date-of-birth") +
+	        	", your star sign is " +
+	        	data.get(StarSignData.class).getStarSign();
+        }
+        catch (Exception e) {
+        	message = e.getMessage();
+        }
+        model.addAttribute("message", message);
         model.addAttribute("version", rand.nextInt());
         return "example";
     }

@@ -59,15 +59,16 @@ public class Main {
 
             String dob = "18/12/1992";
 
-            FlowData flowData = pipeline.createFlowData();
-            flowData
-                .addEvidence("date-of-birth", dob)
-                .process();
-
-            System.out.println("With a date of birth of " +
-                dob +
-                ", your star sign is " +
-                flowData.getFromElement(ageElement).getStarSign() + ".");
+            try (FlowData flowData = pipeline.createFlowData()) {
+	            flowData
+	                .addEvidence("date-of-birth", dob)
+	                .process();
+	
+	            System.out.println("With a date of birth of " +
+	                dob +
+	                ", your star sign is " +
+	                flowData.getFromElement(ageElement).getStarSign() + ".");
+            }
 //! [usage]
         }
     }

@@ -339,20 +339,21 @@ public class PipelineBuilderTests {
         MultiplyByElement multiplyByElement = pipeline.getElement(MultiplyByElement.class);
 
         // Create, populate and process flow data.
-        FlowData flowData = pipeline.createFlowData();
-        flowData
-            .addEvidence(splitterElement.evidenceKeys.get(0), "1,2,abc")
-            .addEvidence(multiplyByElement.evidenceKeys.get(0), 25)
-            .process();
-
-        // Get the results and verify them.
-        ListSplitterElementData splitterData = flowData.getFromElement(splitterElement);
-        TestElementData multiplyByData = flowData.getFromElement(multiplyByElement);
-
-        assertEquals("1", splitterData.getResult().get(0));
-        assertEquals("2", splitterData.getResult().get(1));
-        assertEquals("abc", splitterData.getResult().get(2));
-        assertEquals(75, multiplyByData.getResult());
+        try (FlowData flowData = pipeline.createFlowData()) {
+	        flowData
+	            .addEvidence(splitterElement.evidenceKeys.get(0), "1,2,abc")
+	            .addEvidence(multiplyByElement.evidenceKeys.get(0), 25)
+	            .process();
+	
+	        // Get the results and verify them.
+	        ListSplitterElementData splitterData = flowData.getFromElement(splitterElement);
+	        TestElementData multiplyByData = flowData.getFromElement(multiplyByElement);
+	
+	        assertEquals("1", splitterData.getResult().get(0));
+	        assertEquals("2", splitterData.getResult().get(1));
+	        assertEquals("abc", splitterData.getResult().get(2));
+	        assertEquals(75, multiplyByData.getResult());
+        }
     }
 
     private void VerifyListSplitterElementPipeline(
@@ -366,31 +367,32 @@ public class PipelineBuilderTests {
         assertEquals(1, element.evidenceKeys.size());
 
         // Create, populate and process flow data.
-        FlowData flowData = pipeline.createFlowData();
-        flowData.addEvidence(element.evidenceKeys.get(0), "123,456|789,0")
-            .process();
-
-        // Get the result and verify it.
-        ListSplitterElementData elementData = flowData.getFromElement(element);
-        switch (splitOn) {
-            case Comma:
-                assertEquals("123", elementData.getResult().get(0));
-                assertEquals("456|789", elementData.getResult().get(1));
-                assertEquals("0", elementData.getResult().get(2));
-                break;
-            case Pipe:
-                assertEquals("123,456", elementData.getResult().get(0));
-                assertEquals("789,0", elementData.getResult().get(1));
-                break;
-            case CommaMaxLengthThree:
-                assertEquals("123", elementData.getResult().get(0));
-                assertEquals("456", elementData.getResult().get(1));
-                assertEquals("|78", elementData.getResult().get(2));
-                assertEquals("9", elementData.getResult().get(3));
-                assertEquals("0", elementData.getResult().get(4));
-                break;
-            default:
-                break;
+        try (FlowData flowData = pipeline.createFlowData()) {
+	        flowData.addEvidence(element.evidenceKeys.get(0), "123,456|789,0")
+	            .process();
+	
+	        // Get the result and verify it.
+	        ListSplitterElementData elementData = flowData.getFromElement(element);
+	        switch (splitOn) {
+	            case Comma:
+	                assertEquals("123", elementData.getResult().get(0));
+	                assertEquals("456|789", elementData.getResult().get(1));
+	                assertEquals("0", elementData.getResult().get(2));
+	                break;
+	            case Pipe:
+	                assertEquals("123,456", elementData.getResult().get(0));
+	                assertEquals("789,0", elementData.getResult().get(1));
+	                break;
+	            case CommaMaxLengthThree:
+	                assertEquals("123", elementData.getResult().get(0));
+	                assertEquals("456", elementData.getResult().get(1));
+	                assertEquals("|78", elementData.getResult().get(2));
+	                assertEquals("9", elementData.getResult().get(3));
+	                assertEquals("0", elementData.getResult().get(4));
+	                break;
+	            default:
+	                break;
+	        }
         }
     }
 
@@ -403,13 +405,14 @@ public class PipelineBuilderTests {
         assertEquals(1, element.evidenceKeys.size());
 
         // Create, populate and process flow data.
-        FlowData flowData = pipeline.createFlowData();
-        flowData.addEvidence(element.evidenceKeys.get(0), 5)
-            .process();
-
-        // Get the result and verify it.
-        TestElementData elementData = flowData.getFromElement(element);
-        assertEquals(40, elementData.getResult());
+        try (FlowData flowData = pipeline.createFlowData()) {
+	        flowData.addEvidence(element.evidenceKeys.get(0), 5)
+	            .process();
+	
+	        // Get the result and verify it.
+	        TestElementData elementData = flowData.getFromElement(element);
+	        assertEquals(40, elementData.getResult());
+        }
     }
 
     private enum SplitOption {Comma, Pipe, CommaMaxLengthThree}

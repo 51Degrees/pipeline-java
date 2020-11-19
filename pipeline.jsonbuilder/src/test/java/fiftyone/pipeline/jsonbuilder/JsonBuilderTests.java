@@ -465,17 +465,18 @@ public class JsonBuilderTests {
             .addFlowElement(jsonBuilder)
             .build();
 
-        FlowData flowData = pipeline.createFlowData();
+        try (FlowData flowData = pipeline.createFlowData()) {
 
-        flowData.process();
-
-        JsonBuilderData jsonResult = flowData.get(JsonBuilderData.class);
-        assertNotNull(jsonResult);
-        assertNotNull(jsonResult.getJson());
-
-        JSONObject jsonData = new JSONObject(jsonResult.getJson());
-        assertEquals(1, jsonData.getJSONObject("empty-aspect").getLong("valueone"));
-        assertEquals(2, jsonData.getJSONObject("empty-aspect").getLong("valuetwo"));
+	        flowData.process();
+	
+	        JsonBuilderData jsonResult = flowData.get(JsonBuilderData.class);
+	        assertNotNull(jsonResult);
+	        assertNotNull(jsonResult.getJson());
+	
+	        JSONObject jsonData = new JSONObject(jsonResult.getJson());
+	        assertEquals(1, jsonData.getJSONObject("empty-aspect").getLong("valueone"));
+	        assertEquals(2, jsonData.getJSONObject("empty-aspect").getLong("valuetwo"));
+        }
     }
 
     private String testIteration(int iteration) throws Exception {

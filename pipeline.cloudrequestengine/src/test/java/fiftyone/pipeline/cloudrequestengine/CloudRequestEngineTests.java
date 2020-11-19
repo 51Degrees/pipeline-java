@@ -84,8 +84,8 @@ public class CloudRequestEngineTests {
             .build();
 
         try (Pipeline pipeline = new PipelineBuilder(loggerFactory)
-            .addFlowElement(engine).build()) {
-            FlowData data = pipeline.createFlowData();
+            .addFlowElement(engine).build();
+        	FlowData data = pipeline.createFlowData()) {
             data.addEvidence("query.User-Agent", userAgent);
 
             data.process();
@@ -133,8 +133,8 @@ public class CloudRequestEngineTests {
 
         try (Pipeline pipeline = new PipelineBuilder(loggerFactory)
             .addFlowElement(engine)
-            .build()) {
-            FlowData data = pipeline.createFlowData();
+            .build();
+        	FlowData data = pipeline.createFlowData()) {
             data.addEvidence("query.User-Agent", userAgent);
 
             data.process();
