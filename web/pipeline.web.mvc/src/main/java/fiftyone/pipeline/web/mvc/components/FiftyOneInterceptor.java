@@ -97,7 +97,10 @@ public class FiftyOneInterceptor extends HandlerInterceptorAdapter {
             Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
             // Bind the configuration to a pipeline options instance
             PipelineOptions options = (PipelineOptions) unmarshaller.unmarshal(configFile);
-            pipeline = StartupHelpers.buildFromConfiguration(builder, options, config.getClientsidePropertiesEnabled());
+            pipeline = StartupHelpers.buildFromConfiguration(
+            		builder, 
+            		options, 
+            		config.getClientsidePropertiesEnabled());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
