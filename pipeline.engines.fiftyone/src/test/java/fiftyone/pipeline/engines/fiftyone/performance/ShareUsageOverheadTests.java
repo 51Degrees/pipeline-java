@@ -101,6 +101,17 @@ public class ShareUsageOverheadTests {
             entry.process();
         }
         long end = System.currentTimeMillis();
+        
+        // It is not efficient to use try-with-resources
+        // in this scenario, so loop through and perform
+        // manual close on each FlowData
+        data.forEach((f) -> { 
+        	try {
+        		f.close();
+        	} catch (Exception e) {
+        		e.printStackTrace();
+        	}
+        });
 
         return ((double)end - (double)start) / (double)iterations;
     }
@@ -119,6 +130,17 @@ public class ShareUsageOverheadTests {
             entry.process();
         }
         long end = System.currentTimeMillis();
+        
+        // It is not efficient to use try-with-resources
+        // in this scenario, so loop through and perform
+        // manual close on each FlowData
+        data.forEach((f) -> { 
+        	try {
+        		f.close();
+        	} catch (Exception e) {
+        		e.printStackTrace();
+        	}
+        });
 
         double msOverheadPerCall = (end - start) / iterations;
         assumeTrue("Pipeline with share usage overhead per Process call was " +
@@ -143,6 +165,17 @@ public class ShareUsageOverheadTests {
             entry.process();
         }
         long end = System.currentTimeMillis();
+        
+        // It is not efficient to use try-with-resources
+        // in this scenario, so loop through and perform
+        // manual close on each FlowData
+        data.forEach((f) -> { 
+        	try {
+        		f.close();
+        	} catch (Exception e) {
+        		e.printStackTrace();
+        	}
+        });
 
         double msOverheadPerCall = ((double)end - (double)start) / (double)iterations;
         assumeTrue("Pipeline with share usage overhead per Process call was " +

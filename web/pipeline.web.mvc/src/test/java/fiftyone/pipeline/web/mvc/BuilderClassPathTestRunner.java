@@ -20,9 +20,10 @@
  * such notice(s) shall fulfill the requirements of that article.
  * ********************************************************************* */
 
-package fiftyone.pipeline.web;
+package fiftyone.pipeline.web.mvc;
 
 import com.sun.xml.bind.v2.ContextFactory;
+
 import fiftyone.pipeline.core.testclasses.flowelements.MultiplyByElementBuilder;
 import fiftyone.pipeline.engines.fiftyone.flowelements.SequenceElement;
 import fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElement;
@@ -40,13 +41,11 @@ public class BuilderClassPathTestRunner extends BlockJUnit4ClassRunner {
 
     static ClassLoader classLoaderWithBuidlers;
 
-    public BuilderClassPathTestRunner(Class<?> klass) 
-    	throws InitializationError {
+    public BuilderClassPathTestRunner(Class<?> klass) throws InitializationError {
         super(loadFromCustomClassloader(klass));
     }
 
-    private static Class<?> loadFromCustomClassloader(Class<?> clazz) 
-    	throws InitializationError {
+    private static Class<?> loadFromCustomClassloader(Class<?> clazz) throws InitializationError {
         try {
             // Only load once to support parallel tests
             if (classLoaderWithBuidlers == null) {
@@ -94,8 +93,7 @@ public class BuilderClassPathTestRunner extends BlockJUnit4ClassRunner {
         }
 
         @Override
-        public synchronized Class<?> loadClass(String name) 
-        	throws ClassNotFoundException {
+        public synchronized Class<?> loadClass(String name) throws ClassNotFoundException {
             return parent.loadClass(name);
         }
 
@@ -103,39 +101,13 @@ public class BuilderClassPathTestRunner extends BlockJUnit4ClassRunner {
         private static URL[] getClasspathUrls() {
             ArrayList<URL> classpathUrls = new ArrayList<>();
 
-            classpathUrls.add(
-            	SequenceElement.class
-            		.getProtectionDomain()
-            		.getCodeSource()
-            		.getLocation());
-            classpathUrls.add(
-            	JsonBuilderElement.class
-            		.getProtectionDomain()
-            		.getCodeSource()
-            		.getLocation());
-            classpathUrls.add(
-            	JavaScriptBuilderElement.class
-            		.getProtectionDomain()
-            		.getCodeSource()
-            		.getLocation());
-            classpathUrls.add(
-            	MultiplyByElementBuilder.class
-            		.getProtectionDomain()
-            		.getCodeSource()
-            		.getLocation());
-            if (Integer.parseInt(
-            	System.getProperty("java.version")
-            		.split("\\.")[0]) >= 9) {
-                classpathUrls.add(
-                		JAXBContext.class
-                			.getProtectionDomain()
-                			.getCodeSource()
-                			.getLocation());
-                classpathUrls.add(
-                		ContextFactory.class
-                			.getProtectionDomain()
-                			.getCodeSource()
-                			.getLocation());
+            classpathUrls.add(SequenceElement.class.getProtectionDomain().getCodeSource().getLocation());
+            classpathUrls.add(JsonBuilderElement.class.getProtectionDomain().getCodeSource().getLocation());
+            classpathUrls.add(JavaScriptBuilderElement.class.getProtectionDomain().getCodeSource().getLocation());
+            classpathUrls.add(MultiplyByElementBuilder.class.getProtectionDomain().getCodeSource().getLocation());
+            if (Integer.parseInt(System.getProperty("java.version").split("\\.")[0]) >= 9) {
+                classpathUrls.add(JAXBContext.class.getProtectionDomain().getCodeSource().getLocation());
+                classpathUrls.add(ContextFactory.class.getProtectionDomain().getCodeSource().getLocation());
             }
 
             return classpathUrls.toArray(new URL[classpathUrls.size()]);

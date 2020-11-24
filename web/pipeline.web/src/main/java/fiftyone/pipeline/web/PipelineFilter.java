@@ -124,6 +124,14 @@ public class PipelineFilter implements Filter {
             jsService.serveJson((HttpServletRequest)request, (HttpServletResponse) response) == false) {
             chain.doFilter(request, response);//sends request to next resource
         }
+
+        // The rest of the filters in the chain have now been called. So it is
+        // time to dispose of the FlowData instance.
+        try {
+            flowDataProviderCore.getFlowData((HttpServletRequest) request).close();
+        } catch (Exception e) {
+            throw new ServletException("FlowData could not be disposed of.", e);
+        }
     }
 
     @Override

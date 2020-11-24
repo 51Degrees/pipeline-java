@@ -379,4 +379,13 @@ class FlowDataDefault implements FlowData {
     public EvidenceKeyFilter getEvidenceKeyFilter() {
         return pipeline.getEvidenceKeyFilter();
     }
+
+    @Override
+    public void close() throws Exception {
+        for (Object elementData : data.asStringKeyMap().values()) {
+            if (AutoCloseable.class.isAssignableFrom(elementData.getClass())) {
+                ((AutoCloseable) elementData).close();
+            }
+        }
+    }
 }

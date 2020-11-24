@@ -40,6 +40,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBContext;
@@ -96,7 +97,10 @@ public class FiftyOneInterceptor extends HandlerInterceptorAdapter {
             Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
             // Bind the configuration to a pipeline options instance
             PipelineOptions options = (PipelineOptions) unmarshaller.unmarshal(configFile);
-            pipeline = StartupHelpers.buildFromConfiguration(builder, options, config.getClientsidePropertiesEnabled());
+            pipeline = StartupHelpers.buildFromConfiguration(
+            		builder, 
+            		options, 
+            		config.getClientsidePropertiesEnabled());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -112,12 +116,28 @@ public class FiftyOneInterceptor extends HandlerInterceptorAdapter {
     }
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        Object handler) throws Exception {
         resultService.process(request);
         if (fiftyOneJsService.serveJS(request,  response) == false &&
                 fiftyOneJsService.serveJson(request, response) == false) {
             return super.preHandle(request, response, handler);
         }
         return false;
+    }
+
+    @Override
+    public void afterCompletion(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        Object handler,
+        Exception ex) throws Exception {
+        try {
+            flowDataProvider.getFlowData(request).close();
+        } catch (Exception e) {
+            throw new Exception("FlowData could not be disposed of.", e);
+        }
     }
 }
