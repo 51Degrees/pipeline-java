@@ -22,18 +22,21 @@
 
 package fiftyone.pipeline.engines.services;
 
+import fiftyone.pipeline.core.data.ElementPropertyMetaData;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
+import fiftyone.pipeline.engines.flowelements.CloudAspectEngine;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
+import static fiftyone.pipeline.engines.Constants.MissingPropertyMessages;
 import static fiftyone.pipeline.util.StringManipulation.stringJoin;
 
 /**
  * Default implementation of the {@link MissingPropertyService} interface.
  */
 public class MissingPropertyServiceDefault implements MissingPropertyService {
-
     /**
      * Singleton instance of the service.
      */
@@ -103,30 +106,52 @@ public class MissingPropertyServiceDefault implements MissingPropertyService {
                 reason = MissingPropertyReason.PropertyExcludedFromEngineConfiguration;
             }
         }
+        else {
+            if (CloudAspectEngine.class.isAssignableFrom(engine.getClass())) {
+                if (engine.getProperties().size() == 0) {
+                    reason = MissingPropertyReason.ProductNotAccessibleWithResourceKey;
+                }
+                else {
+                    reason = MissingPropertyReason.PropertyNotAccessibleWithResourceKey;
+                }
+            }
+        }
 
         // Build the message string to return to the caller.
         StringBuilder message = new StringBuilder();
-        message.append("Property '")
-            .append(propertyName)
-            .append("' is not present in the results.\n");
+        message.append(String.format(
+            MissingPropertyMessages.PREFIX,
+            propertyName,
+            engine.getElementDataKey()));
         switch (reason) {
             case DataFileUpgradeRequired:
-                message.append("This is because your license and/or data file " +
-                    "does not include this property. The property is available " +
-                    "with the ")
-                    .append(stringJoin(
+                message.append(String.format(
+                    MissingPropertyMessages.DATA_UPGRADE_REQUIRED,
+                    stringJoin(
                         property.getDataTiersWherePresent(),
-                        ","))
-                    .append(" license/data for the ")
-                    .append(engine.getClass().getSimpleName());
+                        ","),
+                    engine.getClass().getSimpleName()));
                 break;
             case PropertyExcludedFromEngineConfiguration:
-                message.append("This is because the property has been " +
-                    "excluded when configuring the engine.");
+                message.append(MissingPropertyMessages.PROPERTY_EXCLUDED);
+                break;
+            case ProductNotAccessibleWithResourceKey:
+                message.append(String.format(
+                    MissingPropertyMessages.PRODUCT_NOT_IN_CLOUD_RESOURCE,
+                    engine.getElementDataKey()));
+                break;
+            case PropertyNotAccessibleWithResourceKey:
+                List<String> available =
+                    ((List<ElementPropertyMetaData>)engine.getProperties())
+                    .stream().map(ElementPropertyMetaData::getName)
+                    .collect(Collectors.toList());
+                message.append(String.format(
+                    MissingPropertyMessages.PROPERTY_NOT_IN_CLOUD_RESOURCE,
+                    engine.getElementDataKey(),
+                    stringJoin(available, ", ")));
                 break;
             case Unknown:
-                message.append("The reason for this is unknown. Please " +
-                    "check that the aspect and property name are correct.");
+                message.append(MissingPropertyMessages.UNKNOWN);
                 break;
             default:
                 break;

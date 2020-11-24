@@ -22,15 +22,23 @@
 
 package fiftyone.pipeline.engines.services;
 
+import fiftyone.pipeline.core.data.ElementPropertyMetaData;
+import fiftyone.pipeline.core.data.ElementPropertyMetaDataDefault;
+import fiftyone.pipeline.engines.Constants;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaDataDefault;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
+import fiftyone.pipeline.engines.flowelements.CloudAspectEngine;
+import javafx.scene.control.SelectionMode;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import static fiftyone.pipeline.util.StringManipulation.stringJoin;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -49,6 +57,7 @@ public class MissingPropertyServiceTests {
         // Arrange
         AspectEngine engine = mock(AspectEngine.class);
         when(engine.getDataSourceTier()).thenReturn("lite");
+        when(engine.getElementDataKey()).thenReturn("testElement");
         configureProperty(engine);
 
         // Act
@@ -60,6 +69,17 @@ public class MissingPropertyServiceTests {
         assertEquals(
             MissingPropertyReason.DataFileUpgradeRequired,
             result.getReason());
+        assertEquals(
+            String.format(
+                Constants.MissingPropertyMessages.PREFIX,
+                "testProperty",
+                "testElement") +
+                String.format(
+                    Constants.MissingPropertyMessages.DATA_UPGRADE_REQUIRED,
+                    stringJoin(((AspectPropertyMetaData)engine.getProperties().get(0)).getDataTiersWherePresent(), ","),
+                    engine.getClass().getSimpleName()),
+            result.getDescription());
+
     }
 
     @Test
@@ -67,6 +87,7 @@ public class MissingPropertyServiceTests {
         // Arrange
         AspectEngine engine = mock(AspectEngine.class);
         when(engine.getDataSourceTier()).thenReturn("premium");
+        when(engine.getElementDataKey()).thenReturn("testElement");
         configureProperty(engine, false);
 
         // Act
@@ -78,6 +99,14 @@ public class MissingPropertyServiceTests {
         assertEquals(
             MissingPropertyReason.PropertyExcludedFromEngineConfiguration,
             result.getReason());
+        assertEquals(
+            String.format(
+                Constants.MissingPropertyMessages.PREFIX,
+                "testProperty",
+                "testElement") +
+                Constants.MissingPropertyMessages.PROPERTY_EXCLUDED,
+            result.getDescription());
+
     }
 
     @Test
@@ -85,6 +114,7 @@ public class MissingPropertyServiceTests {
         // Arrange
         AspectEngine engine = mock(AspectEngine.class);
         when(engine.getDataSourceTier()).thenReturn("premium");
+        when(engine.getElementDataKey()).thenReturn("testElement");
         configureProperty(engine, false);
 
         // Act
@@ -94,6 +124,68 @@ public class MissingPropertyServiceTests {
 
         // Assert
         assertEquals(MissingPropertyReason.Unknown, result.getReason());
+        assertEquals(
+            String.format(
+                Constants.MissingPropertyMessages.PREFIX,
+                "otherProperty",
+                "testElement") +
+            Constants.MissingPropertyMessages.UNKNOWN,
+            result.getDescription());
+    }
+
+    @Test
+    public void MissingPropertyService_GetReason_ProductNotInResource() {
+        // Arrange
+        CloudAspectEngine engine = mock(CloudAspectEngine.class);
+        when(engine.getElementDataKey()).thenReturn("testElement");
+        when(engine.getProperties()).thenReturn(Collections.emptyList());
+
+        // Act
+        MissingPropertyResult result = service.getMissingPropertyReason(
+            "otherProperty",
+            engine);
+
+        // Assert
+        assertEquals(
+            MissingPropertyReason.ProductNotAccessibleWithResourceKey,
+            result.getReason());
+        assertEquals(
+            String.format(
+                Constants.MissingPropertyMessages.PREFIX,
+                "otherProperty",
+                "testElement") +
+            String.format(
+                Constants.MissingPropertyMessages.PRODUCT_NOT_IN_CLOUD_RESOURCE,
+                "testElement"),
+            result.getDescription());
+    }
+
+    @Test
+    public void MissingPropertyService_GetReason_PropertyNotInResource() {
+        // Arrange
+        CloudAspectEngine engine = mock(CloudAspectEngine.class);
+        when(engine.getElementDataKey()).thenReturn("testElement");
+        configureProperty(engine);
+
+        // Act
+        MissingPropertyResult result = service.getMissingPropertyReason(
+            "otherProperty",
+            engine);
+
+        // Assert
+        assertEquals(
+            MissingPropertyReason.PropertyNotAccessibleWithResourceKey,
+            result.getReason());
+        assertEquals(
+            String.format(
+                Constants.MissingPropertyMessages.PREFIX,
+                "otherProperty",
+                "testElement") +
+                String.format(
+                    Constants.MissingPropertyMessages.PROPERTY_NOT_IN_CLOUD_RESOURCE,
+                    "testElement",
+                    "testProperty"),
+            result.getDescription());
     }
 
     @Test
@@ -101,6 +193,7 @@ public class MissingPropertyServiceTests {
         // Arrange
         AspectEngine engine = mock(AspectEngine.class);
         when(engine.getDataSourceTier()).thenReturn("premium");
+        when(engine.getElementDataKey()).thenReturn("testElement");
         configureProperty(engine);
 
         // Act
@@ -110,6 +203,13 @@ public class MissingPropertyServiceTests {
 
         // Assert
         assertEquals(MissingPropertyReason.Unknown, result.getReason());
+        assertEquals(
+            String.format(
+                Constants.MissingPropertyMessages.PREFIX,
+                "testProperty",
+                "testElement") +
+                Constants.MissingPropertyMessages.UNKNOWN,
+            result.getDescription());
     }
 
     private void configureProperty(AspectEngine engine) {
