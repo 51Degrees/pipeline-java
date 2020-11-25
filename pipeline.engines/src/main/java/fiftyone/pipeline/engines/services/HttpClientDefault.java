@@ -58,7 +58,8 @@ public class HttpClientDefault implements HttpClient {
             throw new IOException("received response code " +
                 rc +
                 " from request to "
-                + connection.getURL().toString());
+                + connection.getURL().toString() + ". Error was: " +
+                connection.getResponseMessage());
         }
         BufferedReader reader = new BufferedReader(new InputStreamReader((connection.getInputStream())));
         StringBuilder builder = new StringBuilder();

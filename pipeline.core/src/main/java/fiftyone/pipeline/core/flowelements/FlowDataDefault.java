@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static fiftyone.pipeline.util.CheckArgument.checkNotNull;
+import static fiftyone.pipeline.util.StringManipulation.stringJoin;
 
 /**
  * Default implementation of the {@link FlowData} interface. This class is
@@ -183,7 +184,12 @@ class FlowDataDefault implements FlowData {
             throw new IllegalStateException("This instance has not yet been processed.");
         }
         checkNotNull(key, "Element data key cannot be null.");
-        return data.get(key);
+        try {
+            return data.get(key);
+        }
+        catch (NoSuchElementException e) {
+            throw new NoSuchElementException(getKeyMissingMessage(key.getName()));
+        }
     }
 
     @Override
@@ -192,12 +198,22 @@ class FlowDataDefault implements FlowData {
             throw new RuntimeException("This instance has not yet been processed");
         }
 
-        return data.get(new TypedKeyDefault<ElementData>(key, ElementData.class));
+        try {
+            return data.get(new TypedKeyDefault<ElementData>(key, ElementData.class));
+        }
+        catch (NoSuchElementException e) {
+            throw new NoSuchElementException(getKeyMissingMessage(key));
+        }
     }
 
     @Override
     public <T extends ElementData> T get(Class<T> type) {
-        return data.get(type);
+        try {
+            return data.get(type);
+        }
+        catch (NoSuchElementException e) {
+            throw new NoSuchElementException(type.getSimpleName());
+        }
     }
 
     @Override
@@ -387,5 +403,11 @@ class FlowDataDefault implements FlowData {
                 ((AutoCloseable) elementData).close();
             }
         }
+    }
+
+    private String getKeyMissingMessage(String key) {
+        return "There is no element data for '" + key + "' against this " +
+            "flow data. Available element data keys are: " +
+            stringJoin(getDataKeys(), ", ");
     }
 }
