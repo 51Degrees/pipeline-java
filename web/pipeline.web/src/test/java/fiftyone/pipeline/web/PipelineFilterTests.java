@@ -37,7 +37,6 @@ import java.io.IOException;
 
 import static fiftyone.pipeline.web.Constants.HTTPCONTEXT_FLOWDATA;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
