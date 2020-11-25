@@ -184,12 +184,7 @@ class FlowDataDefault implements FlowData {
             throw new IllegalStateException("This instance has not yet been processed.");
         }
         checkNotNull(key, "Element data key cannot be null.");
-        try {
-            return data.get(key);
-        }
-        catch (NoSuchElementException e) {
-            throw new NoSuchElementException(getKeyMissingMessage(key.getName()));
-        }
+        return data.get(key);
     }
 
     @Override
@@ -198,22 +193,12 @@ class FlowDataDefault implements FlowData {
             throw new RuntimeException("This instance has not yet been processed");
         }
 
-        try {
-            return data.get(new TypedKeyDefault<ElementData>(key, ElementData.class));
-        }
-        catch (NoSuchElementException e) {
-            throw new NoSuchElementException(getKeyMissingMessage(key));
-        }
+        return data.get(new TypedKeyDefault<ElementData>(key, ElementData.class));
     }
 
     @Override
     public <T extends ElementData> T get(Class<T> type) {
-        try {
-            return data.get(type);
-        }
-        catch (NoSuchElementException e) {
-            throw new NoSuchElementException(type.getSimpleName());
-        }
+        return data.get(type);
     }
 
     @Override
@@ -403,11 +388,5 @@ class FlowDataDefault implements FlowData {
                 ((AutoCloseable) elementData).close();
             }
         }
-    }
-
-    private String getKeyMissingMessage(String key) {
-        return "There is no element data for '" + key + "' against this " +
-            "flow data. Available element data keys are: " +
-            stringJoin(getDataKeys(), ", ");
     }
 }
