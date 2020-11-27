@@ -29,10 +29,12 @@ import fiftyone.pipeline.core.data.EvidenceKeyFilter;
 import fiftyone.pipeline.core.data.EvidenceKeyFilterWhitelist;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
+import fiftyone.pipeline.core.exceptions.PipelineDataException;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaDataDefault;
 import fiftyone.pipeline.engines.flowelements.AspectEngineBase;
 import fiftyone.pipeline.engines.services.HttpClient;
+import fiftyone.pipeline.exceptions.AggregateException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -48,7 +50,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+import static fiftyone.pipeline.cloudrequestengine.Constants.Messages.*;
 import static fiftyone.pipeline.util.StringManipulation.stringJoin;
 
 /**
@@ -183,6 +187,8 @@ public class CloudRequestEngineDefault
         String response = httpClient.postData(connection, headers, content);
 
         ((CloudRequestDataInternal)aspectData).setJsonResponse(response);
+
+        validateResponse(response, connection.getResponseCode());
     }
 
     private byte[] getContent(FlowData data) throws UnsupportedEncodingException {
@@ -272,6 +278,70 @@ public class CloudRequestEngineDefault
             }
             evidenceKeyFilter = new EvidenceKeyFilterWhitelist(keys,
                 String.CASE_INSENSITIVE_ORDER);
+        }
+    }
+
+    /**
+     * Validate the JSON response from the cloud service.
+     * @param jsonResult the JSON content that is returned from the cloud
+     * @param code HTTP response code
+     * service
+     */
+    private void validateResponse(String jsonResult, int code) {
+        boolean hasData = jsonResult != null && jsonResult.isEmpty() == false;
+        List<String> messages = new ArrayList<>();
+
+        if (hasData) {
+            JSONObject jObj = new JSONObject(jsonResult);
+            boolean hasErrors = jObj.keySet().contains("errors");
+            hasData = hasErrors ?
+                jObj.keySet().size() > 1 :
+                jObj.keySet().size() > 0;
+
+            if (hasErrors) {
+                JSONArray errors = jObj.getJSONArray("errors");
+                messages.addAll(
+                    errors.toList()
+                        .stream()
+                        .map(Object::toString)
+                        .collect(Collectors.toList()));
+            }
+        }
+
+        // If there were no errors but there was also no other data
+        // in the response then add an explanation to the list of
+        // messages.
+        if (messages.size() == 0 && hasData == false) {
+            String message = String.format(
+                MessageNoDataInResponse,
+                this.endPoint);
+            messages.add(message);
+        }
+
+        // If there are any errors returned from the cloud service
+        // then throw an exception
+        if (messages.size() > 1) {
+            throw new AggregateException(
+                ExceptionCloudErrorsMultiple,
+                messages.stream()
+                    .map(m -> new PipelineDataException(m))
+                    .collect(Collectors.toList()));
+        }
+        else if (messages.size() == 1) {
+            String message = String.format(
+                ExceptionCloudError,
+                messages.get(0));
+            throw new PipelineDataException(message);
+        }
+
+        // If there were no errors returned but the response code was non
+        // success then throw an exception.
+        if (messages.size() == 0 && code != 200) {
+
+            throw new PipelineDataException("Received response code " +
+                code +
+                ". Content was: " +
+                jsonResult);
         }
     }
 }

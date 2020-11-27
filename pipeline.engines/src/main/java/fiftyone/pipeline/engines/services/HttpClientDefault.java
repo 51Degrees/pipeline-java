@@ -30,6 +30,8 @@ import java.net.URL;
 import java.util.Map;
 
 public class HttpClientDefault implements HttpClient {
+
+
     @Override
     public HttpURLConnection connect(URL url) throws IOException {
         return (HttpURLConnection)url.openConnection();
@@ -53,14 +55,6 @@ public class HttpClientDefault implements HttpClient {
             connection.getOutputStream().write(data);
         }
 
-        int rc = connection.getResponseCode();
-        if (rc != 200) {
-            throw new IOException("received response code " +
-                rc +
-                " from request to "
-                + connection.getURL().toString() + ". Error was: " +
-                connection.getResponseMessage());
-        }
         BufferedReader reader = new BufferedReader(new InputStreamReader((connection.getInputStream())));
         StringBuilder builder = new StringBuilder();
         String current;

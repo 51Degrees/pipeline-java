@@ -36,6 +36,7 @@ package fiftyone.pipeline.engines.data;
 
     import java.util.*;
     import java.util.concurrent.*;
+    import java.util.stream.Collectors;
 
     import static fiftyone.pipeline.util.CheckArgument.checkNotNull;
     import static fiftyone.pipeline.util.StringManipulation.stringJoin;
@@ -274,7 +275,9 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
                     "Failed to retrieve property '" + key + "' " +
                         "because processing threw multiple exceptions in engine(s) " +
                         stringJoin(getDistinctEngineNames(), ", ") + ".",
-                    errors);
+                    errors.stream()
+                    .map(FlowError::getThrowable)
+                    .collect(Collectors.toList()));
             }
         }
         return result.getValue();

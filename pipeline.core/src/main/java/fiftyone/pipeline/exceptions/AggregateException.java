@@ -38,10 +38,10 @@ public class AggregateException extends RuntimeException {
      * @param message the message to give to the exception
      * @param causes multiple causes to be contained in the exception
      */
-    public AggregateException(String message, Collection<FlowError> causes) {
+    public AggregateException(String message, Collection<Throwable> causes) {
         super(message);
-        for (FlowError cause : causes) {
-            super.addSuppressed(cause.getThrowable());
+        for (Throwable cause : causes) {
+            super.addSuppressed(cause);
         }
     }
 
@@ -49,10 +49,10 @@ public class AggregateException extends RuntimeException {
      * Construct a new instance with no message.
      * @param causes multiple causes to be contained in the exception
      */
-    public AggregateException(Collection<FlowError> causes) {
+    public AggregateException(Collection<Throwable> causes) {
         super();
-        for (FlowError cause : causes) {
-            super.addSuppressed(cause.getThrowable());
+        for (Throwable cause : causes) {
+            super.addSuppressed(cause);
         }
     }
 }
