@@ -22,18 +22,14 @@
 
 package fiftyone.pipeline.engines.services;
 
-import fiftyone.pipeline.core.data.ElementPropertyMetaData;
-import fiftyone.pipeline.core.data.ElementPropertyMetaDataDefault;
 import fiftyone.pipeline.engines.Constants;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaDataDefault;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 import fiftyone.pipeline.engines.flowelements.CloudAspectEngine;
-import javafx.scene.control.SelectionMode;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
