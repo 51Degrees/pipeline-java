@@ -48,6 +48,10 @@ public class MissingPropertyServiceTests {
         service = MissingPropertyServiceDefault.getInstance();
     }
 
+    /**
+     * Check that an "upgrade required" reason is returned when a property is
+     * available, but in another data tier.
+     */
     @Test
     public void MissingPropertyService_GetReason_Upgrade() {
         // Arrange
@@ -78,6 +82,11 @@ public class MissingPropertyServiceTests {
 
     }
 
+    /**
+     * Check that an "excluded from configuration" reason is returned if the
+     * property exists in the data tier, but was not included in the list of
+     * required properties when configuring the engine.
+     */
     @Test
     public void MissingPropertyService_GetReason_Excluded() {
         // Arrange
@@ -105,6 +114,10 @@ public class MissingPropertyServiceTests {
 
     }
 
+    /**
+     * Check that an "unknown" reason is returned when the property does not
+     * exist in the engine.
+     */
     @Test
     public void MissingPropertyService_GetReason_NotInEngine() {
         // Arrange
@@ -129,6 +142,10 @@ public class MissingPropertyServiceTests {
             result.getDescription());
     }
 
+    /**
+     * Check that a "product not in resource" reason is returned when a cloud
+     * engine does not contain the product.
+     */
     @Test
     public void MissingPropertyService_GetReason_ProductNotInResource() {
         // Arrange
@@ -156,6 +173,10 @@ public class MissingPropertyServiceTests {
             result.getDescription());
     }
 
+    /**
+     * Check that a "property not in resource" reason is returned when a cloud
+     * engine does contain the product, but not the property.
+     */
     @Test
     public void MissingPropertyService_GetReason_PropertyNotInResource() {
         // Arrange
@@ -184,6 +205,10 @@ public class MissingPropertyServiceTests {
             result.getDescription());
     }
 
+    /**
+     * Check that an "unknown" reason is returned when none of the above are
+     * true.
+     */
     @Test
     public void MissingPropertyService_GetReason_Unknown() {
         // Arrange
