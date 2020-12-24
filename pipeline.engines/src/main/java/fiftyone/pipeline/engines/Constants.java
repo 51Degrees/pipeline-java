@@ -22,6 +22,8 @@
 
 package fiftyone.pipeline.engines;
 
+import static fiftyone.pipeline.util.StringManipulation.stringJoin;
+
 public class Constants {
     public static final String FIFTYONE_COOKIE_PREFIX = "51d_";
     public static final String DEFAULT_SESSION_COOKIE_NAME = "JSESSIONID";
@@ -33,5 +35,31 @@ public class Constants {
         HighPerformance,
         Balanced,
         BalancedTemp
+    }
+
+    public static class MissingPropertyMessages {
+        public static final String PREFIX =
+            "Property '%s' not found in data for element '%s'. ";
+        public static final String DATA_UPGRADE_REQUIRED =
+            "This is because your license and/or data file " +
+                "does not include this property. The property is available " +
+                "with the %s license/data for the %s";
+        public static final String PROPERTY_EXCLUDED =
+            "This is because the property has been excluded when configuring " +
+            "the engine.";
+        public static final String PRODUCT_NOT_IN_CLOUD_RESOURCE =
+            "This is because your resource key does not include access to " +
+            "any properties under '%s'. For more details on resource keys, " +
+            "see our explainer: " +
+            "https://51degrees.com/documentation/_info__resourcekeys.html";
+        public static final String PROPERTY_NOT_IN_CLOUD_RESOURCE =
+            "This is because your resource key does not include access to " +
+            "this property. Properties that are included for this key under " +
+            "'%s' are %s. For more details on resource keys, see our " +
+            "explainer: " +
+            "https://51degrees.com/documentation/4.1/_info__resourcekeys.html";
+        public static final String UNKNOWN =
+            "The reason for this is unknown. Please check that the aspect " +
+            "and property name are correct.";
     }
 }

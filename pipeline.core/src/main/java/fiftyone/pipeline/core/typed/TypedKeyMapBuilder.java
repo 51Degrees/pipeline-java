@@ -30,6 +30,8 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static fiftyone.pipeline.util.StringManipulation.stringJoin;
+
 /**
  * Public builder for instances of {@link TypedKeyMap}. This follows the fluent
  * builder pattern.
@@ -120,6 +122,13 @@ public class TypedKeyMapBuilder {
             return findWithPrevious(typedKeyName)[1];
         }
 
+        private String getKeyMissingMessage(String key) {
+            return "There is no data for '" + key + "' against this " +
+                "instance of '" + getClass().getSimpleName() +
+                "'. Available keys are: " +
+                stringJoin(getKeys(), ", ");
+        }
+
         @Override
         public <T> T get(TypedKey<T> typedKey) {
             Entry current = find(typedKey.getName());
@@ -127,7 +136,7 @@ public class TypedKeyMapBuilder {
                 // Note - can throw java equivalent of invalid cast exception.
                 return typedKey.getType().cast(current._value);
             }
-            throw new NoSuchElementException();
+            throw new NoSuchElementException(getKeyMissingMessage(typedKey.getName()));
         }
 
         @Override
