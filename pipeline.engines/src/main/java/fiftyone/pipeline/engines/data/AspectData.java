@@ -39,7 +39,7 @@ public interface AspectData extends ElementData {
      * Get the engines that generated the data withing this data instance.
      * @return engines which generated the data
      */
-    List<AspectEngine> getEngines();
+    List<AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData>> getEngines();
 
     /**
      * If the engine is configured for lazy loading, this property returns a

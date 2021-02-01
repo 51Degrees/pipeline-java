@@ -2,7 +2,6 @@ package fiftyone.pipeline.javascriptbuilder;
 
 import fiftyone.common.testhelpers.TestLoggerFactory;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
-import fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElement;
 import fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElementBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -33,8 +32,7 @@ public class JavaScriptBuilderElementBuilderTests {
         assertThrows(
             PipelineConfigurationException.class,
             () -> {
-                JavaScriptBuilderElement engine =
-                    new JavaScriptBuilderElementBuilder(loggerFactory)
+                new JavaScriptBuilderElementBuilder(loggerFactory)
                         .setObjectName(objName)
                         .build();
             });
@@ -49,7 +47,6 @@ public class JavaScriptBuilderElementBuilderTests {
     @ValueSource(strings = {"fod", "fifty1Degrees", "data", "data2"})
     public void JavaScriptBuilderElement_Builder_SetObjectName_ValidName(
         String objName) {
-        JavaScriptBuilderElement engine =
             new JavaScriptBuilderElementBuilder(loggerFactory)
                 .setObjectName(objName)
                 .build();
@@ -67,7 +64,6 @@ public class JavaScriptBuilderElementBuilderTests {
         assertThrows(
             PipelineConfigurationException.class,
             () -> {
-                JavaScriptBuilderElement engine =
                     new JavaScriptBuilderElementBuilder(loggerFactory)
                         .setProtocol(protocol)
                         .build();
@@ -84,7 +80,6 @@ public class JavaScriptBuilderElementBuilderTests {
     @ValueSource(strings = {"http", "https"})
     public void JavaScriptBuilderElement_Builder_SetDefaultProtocol_ValidProtocol(
         String protocol) {
-        JavaScriptBuilderElement engine =
             new JavaScriptBuilderElementBuilder(loggerFactory)
                 .setProtocol(protocol)
                 .build();

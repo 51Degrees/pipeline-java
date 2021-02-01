@@ -72,9 +72,9 @@ public class JsonLoaderTests {
         try (FileWriter writer = new FileWriter(file)) {
             writer.write(jsonString);
         }
-        DataLoader loader = new JsonLoader();
+        DataLoader<TestData> loader = new JsonLoader<TestData>();
 
-        TestData data = (TestData) loader.loadData(file.getAbsolutePath(), TestData.class);
+        TestData data = loader.loadData(file.getAbsolutePath(), TestData.class);
         assertEquals("string value", data.getAString());
         assertEquals(12, (int)data.getAnInt());
         assertEquals(true, data.getABool());

@@ -22,8 +22,6 @@
 
 package fiftyone.pipeline.engines;
 
-import static fiftyone.pipeline.util.StringManipulation.stringJoin;
-
 public class Constants {
     public static final String FIFTYONE_COOKIE_PREFIX = "51d_";
     public static final String DEFAULT_SESSION_COOKIE_NAME = "JSESSIONID";

@@ -36,14 +36,14 @@ public abstract class ProcessCallable implements Callable<Void> {
     /**
      * The engine which is doing the processing.
      */
-    public final AspectEngine engine;
+    public final AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData>engine;
 
     /**
      * Construct a new instance.
      * @param engine the engine to make available to the {@link Callable#call()}
      *               method
      */
-    public ProcessCallable(AspectEngine engine) {
+    public ProcessCallable(AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine) {
         this.engine = engine;
     }
 }

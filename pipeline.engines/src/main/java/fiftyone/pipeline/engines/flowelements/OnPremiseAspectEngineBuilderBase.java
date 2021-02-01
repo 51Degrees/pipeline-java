@@ -40,6 +40,7 @@ import java.util.List;
  *                  the fluent builder methods
  * @param <TEngine> the type of the engine that this builder will build
  */
+@SuppressWarnings("rawtypes")
 public abstract class OnPremiseAspectEngineBuilderBase<
     TBuilder extends OnPremiseAspectEngineBuilderBase<TBuilder, TEngine>,
     TEngine extends OnPremiseAspectEngine>
@@ -139,6 +140,7 @@ public abstract class OnPremiseAspectEngineBuilderBase<
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected void configureEngine(TEngine engine) throws Exception {
         super.configureEngine(engine);

@@ -30,6 +30,11 @@ import java.io.IOException;
 public class HttpException extends IOException {
 
     /**
+     * Serializable class version number, which is used during deserialization.
+     */
+    private static final long serialVersionUID = -8984394712231560002L;
+
+    /**
      * Default constructor.
      */
     public HttpException() {

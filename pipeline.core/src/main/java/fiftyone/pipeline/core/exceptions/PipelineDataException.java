@@ -28,6 +28,11 @@ package fiftyone.pipeline.core.exceptions;
  */
 public class PipelineDataException extends RuntimeException {
     /**
+     * Serializable class version number, which is used during deserialization.
+     */
+    private static final long serialVersionUID = -8356317224796833579L;
+
+    /**
      * Constructor.
      */
     public PipelineDataException() {

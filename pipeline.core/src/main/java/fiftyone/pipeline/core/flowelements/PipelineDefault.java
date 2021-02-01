@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
  * automatically use the pipeline when their {@link FlowData#process()} method
  * is called.
  */
+@SuppressWarnings("rawtypes")
 class PipelineDefault implements PipelineInternal {
 
     /**
@@ -255,7 +256,6 @@ class PipelineDefault implements PipelineInternal {
             }
             // Otherwise, just add the element directly.
             else {
-                List<FlowElement> typeElements;
                 if (elementsByType.containsKey(type) == false) {
                     elementsByType.put(type, new ArrayList<FlowElement>());
                 }
@@ -276,7 +276,7 @@ class PipelineDefault implements PipelineInternal {
     private <T extends FlowElement> boolean anyAssignableFrom(
         Map<Class, List<FlowElement>> elements,
         Class<T> type) {
-        for (Class element : elements.keySet()) {
+        for (Class<?> element : elements.keySet()) {
             if (type.isAssignableFrom(element)) {
                 return true;
             }
@@ -372,6 +372,7 @@ class PipelineDefault implements PipelineInternal {
         close(true);
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     protected void finalize() throws Throwable {
         try {

@@ -43,6 +43,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("rawtypes")
 public class ParallelElementsTests {
 
     private ParallelElements parallelElements;
@@ -65,7 +66,7 @@ public class ParallelElementsTests {
         FlowElement element2 = mock(FlowElement.class);
         FlowElement element3 = mock(FlowElement.class);
 
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 TestElementData tempData = ((FlowData) invocationOnMock.getArgument(0))
@@ -83,7 +84,7 @@ public class ParallelElementsTests {
                 return null;
             }
         }).when(element1).process(any(FlowData.class));
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 TestElementData tempData = ((FlowData) invocationOnMock.getArgument(0))
@@ -101,7 +102,7 @@ public class ParallelElementsTests {
                 return null;
             }
         }).when(element2).process(any(FlowData.class));
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 TestElementData tempData = ((FlowData) invocationOnMock.getArgument(0))

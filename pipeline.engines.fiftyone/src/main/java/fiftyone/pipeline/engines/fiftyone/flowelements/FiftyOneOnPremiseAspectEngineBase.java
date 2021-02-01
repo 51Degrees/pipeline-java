@@ -72,11 +72,13 @@ public abstract class FiftyOneOnPremiseAspectEngineBase<
     public abstract CloseableIterable<ProfileMetaData> getProfiles();
 
     @Override
-    public ProfileMetaData getProfile(int profileId) {
-        for (ProfileMetaData profile : getProfiles()) {
+    public ProfileMetaData getProfile(int profileId) throws Exception {
+        try(CloseableIterable<ProfileMetaData> profiles = getProfiles()){
+          for (ProfileMetaData profile : profiles) {
             if (profile.getProfileId() == profileId) {
                 return profile;
             }
+          }
         }
         return null;
     }
@@ -85,11 +87,13 @@ public abstract class FiftyOneOnPremiseAspectEngineBase<
     public abstract CloseableIterable<ComponentMetaData> getComponents();
 
     @Override
-    public ComponentMetaData getComponent(String name) {
-        for (ComponentMetaData component : getComponents()) {
+    public ComponentMetaData getComponent(String name) throws Exception {
+        try(CloseableIterable<ComponentMetaData> metaDataComponents = getComponents()){
+          for (ComponentMetaData component : metaDataComponents) {
             if (component.getName().equalsIgnoreCase(name)) {
                 return component;
             }
+          }
         }
         return null;
     }
@@ -98,12 +102,14 @@ public abstract class FiftyOneOnPremiseAspectEngineBase<
     public abstract CloseableIterable<ValueMetaData> getValues();
 
     @Override
-    public ValueMetaData getValue(String propertyName, String valueName) {
-        for (ValueMetaData value : getValues()) {
+    public ValueMetaData getValue(String propertyName, String valueName) throws Exception {
+        try(CloseableIterable<ValueMetaData> values = getValues()){
+          for (ValueMetaData value : values) {
             if (value.getProperty().getName().equalsIgnoreCase(propertyName) &&
                 value.getName().equalsIgnoreCase(valueName)) {
                 return value;
             }
+          }
         }
         return null;
     }

@@ -1,11 +1,11 @@
 package fiftyone.pipeline.engines.fiftyone.flowelements;
 
 import fiftyone.pipeline.engines.Constants;
+import fiftyone.pipeline.engines.data.AspectData;
 import fiftyone.pipeline.engines.data.AspectEngineDataFile;
+import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.fiftyone.data.FiftyOneDataFile;
-import fiftyone.pipeline.engines.flowelements.OnPremiseAspectEngineBase;
 import fiftyone.pipeline.engines.services.DataUpdateService;
-import fiftyone.pipeline.engines.testhelpers.flowelements.EmptyEngine;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -23,17 +23,20 @@ public class FiftyOneDegreesOnPremiseAspectEngineBuilderBaseTests {
     final String licenseKey = "somelicensekey";
     final String downloadType = "sometype";
 
-    private FiftyOneAspectEngine engine = mock(FiftyOneAspectEngine.class);
+    @SuppressWarnings("unchecked")
+    private FiftyOneAspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine = mock(FiftyOneAspectEngine.class);
 
     private DataUpdateService updateService = mock(DataUpdateService.class);
 
     private class ImplementedBuilder extends
-        FiftyOneOnPremiseAspectEngineBuilderBase<ImplementedBuilder, FiftyOneAspectEngine> {
+        FiftyOneOnPremiseAspectEngineBuilderBase<ImplementedBuilder, FiftyOneAspectEngine<? extends AspectData, ? extends AspectPropertyMetaData>> {
 
+        @SuppressWarnings("unused")
         public ImplementedBuilder() {
             super();
         }
 
+        @SuppressWarnings("unused")
         public ImplementedBuilder(ILoggerFactory loggerFactory) {
             super(loggerFactory);
         }
@@ -53,7 +56,7 @@ public class FiftyOneDegreesOnPremiseAspectEngineBuilderBaseTests {
         }
 
         @Override
-        protected FiftyOneAspectEngine newEngine(List<String> properties) {
+        protected FiftyOneAspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> newEngine(List<String> properties) {
             // Follow the logic used by 51Degrees engines.
             AspectEngineDataFile dataFile = dataFiles.get(0);
             dataFiles.remove(dataFile);
@@ -70,7 +73,7 @@ public class FiftyOneDegreesOnPremiseAspectEngineBuilderBaseTests {
 
     @Before
     public void init() {
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 // Follow the logic used by 51Degrees engines.
@@ -106,7 +109,6 @@ public class FiftyOneDegreesOnPremiseAspectEngineBuilderBaseTests {
      */
     @Test
     public void DataFile_UrlFormatter() throws Exception {
-        final FiftyOneDataFile[] dataFile = new FiftyOneDataFile[1];
 
         ImplementedBuilder builder = new ImplementedBuilder(
             mock(ILoggerFactory.class),

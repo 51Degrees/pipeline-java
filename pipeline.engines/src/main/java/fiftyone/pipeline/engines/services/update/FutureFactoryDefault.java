@@ -34,7 +34,7 @@ public class FutureFactoryDefault implements FutureFactory {
         Executors.newSingleThreadScheduledExecutor();
 
     @Override
-    public ScheduledFuture scheduleRepeating(Runnable runnable, long period) {
+    public ScheduledFuture<?> scheduleRepeating(Runnable runnable, long period) {
         return executor.scheduleAtFixedRate(
             runnable,
             period,
@@ -43,7 +43,7 @@ public class FutureFactoryDefault implements FutureFactory {
     }
 
     @Override
-    public ScheduledFuture schedule(Runnable runnable, long delay) {
+    public ScheduledFuture<?> schedule(Runnable runnable, long delay) {
         return executor.schedule(
             runnable,
             delay,

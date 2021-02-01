@@ -40,6 +40,7 @@ public class TypedKeyDefault<T> implements TypedKey<T> {
      *  the type
      * @param name the name of the key
      */
+    @SuppressWarnings("unchecked")
     public TypedKeyDefault(String name) {
         this(name, Object.class);
     }
@@ -49,7 +50,7 @@ public class TypedKeyDefault<T> implements TypedKey<T> {
      * @param name the name of the key
      * @param type the type of the key
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public TypedKeyDefault(String name, Class type) {
         //noinspection ConstantConditions
         this.name = checkNotNull(name, "Name must not be null").trim();

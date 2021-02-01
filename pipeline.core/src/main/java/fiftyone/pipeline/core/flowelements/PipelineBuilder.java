@@ -52,6 +52,7 @@ import static fiftyone.pipeline.util.Types.getPrimitiveTypeMap;
  * A PipelineBuilder is intended to be used once only and once {@link #build()}
  * has been called it cannot be used further.
  */
+@SuppressWarnings("rawtypes")
 public class PipelineBuilder
     extends PipelineBuilderBase<PipelineBuilder>
     implements PipelineBuilderFromConfiguration {
@@ -381,8 +382,8 @@ public class PipelineBuilder
      * @param constructor the constructor to check the parameters of
      * @return true if all parameters are services or logger factory
      */
-    private boolean paramsAreServices(Constructor constructor) {
-        for (Class type : constructor.getParameterTypes()) {
+    private boolean paramsAreServices(Constructor<?> constructor) {
+        for (Class<?> type : constructor.getParameterTypes()) {
             if (type.equals(ILoggerFactory.class) == false &&
                 PipelineService.class.isAssignableFrom(type) == false) {
                 return false;
@@ -432,9 +433,10 @@ public class PipelineBuilder
      * @return best constructor or null if none have parameters that can be
      * fulfilled
      */
-    private Constructor getBestConstructor(List<Constructor> constructors) {
-        Constructor bestConstructor = null;
-        for (Constructor constructor : constructors) {
+    @SuppressWarnings("unchecked")
+    private Constructor<?> getBestConstructor(List<Constructor<?>> constructors) {
+        Constructor<?> bestConstructor = null;
+        for (Constructor<?> constructor : constructors) {
             if (bestConstructor == null ||
                     constructor.getParameterTypes().length >
                         bestConstructor.getParameterTypes().length) {
@@ -464,7 +466,8 @@ public class PipelineBuilder
      * @throws InvocationTargetException
      * @throws InstantiationException
      */
-    private Object callConstructorWithServices(Constructor constructor)
+    @SuppressWarnings("unchecked")
+    private Object callConstructorWithServices(Constructor<?> constructor)
         throws IllegalAccessException, InvocationTargetException, InstantiationException {
         Class[] types = constructor.getParameterTypes();
         Object[] services = new Object[types.length];
@@ -490,15 +493,16 @@ public class PipelineBuilder
      * @throws InvocationTargetException
      * @throws InstantiationException
      */
+    @SuppressWarnings("deprecation")
     private Object getBuilder(Class<?> builderType)
         throws IllegalAccessException, InvocationTargetException, InstantiationException {
         // Get the valid constructors. This means either a default
         // constructor, or a constructor taking a logger factory as an
         // argument.
-        List<Constructor> defaultConstructors = new ArrayList<>();
-        List<Constructor> loggerConstructors = new ArrayList<>();
-        List<Constructor> serviceConstructors = new ArrayList<>();
-        for (Constructor constructor : builderType.getConstructors()) {
+        List<Constructor<?>> defaultConstructors = new ArrayList<>();
+        List<Constructor<?>> loggerConstructors = new ArrayList<>();
+        List<Constructor<?>> serviceConstructors = new ArrayList<>();
+        for (Constructor<?> constructor : builderType.getConstructors()) {
             if (constructor.getParameterTypes().length == 0) {
                 defaultConstructors.add(constructor);
             } else if (constructor.getParameterTypes().length == 1 &&

@@ -27,11 +27,11 @@ import java.util.concurrent.ScheduledFuture;
 
 public interface FutureFactory extends Closeable {
 
-    ScheduledFuture scheduleRepeating(
+    ScheduledFuture<?> scheduleRepeating(
         Runnable runnable,
         long period);
 
-    ScheduledFuture schedule(
+    ScheduledFuture<?> schedule(
         Runnable runnable,
         long delay);
 }

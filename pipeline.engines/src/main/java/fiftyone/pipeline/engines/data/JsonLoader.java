@@ -49,6 +49,7 @@ public class JsonLoader<T> implements DataLoader<T> {
         String json = builder.toString();
         JSONObject jsonObj = new JSONObject(json);
 
+        @SuppressWarnings("deprecation")
         T instance = type.newInstance();
 
         Map<String, Object> parameters = new HashMap<>();

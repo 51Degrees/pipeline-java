@@ -31,6 +31,11 @@ import fiftyone.pipeline.core.flowelements.PipelineBuilder;
 public class PipelineConfigurationException extends RuntimeException {
 
     /**
+     * Serializable class version number, which is used during deserialization.
+     */
+    private static final long serialVersionUID = 2717735716760393193L;
+
+    /**
      * Constructor
      * @param message the exception message
      */

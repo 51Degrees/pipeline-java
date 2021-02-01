@@ -23,6 +23,7 @@
 package fiftyone.pipeline.engines.services;
 
 import fiftyone.pipeline.core.data.ElementPropertyMetaData;
+import fiftyone.pipeline.engines.data.AspectData;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 import fiftyone.pipeline.engines.flowelements.CloudAspectEngine;
@@ -66,6 +67,7 @@ public class MissingPropertyServiceDefault implements MissingPropertyService {
         return missingPropertyService;
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public MissingPropertyResult getMissingPropertyReason(
         String propertyName,
@@ -163,9 +165,9 @@ public class MissingPropertyServiceDefault implements MissingPropertyService {
     @Override
     public MissingPropertyResult getMissingPropertyReason(
         String propertyName,
-        List<AspectEngine> engines) {
+        List<AspectEngine<? extends AspectData,? extends AspectPropertyMetaData>> engines) {
         MissingPropertyResult result = null;
-        for (AspectEngine engine : engines) {
+        for (AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine : engines) {
             result = getMissingPropertyReason(propertyName, engine);
             if (result.getReason() != MissingPropertyReason.Unknown) {
                 return result;

@@ -44,11 +44,12 @@ public class FiftyOneAspectPropertyMetaDataDefault
     private final Iterable<ValueMetaData> values;
     private final ValueMetaData defaultValue;
 
+    @SuppressWarnings("rawtypes") 
     public FiftyOneAspectPropertyMetaDataDefault(
         String name,
         FlowElement element,
         String category,
-        Class type,
+        Class<?> type,
         List<String> dataTiersWherePresent,
         boolean available,
         String url,

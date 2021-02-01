@@ -39,6 +39,7 @@ public class ListSplitterElementData extends ElementDataBase {
         super(logger, flowData, map);
     }
 
+    @SuppressWarnings("unchecked")
     public List<String> getResult() {
         return (List<String>) get("result");
     }

@@ -23,6 +23,7 @@
 package fiftyone.pipeline.engines.services;
 
 import fiftyone.pipeline.core.services.PipelineService;
+import fiftyone.pipeline.engines.data.AspectData;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 
@@ -44,7 +45,7 @@ public interface MissingPropertyService extends PipelineService {
      */
     MissingPropertyResult getMissingPropertyReason(
         String propertyName,
-        AspectEngine engine);
+        AspectEngine<? extends AspectData,? extends AspectPropertyMetaData> engine);
 
     /**
      * Get the reason for the property not being found. If the property can be
@@ -56,5 +57,5 @@ public interface MissingPropertyService extends PipelineService {
      */
     MissingPropertyResult getMissingPropertyReason(
         String propertyName,
-        List<AspectEngine> engines);
+        List<AspectEngine<? extends AspectData,? extends AspectPropertyMetaData>> engines);
 }

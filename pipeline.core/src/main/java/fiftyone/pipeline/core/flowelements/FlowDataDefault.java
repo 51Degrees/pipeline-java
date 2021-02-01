@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static fiftyone.pipeline.util.CheckArgument.checkNotNull;
-import static fiftyone.pipeline.util.StringManipulation.stringJoin;
 
 /**
  * Default implementation of the {@link FlowData} interface. This class is
@@ -126,6 +125,7 @@ class FlowDataDefault implements FlowData {
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public void addError(Throwable e, FlowElement element) {
         addError(new FlowError.Default(e, element));
     }
@@ -276,7 +276,6 @@ class FlowDataDefault implements FlowData {
     public <T extends ElementData> T getOrAdd(
         String elementDataKey,
         FlowElement.DataFactory<T> dataFactory) {
-        ElementData result = null;
 
         TypedKey<ElementData> typedKey = new TypedKeyDefault<>(
             elementDataKey,
@@ -341,6 +340,7 @@ class FlowDataDefault implements FlowData {
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public Map<String, String> getWhere(PropertyMatcher matcher) {
         Map<String, String> map = new HashMap<>();
         for (FlowElement element : pipeline.getFlowElements()) {

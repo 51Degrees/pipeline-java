@@ -99,7 +99,7 @@ public class LibLoader {
      *
      * @return String full file name
      */
-    public static String getLibName(Class engineClass) {
+    public static String getLibName(Class<?> engineClass) {
         return engineClass.getSimpleName() +
             "-" + getOs().toString() +
             "-" + getArch() +
@@ -118,7 +118,7 @@ public class LibLoader {
      * @throws IOException                   thrown if there is a problem
      * copying the resource
      */
-    public static void load(Class engineClass)
+    public static void load(Class<?> engineClass)
         throws IOException, UnsupportedOperationException {
         File nativeLibraryFile = copyResource(
             engineClass,
@@ -142,7 +142,7 @@ public class LibLoader {
      * @throws IOException          if the resource can not be copied
      * @throws UnsatisfiedLinkError if the resource can not be found
      */
-    private static File copyResource(Class engineClass, String libName)
+    private static File copyResource(Class<?> engineClass, String libName)
         throws IOException {
         byte[] buffer = new byte[1024];
         int read;

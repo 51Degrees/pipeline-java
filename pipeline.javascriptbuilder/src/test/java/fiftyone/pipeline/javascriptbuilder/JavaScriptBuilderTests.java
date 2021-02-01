@@ -87,12 +87,12 @@ public class JavaScriptBuilderTests {
         jsonBuilderElement = mock(JsonBuilder.class);
         
         List<ElementPropertyMetaData> properties = new ArrayList<>();
+        
         properties.add(new ElementPropertyMetaDataDefault("property", jsonBuilderElement, "", String.class, true));
         
         doReturn(properties).when(jsonBuilderElement).getProperties();
-        
-        javaScriptBuilderElement = (JavaScriptBuilderElement)new JavaScriptBuilderElementBuilder(loggerFactory)
-            .build();
+
+        javaScriptBuilderElement = new JavaScriptBuilderElementBuilder(loggerFactory).build();
         
         elementDataMock = mock(ElementData.class);
         
@@ -102,6 +102,7 @@ public class JavaScriptBuilderTests {
         doReturn(data).when(elementDataMock).asKeyMap();
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void Valid_Js() throws Exception {
         json = new JSONObject();
@@ -163,6 +164,7 @@ public class JavaScriptBuilderTests {
         assertTrue(isValidFodObject(result.getJavaScript(), "device", "ismobile", true));
     }
     
+    @SuppressWarnings("unchecked")
     @Test
     public void JavaScriptBuilder_NoJson() throws Exception {
         doAnswer(new Answer<Object>() { 
@@ -219,6 +221,7 @@ public class JavaScriptBuilderTests {
      * Verify that valid JavaScript is produced when there are delayed execution
      * properties in the payload.
      */
+    @SuppressWarnings("unchecked")
     @Test
     public void JavaScriptBuilderElement_DelayExecution() throws Exception {
         javaScriptBuilderElement =
@@ -280,6 +283,7 @@ public class JavaScriptBuilderTests {
             any(String.class),
             any(FlowElement.DataFactory.class)))
             .thenAnswer((Answer<JavaScriptBuilderData>) invocationOnMock -> {
+                @SuppressWarnings("rawtypes")
                 FlowElement.DataFactory dataFactory = invocationOnMock.getArgument(1);
                 result[0] = (JavaScriptBuilderData) dataFactory.create(flowData);
                 return result[0];

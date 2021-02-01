@@ -83,6 +83,7 @@ public interface FlowData extends AutoCloseable {
      * @param e error which was thrown
      * @param element the {@link FlowElement} which threw the error
      */
+    @SuppressWarnings("rawtypes")
     void addError(Throwable e, FlowElement element);
 
     /**
