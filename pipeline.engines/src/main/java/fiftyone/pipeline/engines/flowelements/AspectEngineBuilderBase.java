@@ -40,6 +40,7 @@ import java.util.Set;
  *                  the fluent builder methods
  * @param <TEngine> the type of the engine that this builder will build
  */
+@SuppressWarnings("rawtypes")
 public abstract class AspectEngineBuilderBase<
     TBuilder extends AspectEngineBuilderBase<TBuilder, TEngine>,
     TEngine extends AspectEngine> {

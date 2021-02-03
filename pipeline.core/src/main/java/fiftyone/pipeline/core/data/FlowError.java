@@ -29,6 +29,7 @@ import static fiftyone.pipeline.util.CheckArgument.checkNotNull;
 /**
  * An error that occurred during the processing of an element
  */
+@SuppressWarnings("rawtypes")
 public interface FlowError {
     /**
      * The {@link Throwable} (if any) that caused the error.

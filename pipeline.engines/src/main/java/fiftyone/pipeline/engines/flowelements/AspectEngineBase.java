@@ -142,6 +142,7 @@ public abstract class AspectEngineBase<
      *                 and holds the result.
      * @throws Exception if there was an exception during processing
      */
+    @SuppressWarnings("unchecked")
     private void processWithCache(final FlowData flowData) throws Exception {
         TData cacheResult = null;
 

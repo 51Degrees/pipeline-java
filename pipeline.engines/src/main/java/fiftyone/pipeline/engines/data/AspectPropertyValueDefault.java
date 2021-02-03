@@ -97,7 +97,7 @@ public class AspectPropertyValueDefault<T> implements AspectPropertyValue<T> {
             this.value != null) {
             try {
                 result = this.getValue()
-                    .equals(((AspectPropertyValue) obj).getValue());
+                    .equals(((AspectPropertyValue<?>) obj).getValue());
             } catch (NoValueException e) {
                 result = false;
             }

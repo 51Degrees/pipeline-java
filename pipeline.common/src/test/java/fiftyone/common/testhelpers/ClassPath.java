@@ -27,7 +27,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 
 public class ClassPath {
-    public static void addToClassPath(Class classToLoad) {
+    public static void addToClassPath(Class<?> classToLoad) {
         try {
             URL url = classToLoad.getProtectionDomain().getCodeSource().getLocation();
 

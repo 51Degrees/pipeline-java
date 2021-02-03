@@ -172,8 +172,6 @@ public class CloudRequestEngineDefault
 
     @Override
     protected void processEngine(FlowData data, CloudRequestData aspectData) throws IOException {
-        String jsonResult = "";
-
         byte[] content = getContent(data);
         HttpURLConnection connection = httpClient.connect(new URL(endPoint.trim()));
         if (timeoutMillis != null) {

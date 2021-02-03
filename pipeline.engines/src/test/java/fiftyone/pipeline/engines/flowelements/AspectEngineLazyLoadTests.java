@@ -55,6 +55,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings({"unused", "unchecked"})
 public class AspectEngineLazyLoadTests {
     private EmptyEngine engine;
 
@@ -106,7 +107,7 @@ public class AspectEngineLazyLoadTests {
         // Use the mock flow data to populate this variable with the
         // engine data from the call to process.
         final EmptyEngineData[] engineData = {null};
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 FlowElement.DataFactory<EmptyEngineData> factory =
@@ -148,7 +149,7 @@ public class AspectEngineLazyLoadTests {
         // engine data from the call to process.
         final FlowData mockData = MockFlowData.createFromEvidence(evidence, false);
         final EmptyEngineData[] engineData = {null};
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 FlowElement.DataFactory<EmptyEngineData> factory =
@@ -183,7 +184,7 @@ public class AspectEngineLazyLoadTests {
         // engine data from the call to process.
         final FlowData mockData = MockFlowData.createFromEvidence(evidence, false);
         final EmptyEngineData[] engineData = {null};
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 FlowElement.DataFactory<EmptyEngineData> factory =
@@ -218,7 +219,7 @@ public class AspectEngineLazyLoadTests {
         // engine data from the call to process.
         final FlowData mockData = MockFlowData.createFromEvidence(evidence, false);
         final EmptyEngineData[] engineData = {null};
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 FlowElement.DataFactory<EmptyEngineData> factory =
@@ -268,7 +269,7 @@ public class AspectEngineLazyLoadTests {
         // engine data from the call to process.
         final FlowData mockData = MockFlowData.createFromEvidence(evidence, false);
         final EmptyEngineData[] engineData = {null};
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 FlowElement.DataFactory<EmptyEngineData> factory =

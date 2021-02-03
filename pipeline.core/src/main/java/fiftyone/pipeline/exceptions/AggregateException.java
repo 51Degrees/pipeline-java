@@ -22,8 +22,6 @@
 
 package fiftyone.pipeline.exceptions;
 
-import fiftyone.pipeline.core.data.FlowError;
-
 import java.util.Collection;
 
 /**
@@ -32,6 +30,11 @@ import java.util.Collection;
  * retrieved via the {@link #getSuppressed()} method.
  */
 public class AggregateException extends RuntimeException {
+
+    /**
+     * Serializable class version number, which is used during deserialization.
+     */
+    private static final long serialVersionUID = 4875303941913611736L;
 
     /**
      * Construct a new instance

@@ -33,5 +33,12 @@ public class Constants {
 
         public static final String ExceptionCloudError =
             "Error returned from 51Degrees cloud service: %s";
+        
+        public static final String ExceptionFailedToLoadProperties = 
+                "Failed to load aspect properties for element '%s'. This is "
+                + "because your resource key does not include access to any "
+                + "properties under '%s'. For more details on resource keys, "
+                + "see our explainer: "
+                + "https://51degrees.com/documentation/4.2/_info__resourcekeys.html";
     }
 }

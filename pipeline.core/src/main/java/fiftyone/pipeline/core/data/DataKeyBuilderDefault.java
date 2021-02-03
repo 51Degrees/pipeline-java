@@ -43,7 +43,7 @@ public class DataKeyBuilderDefault implements DataKeyBuilder {
 
     @Override
     public DataKey build() {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"unchecked", "rawtypes"})
         Entry<Integer, Entry<String, Object>> keyArray[] = new Entry[0];
         keyArray = keys.toArray(keyArray);
         Arrays.sort(keyArray, new KeyComparator());

@@ -74,6 +74,7 @@ public class AspectEngineCachedTests {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void FlowElementCached_Process_CheckCachePut() throws Exception {
         // Arrange
@@ -116,6 +117,7 @@ public class AspectEngineCachedTests {
             any(EmptyEngineData.class));
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void FlowElementCached_Process_CheckCacheGet() throws Exception {
         // Arrange

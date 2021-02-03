@@ -31,6 +31,11 @@ import fiftyone.pipeline.core.data.ElementData;
 public class LazyLoadTimeoutException extends RuntimeException {
 
     /**
+     * Serializable class version number, which is used during deserialization.
+     */
+    private static final long serialVersionUID = -263332472368855660L;
+
+    /**
      * Construct a new instance
      * @param message the message to give to the exception
      * @param cause cause of the exception

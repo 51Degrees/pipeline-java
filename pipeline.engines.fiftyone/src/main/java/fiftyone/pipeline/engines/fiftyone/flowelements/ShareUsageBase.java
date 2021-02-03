@@ -128,7 +128,7 @@ public abstract class ShareUsageBase
      * Future for the thread currently attempting to send usage data, or null
      * if no data is currently being sent.
      */
-    private volatile Future sendDataFuture = null;
+    private volatile Future<?> sendDataFuture = null;
 
     /**
      * Lock used for thread-safe access to internal items.
@@ -402,7 +402,7 @@ public abstract class ShareUsageBase
         languageVersion = System.getProperty("java.version");
         osVersion = System.getProperty("os.name");
 
-        enginesVersion = getClass().getPackage().getImplementationVersion();
+        setEnginesVersion(getClass().getPackage().getImplementationVersion());
         coreVersion = Pipeline.class.getPackage().getImplementationVersion();
 
         includedQueryStringParameters.add(Constants.EVIDENCE_SESSIONID_SUFFIX);
@@ -437,13 +437,14 @@ public abstract class ShareUsageBase
      * If there are multiple or no pipelines then log an error.
      * @return list of flow elements
      */
+    @SuppressWarnings("rawtypes")
     private List<String> getFlowElements() {
         if (flowElements == null) {
             Pipeline pipeline;
             if (getPipelines().size() == 1) {
                 pipeline = getPipelines().get(0);
                 List<String> list = new ArrayList<>();
-                for (FlowElement element : pipeline.getFlowElements()) {
+                for ( FlowElement element : pipeline.getFlowElements()) {
                     list.add(element.getClass().getSimpleName());
                 }
                 flowElements = list;
@@ -559,7 +560,7 @@ public abstract class ShareUsageBase
      * @return future for data being sent, or null if no data is currently being
      * sent
      */
-    Future getSendDataFuture() {
+    Future<?> getSendDataFuture() {
         return sendDataFuture;
     }
 
@@ -587,6 +588,7 @@ public abstract class ShareUsageBase
      * @param address the address to check
      * @return true if localhost
      */
+    @SuppressWarnings("unused")
     private boolean isLocalHost(String address) throws UnknownHostException {
         InetAddress other = InetAddress.getByName(address);
         for (InetAddress host : localHosts) {
@@ -851,6 +853,22 @@ public abstract class ShareUsageBase
         for (String element : getFlowElements()) {
             builder.writeElement("FlowElement", element);
         }
+    }
+    
+    /**
+     * Get engine Version No.
+     * @return engine version no
+     */
+    public String getEnginesVersion() {
+        return enginesVersion;
+    }
+
+    /**
+     * Set Engine Version No.
+     * @param enginesVersion
+     */
+    public void setEnginesVersion(String enginesVersion) {
+        this.enginesVersion = enginesVersion;
     }
 
     /**

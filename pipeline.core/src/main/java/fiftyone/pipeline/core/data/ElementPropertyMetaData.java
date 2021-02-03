@@ -52,6 +52,7 @@ public interface ElementPropertyMetaData {
      *
      * @return {@link FlowElement} instance
      */
+    @SuppressWarnings("rawtypes")
     FlowElement getElement();
 
     /**
@@ -64,7 +65,7 @@ public interface ElementPropertyMetaData {
      * Get the type of data which the property refers to e.g. {@link String}.
      * @return variable type class
      */
-    Class getType();
+    Class<?> getType();
 
     /**
      * Get whether or not the property is available in the results // todo

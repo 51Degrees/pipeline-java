@@ -41,12 +41,12 @@ public class BuilderClassPathTestRunner extends BlockJUnit4ClassRunner {
     static ClassLoader classLoaderWithBuidlers;
 
     public BuilderClassPathTestRunner(Class<?> klass) 
-    	throws InitializationError {
+        throws InitializationError {
         super(loadFromCustomClassloader(klass));
     }
 
     private static Class<?> loadFromCustomClassloader(Class<?> clazz) 
-    	throws InitializationError {
+        throws InitializationError {
         try {
             // Only load once to support parallel tests
             if (classLoaderWithBuidlers == null) {
@@ -95,7 +95,7 @@ public class BuilderClassPathTestRunner extends BlockJUnit4ClassRunner {
 
         @Override
         public synchronized Class<?> loadClass(String name) 
-        	throws ClassNotFoundException {
+            throws ClassNotFoundException {
             return parent.loadClass(name);
         }
 
@@ -104,38 +104,38 @@ public class BuilderClassPathTestRunner extends BlockJUnit4ClassRunner {
             ArrayList<URL> classpathUrls = new ArrayList<>();
 
             classpathUrls.add(
-            	SequenceElement.class
-            		.getProtectionDomain()
-            		.getCodeSource()
-            		.getLocation());
+                SequenceElement.class
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation());
             classpathUrls.add(
-            	JsonBuilderElement.class
-            		.getProtectionDomain()
-            		.getCodeSource()
-            		.getLocation());
+                JsonBuilderElement.class
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation());
             classpathUrls.add(
-            	JavaScriptBuilderElement.class
-            		.getProtectionDomain()
-            		.getCodeSource()
-            		.getLocation());
+                JavaScriptBuilderElement.class
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation());
             classpathUrls.add(
-            	MultiplyByElementBuilder.class
-            		.getProtectionDomain()
-            		.getCodeSource()
-            		.getLocation());
+                MultiplyByElementBuilder.class
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation());
             if (Integer.parseInt(
-            	System.getProperty("java.version")
-            		.split("\\.")[0]) >= 9) {
+                System.getProperty("java.version")
+                    .split("\\.")[0]) >= 9) {
                 classpathUrls.add(
-                		JAXBContext.class
-                			.getProtectionDomain()
-                			.getCodeSource()
-                			.getLocation());
+                        JAXBContext.class
+                            .getProtectionDomain()
+                            .getCodeSource()
+                            .getLocation());
                 classpathUrls.add(
-                		ContextFactory.class
-                			.getProtectionDomain()
-                			.getCodeSource()
-                			.getLocation());
+                        ContextFactory.class
+                            .getProtectionDomain()
+                            .getCodeSource()
+                            .getLocation());
             }
 
             return classpathUrls.toArray(new URL[classpathUrls.size()]);

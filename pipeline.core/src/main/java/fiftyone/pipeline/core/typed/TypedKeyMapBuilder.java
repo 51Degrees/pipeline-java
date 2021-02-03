@@ -36,6 +36,7 @@ import static fiftyone.pipeline.util.StringManipulation.stringJoin;
  * Public builder for instances of {@link TypedKeyMap}. This follows the fluent
  * builder pattern.
  */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class TypedKeyMapBuilder {
 
     private final TypedKeyMap _map;
@@ -202,7 +203,6 @@ public class TypedKeyMapBuilder {
                 if (current[1] == _head) {
                     _head = current[1]._next;
                 }
-                @SuppressWarnings("unchecked")
                 T value = (T) current[1]._value;
                 current[1].closeValue();
                 current[1]._value = null;

@@ -29,8 +29,10 @@ import fiftyone.common.wrappers.io.FileWrapperFactory;
 import fiftyone.common.wrappers.io.FileWrapperFactoryDefault;
 import fiftyone.common.wrappers.io.FileWrapperMemory;
 import fiftyone.pipeline.engines.configuration.DataFileConfiguration;
+import fiftyone.pipeline.engines.data.AspectData;
 import fiftyone.pipeline.engines.data.AspectEngineDataFile;
 import fiftyone.pipeline.engines.data.AspectEngineDataFileDefault;
+import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.flowelements.OnPremiseAspectEngine;
 import fiftyone.pipeline.engines.services.update.FutureFactory;
 import fiftyone.pipeline.engines.services.update.FutureFactoryDefault;
@@ -125,12 +127,12 @@ public class DataUpdateServiceDefault implements DataUpdateService {
     }
 
     @Override
-    public AutoUpdateStatus checkForUpdate(OnPremiseAspectEngine engine) {
+    public AutoUpdateStatus checkForUpdate(OnPremiseAspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine) {
         return checkForUpdate(engine.getDataFileMetaData(), true);
     }
 
     @Override
-    public AutoUpdateStatus checkForUpdate(OnPremiseAspectEngine engine, String identifier) {
+    public AutoUpdateStatus checkForUpdate(OnPremiseAspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine, String identifier) {
         return checkForUpdate(engine.getDataFileMetaData(identifier), true);
     }
 
@@ -239,7 +241,6 @@ public class DataUpdateServiceDefault implements DataUpdateService {
         AspectEngineDataFileDefault aspectDataFile =
             (AspectEngineDataFileDefault)dataFile;
 
-        Exception exception = null;
         int tries = 0;
 
         if (dataFile.getEngine() != null) {
@@ -412,7 +413,7 @@ public class DataUpdateServiceDefault implements DataUpdateService {
                 }
                 // Create a timer that will go off when the engine expects
                 // updated data to be available.
-                ScheduledFuture future = futureFactory.schedule(
+                ScheduledFuture<?> future = futureFactory.schedule(
                     new Runnable() {
                         @Override
                         public void run() {
@@ -532,6 +533,7 @@ public class DataUpdateServiceDefault implements DataUpdateService {
      * @param tempFile the temp file to write the data to
      * @return the {@link AutoUpdateStatus} value indicating the result
      */
+    @SuppressWarnings("unused")
     private DownloadResult downloadFile(
         AspectEngineDataFile dataFile,
         FileWrapper tempFile) {

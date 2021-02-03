@@ -23,7 +23,9 @@
 package fiftyone.pipeline.engines.testhelpers.data;
 
 import fiftyone.pipeline.core.data.FlowData;
+import fiftyone.pipeline.engines.data.AspectData;
 import fiftyone.pipeline.engines.data.AspectDataBase;
+import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 import fiftyone.pipeline.engines.services.MissingPropertyService;
 import org.slf4j.Logger;
@@ -33,7 +35,7 @@ public class EmptyEngineData extends AspectDataBase {
     public EmptyEngineData(
         Logger logger,
         FlowData flowData,
-        AspectEngine engine,
+        AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine,
         MissingPropertyService missingPropertyService) {
         super(logger, flowData, engine, missingPropertyService);
     }

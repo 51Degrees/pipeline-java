@@ -37,7 +37,7 @@ import java.util.concurrent.ScheduledFuture;
  */
 public class AspectEngineDataFileDefault implements AspectEngineDataFile {
     private String identifier;
-    private OnPremiseAspectEngine engine;
+    private OnPremiseAspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine;
     private DataFileConfiguration configuration;
     private DataUpdateService dataUpdateService = null;
     private String tempDataDirPath;
@@ -53,12 +53,12 @@ public class AspectEngineDataFileDefault implements AspectEngineDataFile {
     }
 
     @Override
-    public OnPremiseAspectEngine getEngine() {
+    public OnPremiseAspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> getEngine() {
         return engine;
     }
 
     @Override
-    public void setEngine(OnPremiseAspectEngine engine) {
+    public void setEngine(OnPremiseAspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine) {
         this.engine = engine;
     }
 
@@ -178,23 +178,23 @@ public class AspectEngineDataFileDefault implements AspectEngineDataFile {
         return syncLock;
     }
 
-    private ScheduledFuture future;
+    private ScheduledFuture<?> future;
 
-    public ScheduledFuture getFuture() {
+    public ScheduledFuture<?> getFuture() {
         return future;
     }
 
-    public void setFuture(ScheduledFuture future) {
+    public void setFuture(ScheduledFuture<?> future) {
         this.future = future;
     }
 
-    private ScheduledFuture pollFuture;
+    private ScheduledFuture<?> pollFuture;
 
-    public ScheduledFuture getPollFuture() {
+    public ScheduledFuture<?> getPollFuture() {
         return pollFuture;
     }
 
-    public void setPollFuture(ScheduledFuture future) {
+    public void setPollFuture(ScheduledFuture<?> future) {
         this.pollFuture = future;
     }
 

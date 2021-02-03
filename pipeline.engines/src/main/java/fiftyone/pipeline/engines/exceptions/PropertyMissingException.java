@@ -32,6 +32,11 @@ import fiftyone.pipeline.engines.services.MissingPropertyReason;
  */
 public class PropertyMissingException extends RuntimeException {
 
+    /**
+     * Serializable class version number, which is used during deserialization.
+     */
+    private static final long serialVersionUID = -2395447752714222366L;
+
     private String propertyName = null;
 
     private MissingPropertyReason reason;
@@ -52,7 +57,7 @@ public class PropertyMissingException extends RuntimeException {
         String propertyName,
         String message) {
         super(message);
-        this.reason = reason;
+        this.setReason(reason);
         this.propertyName = propertyName;
     }
 
@@ -70,7 +75,7 @@ public class PropertyMissingException extends RuntimeException {
         String message,
         Throwable cause) {
         super(message, cause);
-        this.reason = reason;
+        this.setReason(reason);
         this.propertyName = propertyName;
     }
 
@@ -81,5 +86,21 @@ public class PropertyMissingException extends RuntimeException {
     public String getPropertyName() {
 
         return propertyName;
+    }
+
+    /**
+     * Get missing property reason.
+     * @return property name
+     */
+    public MissingPropertyReason getReason() {
+        return reason;
+    }
+
+    /**
+     * Set missing property reason.
+     * @param reason
+     */
+    public void setReason(MissingPropertyReason reason) {
+        this.reason = reason;
     }
 }

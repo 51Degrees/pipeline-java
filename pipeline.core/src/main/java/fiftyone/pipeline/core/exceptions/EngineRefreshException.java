@@ -29,6 +29,11 @@ package fiftyone.pipeline.core.exceptions;
 public class EngineRefreshException extends RuntimeException {
 
     /**
+     * Serializable class version number, which is used during deserialization.
+     */
+    private static final long serialVersionUID = -6797659537741928532L;
+
+    /**
      * Constructor
      */
     public EngineRefreshException() {

@@ -34,16 +34,14 @@ import fiftyone.pipeline.core.typed.TypedKeyDefault;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 
-import java.io.Closeable;
 import java.util.*;
 
 import static junit.framework.TestCase.*;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("rawtypes")
 public class FlowDataTests {
 
     private static final String INT_PROPERTY = "intvalue";
@@ -71,7 +69,7 @@ public class FlowDataTests {
     
     @After
     public void TearDown() throws Exception {
-    	CloseFlowData();
+        CloseFlowData();
     }
     
     /**
@@ -80,10 +78,10 @@ public class FlowDataTests {
      * @throws Exception
      */
     private void CloseFlowData() throws Exception {
-    	if (flowDataClosed == false) {
-    		flowData.close();
-    		flowDataClosed = true;
-    	}
+        if (flowDataClosed == false) {
+            flowData.close();
+            flowDataClosed = true;
+        }
     }
 
     @Test
@@ -263,34 +261,35 @@ public class FlowDataTests {
     @Test(expected = IllegalArgumentException.class)
     public void FlowData_GetWithNullStringKey() {
         flowData.process();
-        Object result = flowData.get((String) null);
+        flowData.get((String) null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void FlowData_GetWithNullTypedKey() {
         flowData.process();
-        Object result = flowData.get((TypedKey<TestElementData>) null);
+        flowData.get((TypedKey<TestElementData>) null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void FlowData_GetWithNullElement() {
         flowData.process();
-        Object result = flowData.getFromElement(null);
+        flowData.getFromElement(null);
     }
 
     @Test(expected = Exception.class)
     public void FlowData_GetBeforeProcess_String() {
-        Object result = flowData.get("key");
+        flowData.get("key");
     }
 
     @Test(expected = Exception.class)
     public void FlowData_GetBeforeProcess_TypedKey() {
-        Object result = flowData.get(new TypedKeyDefault<TestElementData>("key"));
+        flowData.get(new TypedKeyDefault<TestElementData>("key"));
     }
 
     @Test(expected = Exception.class)
+    @SuppressWarnings("unchecked")
     public void FlowData_GetBeforeProcess_FlowElement() {
-        Object result = flowData.getFromElement(
+        flowData.getFromElement(
             new TestElement(mock(Logger.class), mock(ElementDataFactory.class)));
     }
 
@@ -309,6 +308,7 @@ public class FlowDataTests {
     }
 
     @Test(expected = NoSuchElementException.class)
+    @SuppressWarnings("unchecked")
     public void FlowData_GetNotPresent_Element() {
         flowData.process();
         Object result = flowData.getFromElement(
@@ -363,10 +363,10 @@ public class FlowDataTests {
             mock(Logger.class),
             pipeline,
             new EvidenceDefault(mock(Logger.class)))) {
-	        flowData.process();
-	
-	        assertEquals(INT_PROPERTY_VALUE, flowData.getAs(INT_PROPERTY, Integer.class));
-	        assertEquals(INT_PROPERTY_VALUE, flowData.getAsInt(INT_PROPERTY));
+            flowData.process();
+    
+            assertEquals(INT_PROPERTY_VALUE, flowData.getAs(INT_PROPERTY, Integer.class));
+            assertEquals(INT_PROPERTY_VALUE, flowData.getAsInt(INT_PROPERTY));
         }
     }
 
@@ -377,10 +377,10 @@ public class FlowDataTests {
             mock(Logger.class),
             pipeline,
             new EvidenceDefault(mock(Logger.class)))) {
-        	flowData.process();
+            flowData.process();
 
-        	assertEquals(STRING_PROPERTY_VALUE, flowData.getAs(STRING_PROPERTY, String.class));
-        	assertEquals(STRING_PROPERTY_VALUE, flowData.getAsString(STRING_PROPERTY));
+            assertEquals(STRING_PROPERTY_VALUE, flowData.getAs(STRING_PROPERTY, String.class));
+            assertEquals(STRING_PROPERTY_VALUE, flowData.getAsString(STRING_PROPERTY));
         }
     }
 
@@ -391,27 +391,28 @@ public class FlowDataTests {
             mock(Logger.class),
             pipeline,
             new EvidenceDefault(mock(Logger.class)))) {
-        	flowData.process();
+            flowData.process();
 
-        	assertNull(flowData.getAs(NULL_STRING_PROPERTY, String.class));
-        	assertNull(flowData.getAsString(NULL_STRING_PROPERTY));
+            assertNull(flowData.getAs(NULL_STRING_PROPERTY, String.class));
+            assertNull(flowData.getAsString(NULL_STRING_PROPERTY));
         }
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void FlowData_GetAs_List() throws Exception {
         configureMultiElementValues();
         try (FlowData flowData = new FlowDataDefault(
             mock(Logger.class),
             pipeline,
             new EvidenceDefault(mock(Logger.class)))) {
-	        flowData.process();
-	
-	        List<String> result = flowData.getAs(LIST_PROPERTY, List.class);
-	        assertEquals(LIST_PROPERTY_VALUE.size(), result.size());
-	        for (int i = 0; i < result.size(); i++) {
-	            assertEquals(LIST_PROPERTY_VALUE.get(i), result.get(i));
-	        }
+            flowData.process();
+    
+            List<String> result = flowData.getAs(LIST_PROPERTY, List.class);
+            assertEquals(LIST_PROPERTY_VALUE.size(), result.size());
+            for (int i = 0; i < result.size(); i++) {
+                assertEquals(LIST_PROPERTY_VALUE.get(i), result.get(i));
+            }
         }
     }
 
@@ -423,7 +424,7 @@ public class FlowDataTests {
             pipeline,
             new EvidenceDefault(mock(Logger.class)))) {
 
-        	Object result = flowData.getAs(STRING_PROPERTY, String.class);
+            flowData.getAs(STRING_PROPERTY, String.class);
         }
     }
 
@@ -434,9 +435,9 @@ public class FlowDataTests {
             mock(Logger.class),
             pipeline,
             new EvidenceDefault(mock(Logger.class)))) {
-        	flowData.process();
+            flowData.process();
 
-        	Object result = flowData.getAs("not a property", String.class);
+            flowData.getAs("not a property", String.class);
         }
     }
 
@@ -447,9 +448,9 @@ public class FlowDataTests {
             mock(Logger.class),
             pipeline,
             new EvidenceDefault(mock(Logger.class)))) {
-        	flowData.process();
+            flowData.process();
 
-        	Object result = flowData.getAs(DUPLICATE_PROPERTY, String.class);
+            flowData.getAs(DUPLICATE_PROPERTY, String.class);
         }
     }
 
@@ -460,9 +461,9 @@ public class FlowDataTests {
             mock(Logger.class),
             pipeline,
             new EvidenceDefault(mock(Logger.class)))) {
-        	flowData.process();
+            flowData.process();
 
-        	int result = flowData.getAs(STRING_PROPERTY, int.class);
+            flowData.getAs(STRING_PROPERTY, int.class);
         }
     }
 

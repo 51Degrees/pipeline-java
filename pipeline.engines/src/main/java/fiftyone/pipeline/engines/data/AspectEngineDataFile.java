@@ -53,12 +53,12 @@ public interface AspectEngineDataFile extends Closeable {
      * Get the engine this data file is used by.
      * @return engine the data file is used by
      */
-    OnPremiseAspectEngine getEngine();
+    OnPremiseAspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> getEngine();
     /**
      * Set the engine this data file is used by.
      * @param engine the data file is used by
      */
-    void setEngine(OnPremiseAspectEngine engine);
+    void setEngine(OnPremiseAspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine);
 
     /**
      * The complete file path to the location of the data file.

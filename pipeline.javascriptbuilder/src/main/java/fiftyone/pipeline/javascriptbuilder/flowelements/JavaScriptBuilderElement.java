@@ -64,8 +64,6 @@ public class JavaScriptBuilderElement
     protected String contextRoot;
     protected final String objName;
     protected final boolean enableCookies;
-    
-    private boolean lastRequestWasError;
     private final Mustache mustache;
     
     //! [constructor]
@@ -188,7 +186,7 @@ public class JavaScriptBuilderElement
         // If device detection is enabled then try and get whether the
         // requesting browser supports promises. If not then default to false.
         try {
-            AspectPropertyValue supportsPromisesValue =
+            AspectPropertyValue<?> supportsPromisesValue =
                 data.getAs("Promise", AspectPropertyValue.class);
             supportsPromises = supportsPromisesValue.hasValue() &&
                 supportsPromisesValue.getValue() == "Full";

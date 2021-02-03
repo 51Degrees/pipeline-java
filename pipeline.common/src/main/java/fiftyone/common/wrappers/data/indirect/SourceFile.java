@@ -36,8 +36,11 @@ public class SourceFile implements Source {
     private final FileChannel channel;
 
     public SourceFile(String fileName)
-        throws FileNotFoundException {
-        channel = new FileInputStream(fileName).getChannel();
+        throws IOException, FileNotFoundException {
+        try(FileInputStream fis = new FileInputStream(fileName)){
+             channel = fis.getChannel();
+        }
+        
     }
 
     /**

@@ -59,12 +59,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 
+@SuppressWarnings("unused")
 public class JsonBuilderTests {
     private TestLoggerFactory loggerFactory;
     private EmptyEngine testEngine;
@@ -84,7 +84,7 @@ public class JsonBuilderTests {
     public void Init() {
         flowData = mock(FlowData.class);
         
-        testEngine = mock(EmptyEngine.class, new Answer() {
+        testEngine = mock(EmptyEngine.class, new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 throw new Exception("The method '" +
@@ -98,7 +98,7 @@ public class JsonBuilderTests {
         doReturn(properties).when(testEngine).getProperties();
         doReturn("test").when(testEngine).getElementDataKey();
         
-        jsonBuilderElement = (JsonBuilderElement)new JsonBuilderElementBuilder(loggerFactory)
+        jsonBuilderElement = new JsonBuilderElementBuilder(loggerFactory)
             .build();
 
         elementDataMock = mock(ElementData.class);
@@ -208,6 +208,7 @@ public class JsonBuilderTests {
      * Check that nested properties are serialised as expected
      * @throws Exception
      */
+    @SuppressWarnings("unchecked")
     @Test
     public void JsonBuilder_NestedProperties() throws Exception {
 
@@ -361,7 +362,7 @@ public class JsonBuilderTests {
      * Check that delayed execution and evidence properties values are populated
      * correctly when a property has multiple evidence properties
      * @throws Exception
-     */
+     */ 
     @Test
     public void JsonBuilder_MultipleEvidenceProperties() throws Exception {
         // Configure the property meta-data as needed for
@@ -467,15 +468,15 @@ public class JsonBuilderTests {
 
         try (FlowData flowData = pipeline.createFlowData()) {
 
-	        flowData.process();
-	
-	        JsonBuilderData jsonResult = flowData.get(JsonBuilderData.class);
-	        assertNotNull(jsonResult);
-	        assertNotNull(jsonResult.getJson());
-	
-	        JSONObject jsonData = new JSONObject(jsonResult.getJson());
-	        assertEquals(1, jsonData.getJSONObject("empty-aspect").getLong("valueone"));
-	        assertEquals(2, jsonData.getJSONObject("empty-aspect").getLong("valuetwo"));
+            flowData.process();
+    
+            JsonBuilderData jsonResult = flowData.get(JsonBuilderData.class);
+            assertNotNull(jsonResult);
+            assertNotNull(jsonResult.getJson());
+    
+            JSONObject jsonData = new JSONObject(jsonResult.getJson());
+            assertEquals(1, jsonData.getJSONObject("empty-aspect").getLong("valueone"));
+            assertEquals(2, jsonData.getJSONObject("empty-aspect").getLong("valuetwo"));
         }
     }
 
@@ -489,6 +490,7 @@ public class JsonBuilderTests {
         return testIteration(iteration, data, null);
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private String testIteration(
         int iteration,
         Map<String, Object> data,
@@ -556,5 +558,13 @@ public class JsonBuilderTests {
             }
         }
         return false;
+    }
+
+    public JsonBuilderData getResult() {
+        return result;
+    }
+
+    public void setResult(JsonBuilderData result) {
+        this.result = result;
     }
 }

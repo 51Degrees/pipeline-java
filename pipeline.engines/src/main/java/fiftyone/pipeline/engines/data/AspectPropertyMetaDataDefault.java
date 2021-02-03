@@ -49,11 +49,12 @@ public class AspectPropertyMetaDataDefault
      * @param dataTiersWherePresent data tiers which contain this property
      * @param available true if the property is available
      */
+    @SuppressWarnings("rawtypes")
     public AspectPropertyMetaDataDefault(
         String name,
         FlowElement element,
         String category,
-        Class type,
+        Class<?> type,
         List<String> dataTiersWherePresent,
         boolean available) {
         super(name, element, category, type, available);
@@ -71,11 +72,12 @@ public class AspectPropertyMetaDataDefault
      * @param itemProperties list of sub-properties contained within the
      *                       property
      */
+    @SuppressWarnings("rawtypes")
     public AspectPropertyMetaDataDefault(
         String name,
         FlowElement element,
         String category,
-        Class type,
+        Class<?> type,
         List<String> dataTiersWherePresent,
         boolean available,
         List<ElementPropertyMetaData> itemProperties) {
@@ -115,11 +117,12 @@ public class AspectPropertyMetaDataDefault
      *                           then the/ name in this list must be
      *                           'profiles.screenwidthpixelsjavascript'
      */
+    @SuppressWarnings("rawtypes")
     public AspectPropertyMetaDataDefault(
         String name,
         FlowElement element,
         String category,
-        Class type,
+        Class<?> type,
         List<String> dataTiersWherePresent,
         boolean available,
         List<ElementPropertyMetaData> itemProperties,

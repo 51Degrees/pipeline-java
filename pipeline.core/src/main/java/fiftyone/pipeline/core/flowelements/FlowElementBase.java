@@ -187,6 +187,7 @@ public abstract class FlowElementBase<
         }
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     protected void finalize() throws Throwable {
         logger.warn("FlowElement '" + getClass().getSimpleName() + "'-'" +

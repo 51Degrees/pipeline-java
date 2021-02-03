@@ -126,7 +126,7 @@ public class JavaScriptBuilderElementBuilder {
                 new PipelineConfigurationException("JavaScriptBuilder" +
                 " ObjectName is invalid. This must be a valid JavaScript" +
                 " type identifier.");
-
+            
             logger.error("Value for ObjectName is invalid.", ex);
             throw ex;
         }

@@ -40,7 +40,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBContext;
@@ -98,9 +97,9 @@ public class FiftyOneInterceptor extends HandlerInterceptorAdapter {
             // Bind the configuration to a pipeline options instance
             PipelineOptions options = (PipelineOptions) unmarshaller.unmarshal(configFile);
             pipeline = StartupHelpers.buildFromConfiguration(
-            		builder, 
-            		options, 
-            		config.getClientsidePropertiesEnabled());
+                    builder, 
+                    options, 
+                    config.getClientsidePropertiesEnabled());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -139,5 +138,9 @@ public class FiftyOneInterceptor extends HandlerInterceptorAdapter {
         } catch (Exception e) {
             throw new Exception("FlowData could not be disposed of.", e);
         }
+    }
+
+    public ClientsidePropertyService getClientsidePropertyService() {
+        return clientsidePropertyService;
     }
 }

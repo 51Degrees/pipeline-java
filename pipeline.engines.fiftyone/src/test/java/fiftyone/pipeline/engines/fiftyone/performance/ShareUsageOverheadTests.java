@@ -25,6 +25,8 @@ package fiftyone.pipeline.engines.fiftyone.performance;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.flowelements.PipelineBuilder;
+import fiftyone.pipeline.engines.data.AspectData;
+import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.fiftyone.flowelements.ShareUsageBuilder;
 import fiftyone.pipeline.engines.fiftyone.flowelements.ShareUsageElement;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
@@ -51,8 +53,9 @@ public class ShareUsageOverheadTests {
 
     private Pipeline pipeline;
     private Pipeline baselinePipeline;
-    private AspectEngine engine;
+    private AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine;
 
+    @SuppressWarnings("unchecked")
     @Before
     public void Initialise() throws Exception {
         ILoggerFactory loggerFactory = mock(ILoggerFactory.class);
@@ -81,9 +84,9 @@ public class ShareUsageOverheadTests {
             .addFlowElement(engine)
             .addFlowElement(shareUsage)
             .build();
-        baselinePipeline = new PipelineBuilder(loggerFactory)
+        baselinePipeline = (new PipelineBuilder(loggerFactory)
             .addFlowElement(engine)
-            .build();
+            .build());
     }
 
     private double getTime(int iterations, int headers, Pipeline pipeline) {
@@ -106,11 +109,11 @@ public class ShareUsageOverheadTests {
         // in this scenario, so loop through and perform
         // manual close on each FlowData
         data.forEach((f) -> { 
-        	try {
-        		f.close();
-        	} catch (Exception e) {
-        		e.printStackTrace();
-        	}
+            try {
+                f.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
 
         return ((double)end - (double)start) / (double)iterations;
@@ -135,11 +138,11 @@ public class ShareUsageOverheadTests {
         // in this scenario, so loop through and perform
         // manual close on each FlowData
         data.forEach((f) -> { 
-        	try {
-        		f.close();
-        	} catch (Exception e) {
-        		e.printStackTrace();
-        	}
+            try {
+                f.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
 
         double msOverheadPerCall = (end - start) / iterations;
@@ -170,11 +173,11 @@ public class ShareUsageOverheadTests {
         // in this scenario, so loop through and perform
         // manual close on each FlowData
         data.forEach((f) -> { 
-        	try {
-        		f.close();
-        	} catch (Exception e) {
-        		e.printStackTrace();
-        	}
+            try {
+                f.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
 
         double msOverheadPerCall = ((double)end - (double)start) / (double)iterations;

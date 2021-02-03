@@ -25,7 +25,6 @@ package fiftyone.pipeline.core.flowelements;
 import fiftyone.pipeline.core.data.ElementPropertyMetaData;
 import fiftyone.pipeline.core.data.EvidenceKeyFilter;
 import fiftyone.pipeline.core.data.FlowData;
-import fiftyone.pipeline.core.exceptions.PipelineDataException;
 
 import java.util.List;
 import java.util.Map;
@@ -78,14 +77,15 @@ public interface Pipeline extends AutoCloseable {
      * contains one. Null is returned if there is no such instance or there are
      * multiple instances of that type.
      */
+    @SuppressWarnings("rawtypes")
     <T extends FlowElement> T getElement(Class<T> type);
 
     /**
      * Get list of the flow elements that are part of this pipeline.
      * @return an immutable list of the flow elements
      */
+    @SuppressWarnings("rawtypes")
     List<FlowElement> getFlowElements();
-
     /**
      * Get the map of available properties for an
      * {@link FlowElement#getElementDataKey()}. The map returned contains the
@@ -93,31 +93,5 @@ public interface Pipeline extends AutoCloseable {
      * @return an immutable map of available properties
      */
     Map<String, Map<String, ElementPropertyMetaData>> getElementAvailableProperties();
-}
-
-/**
- * Internal interface for a pipeline.
- * Allows {@link FlowData} to call the pipeline's process method.
- */
-interface PipelineInternal extends Pipeline {
-
-    /**
-     * Process the given {@link FlowData} using the {@link FlowElement}s in the
-     * pipeline.
-     * @param data the {@link FlowData} that contains the evidence and will
-     *             allow the user to access the results
-     */
-    void process(FlowData data);
-
-    /**
-     * Get the meta data for the specified property name.
-     * If there are no properties with that name or multiple
-     * properties on different elements then an exception will
-     * be thrown.
-     * @param propertyName the property name to find the meta data for
-     * @return the meta data associated with the specified property name
-     * @throws PipelineDataException if the property name is associated with
-     * zero or multiple elements.
-     */
-    ElementPropertyMetaData getMetaDataForProperty(String propertyName) throws PipelineDataException;
+    
 }

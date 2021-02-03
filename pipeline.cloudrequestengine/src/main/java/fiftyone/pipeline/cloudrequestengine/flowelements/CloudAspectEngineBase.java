@@ -22,6 +22,7 @@
 
 package fiftyone.pipeline.cloudrequestengine.flowelements;
 
+import static fiftyone.pipeline.cloudrequestengine.Constants.Messages.ExceptionFailedToLoadProperties;
 import fiftyone.pipeline.core.data.AccessiblePropertyMetaData;
 import fiftyone.pipeline.core.data.ElementPropertyMetaData;
 import fiftyone.pipeline.core.data.ElementPropertyMetaDataDefault;
@@ -140,7 +141,12 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
                 localRef = aspectProperties;
                 if (localRef == null) {
                     if(loadAspectProperties() == false) {
-                        aspectProperties = null;
+                        throw new RuntimeException(
+                            String.format(
+                                ExceptionFailedToLoadProperties,
+                                this.getElementDataKey(),
+                                this.getElementDataKey())
+                        );
                     }
                 }
             }
@@ -275,7 +281,7 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
 
                     // If this property has a type of AspectPropertyValue
                     // then create a new instance and populate it.
-                    AspectPropertyValue apv = new AspectPropertyValueDefault<>();
+                    AspectPropertyValue<Object> apv = new AspectPropertyValueDefault<>();
                     if (property.getValue() != null) {
                         Object newValue = property.getValue();
                         if (metaData.getType().equals(JavaScript.class)) {

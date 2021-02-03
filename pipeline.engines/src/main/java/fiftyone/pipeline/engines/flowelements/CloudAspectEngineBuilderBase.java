@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
  *                  the fluent builder methods
  * @param <TEngine> the type of the engine that this builder will build
  */
+@SuppressWarnings("rawtypes")
 public abstract class CloudAspectEngineBuilderBase<
     TBuilder extends CloudAspectEngineBuilderBase<TBuilder, TEngine>,
     TEngine extends CloudAspectEngine>

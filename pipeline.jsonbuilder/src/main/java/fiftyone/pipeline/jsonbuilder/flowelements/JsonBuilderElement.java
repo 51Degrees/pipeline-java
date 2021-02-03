@@ -42,6 +42,7 @@ import fiftyone.pipeline.jsonbuilder.Constants;
 import fiftyone.pipeline.jsonbuilder.data.JsonBuilderData;
 
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONObject;
@@ -76,7 +77,7 @@ public class JsonBuilderElement
         super(logger, elementDataFactory);
         // Set the evidence key filter for the flow data to use.
         evidenceKeyFilter = new EvidenceKeyFilterWhitelist(new ArrayList<String>(){},
-            String.CASE_INSENSITIVE_ORDER);
+                String.CASE_INSENSITIVE_ORDER);
 
         properties = Collections.singletonList(
             (ElementPropertyMetaData)new ElementPropertyMetaDataDefault(
@@ -205,11 +206,7 @@ public class JsonBuilderElement
         // has not reached max iterations.
         if (sequenceNumber < Constants.MAX_JAVASCRIPT_ITERATIONS) {
             addJavaScriptProperties(data, allProperties);
-        }
-        else {
-            int a = 1;
-        }
-        
+        }        
         addErrors(data, allProperties);
         
         return buildJson(allProperties);
@@ -280,8 +277,8 @@ public class JsonBuilderElement
             Object propertyValue = null;
 
             if (value.getValue() instanceof AspectPropertyValue){
-                AspectPropertyValue aspectProperty =
-                    (AspectPropertyValue)value.getValue();
+                AspectPropertyValue<?> aspectProperty =
+                    (AspectPropertyValue<?>)value.getValue();
                 if (aspectProperty.hasValue()) {
                     propertyValue = aspectProperty.getValue();
                 }
@@ -304,8 +301,9 @@ public class JsonBuilderElement
                 // recursively call this method for each instance
                 // in the list.
                 if (propertyValue instanceof List &&
-                    ((List) propertyValue).size() > 0 &&
-                    ElementData.class.isAssignableFrom(((List) propertyValue).get(0).getClass())) {
+                    ((List<?>) propertyValue).size() > 0 &&
+                    ElementData.class.isAssignableFrom(((List<?>) propertyValue).get(0).getClass())) {
+                    @SuppressWarnings("unchecked")
                     List<Object> elementDatas = (List<Object>) propertyValue;
                     List<Object> results = new ArrayList<>();
                     for (Object elementData : elementDatas) {
@@ -358,9 +356,9 @@ public class JsonBuilderElement
         for (Map.Entry<String, Object> element : allProperties.entrySet()) {
             Object entryObject = element.getValue();
             if (entryObject instanceof Map) {
-                Map entry = (Map)entryObject;
+                Map<?, ?> entry = (Map<?, ?>)entryObject;
                 for (Object propertyObject : entry.entrySet()) {
-                    Map.Entry property = (Map.Entry)propertyObject;
+                    Map.Entry<?,?> property = (Entry<?, ?>)propertyObject;
                     props.add(
                         element.getKey().toLowerCase() + EVIDENCE_SEPERATOR + property.getKey().toString().toLowerCase());
                 }
