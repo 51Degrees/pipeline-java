@@ -22,27 +22,19 @@
 
 package fiftyone.pipeline.cloudrequestengine;
 
-import fiftyone.common.testhelpers.TestLoggerFactory;
 import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngine;
 import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngineBuilder;
 import fiftyone.pipeline.core.data.AccessiblePropertyMetaData;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.flowelements.PipelineBuilder;
-import fiftyone.pipeline.engines.services.HttpClient;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-import org.slf4j.ILoggerFactory;
-import org.slf4j.Logger;
 
-import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -50,21 +42,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
-public class CloudRequestEngineTests {
-    HttpClient httpClient;
-    private TestLoggerFactory loggerFactory;
-
-    private URL expectedUrl = new URL("https://cloud.51degrees.com/api/v4/resource_key.json");
-    private String jsonResponse = "{'device':{'value':'1'}}";
-    private String evidenceKeysResponse = "['query.User-Agent']";
-    private String accessiblePropertiesResponse =
-            "{'Products': {'device': {'DataTier': 'tier','Properties': [{'Name': 'value','Type': 'String','Category': 'Device'}]}}}";
-    private int accessiblePropertiesResponseCode = 200;
-
+public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
     public CloudRequestEngineTests() throws MalformedURLException {
-        ILoggerFactory internalLogger = mock(ILoggerFactory.class);
-        when(internalLogger.getLogger(anyString())).thenReturn(mock(Logger.class));
-        loggerFactory = new TestLoggerFactory(internalLogger);
+        super();
     }
 
     /**
@@ -283,64 +263,5 @@ public class CloudRequestEngineTests {
         assertTrue("Exception message did not contain the expected text.", 
                 realEx.getMessage().contains(
             "resource_key not a valid resource key"));
-    }
-    
-
-    private void configureMockedClient() throws IOException {
-        // ARRANGE
-        httpClient = mock(HttpClient.class, new Answer<Object>() {
-            @Override
-            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-                throw new Exception("The method '" +
-                        invocationOnMock.getMethod().getName() + "' should not have been called.");
-            }
-        });
-        final HttpURLConnection connection = mock(HttpURLConnection.class, new Answer<Object>() {
-            @Override
-            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-                throw new Exception("The method '" +
-                        invocationOnMock.getMethod().getName() + "' should not have been called.");
-            }
-        });
-        doNothing().when(connection).setConnectTimeout(anyInt());
-        doNothing().when(connection).setReadTimeout(anyInt());
-        doAnswer(new Answer<Object>() {
-            @Override
-            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-                URL url = (URL)invocationOnMock.getArgument(0);
-                doReturn(url).when(connection).getURL();
-                if (url.getPath().endsWith("properties")) {
-                    doReturn(accessiblePropertiesResponseCode).when(connection).getResponseCode();
-                }
-                else {
-                    doReturn(200).when(connection).getResponseCode();
-                }
-                return (Object)connection;
-            }
-        }).when(httpClient).connect(any(URL.class));
-        
-        doAnswer(new Answer<Object>() {
-            @Override
-            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-                URL url = ((HttpURLConnection)invocationOnMock.getArgument(0)).getURL();
-                if (url.getPath().endsWith("properties")) {
-                    return accessiblePropertiesResponse;
-                }
-                else if (url.getPath().endsWith("evidencekeys")) {
-                    return evidenceKeysResponse;
-                }
-                else {
-                    throw new Exception("A request was made with the URL '" +
-                            url + "'");
-                }
-            }
-        }).when(httpClient).getResponseString(any(HttpURLConnection.class));
-
-        doReturn(jsonResponse)
-                .when(httpClient)
-                .postData(
-                        any(HttpURLConnection.class),
-                        ArgumentMatchers.<String, String>anyMap(),
-                        (byte[])any());
     }
 }

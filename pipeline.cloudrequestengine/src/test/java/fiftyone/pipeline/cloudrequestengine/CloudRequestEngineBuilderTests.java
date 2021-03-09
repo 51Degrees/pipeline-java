@@ -24,12 +24,35 @@ package fiftyone.pipeline.cloudrequestengine;
 
 import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngine;
 import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngineBuilder;
+import fiftyone.pipeline.cloudrequestengine.flowelements.Constants;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.engines.services.HttpClientDefault;
+
+import static org.junit.Assert.assertEquals;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.MalformedURLException;
+import java.util.function.Function;
+
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
-public class CloudRequestEngineBuilderTests {
+public class CloudRequestEngineBuilderTests extends CloudRequestEngineTestsBase {
+    private final String testResourceKey = "resource_key";
+	private final String testEndpoint = "https://testEndpoint/";
+	private final String testEnvVarEndpoint = "https://testEnvVarEndpoint/";
+	
+	public CloudRequestEngineBuilderTests() throws MalformedURLException {
+        super();
+    }
+	
+    @Before
+    public void setUp() throws IOException {
+    	configureMockedClient();
+    }
+    
     @Test(expected = PipelineConfigurationException.class)
     @SuppressWarnings("unused")
     public void BuildEngine_ResourceKey_NotSet() throws Exception {
@@ -40,4 +63,55 @@ public class CloudRequestEngineBuilderTests {
                 .build();
     }
 
+    private void setExpectedEnvVarValue(
+    	CloudRequestEngineBuilder builder,
+    	String expectedValue) throws Exception {
+    	Field getEnvVarField = builder.getClass().getDeclaredField("getEnvVar");
+    	getEnvVarField.setAccessible(true);
+    	getEnvVarField.set(builder, (Function<String, String>)(name) -> {
+    		return expectedValue;
+    	});
+    }
+    
+    private String getEndpointValue(
+    		CloudRequestEngineBuilder builder) throws Exception {
+    	Field endPointField = builder.getClass().getDeclaredField("endPoint");
+    	endPointField.setAccessible(true);
+    	return (String)endPointField.get(builder);
+    }
+    
+    @Test
+    public void CloudEndPoint_Explicit_Setting() throws Exception {
+    	CloudRequestEngineBuilder builder =
+    		new CloudRequestEngineBuilder(loggerFactory, httpClient);
+    	setExpectedEnvVarValue(builder, testEnvVarEndpoint);
+    	
+    	builder.setResourceKey(testResourceKey)
+    		.setEndpoint(testEndpoint)
+    		.build();
+    	assertEquals(testEndpoint, getEndpointValue(builder));
+    }
+    
+    @Test
+    public void CloudEndPoint_Environment_Setting() throws Exception {
+    	CloudRequestEngineBuilder builder =
+    		new CloudRequestEngineBuilder(loggerFactory, httpClient);
+    	setExpectedEnvVarValue(builder, testEnvVarEndpoint);
+    	
+    	builder.setResourceKey(testResourceKey)
+    		.build();
+    	assertEquals(testEnvVarEndpoint, getEndpointValue(builder));
+    }
+    
+    @Test
+    public void CloudEndPoint_Default_Setting() throws Exception {
+    	CloudRequestEngineBuilder builder =
+    		new CloudRequestEngineBuilder(loggerFactory, httpClient);
+    	setExpectedEnvVarValue(builder, null);
+    	
+    	builder.setResourceKey(testResourceKey)
+    		.build();
+    	assertEquals(
+    		Constants.END_POINT_DEFAULT + "/", getEndpointValue(builder));
+    }
 }
