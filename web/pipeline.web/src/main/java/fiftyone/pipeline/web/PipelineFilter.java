@@ -23,6 +23,7 @@
 package fiftyone.pipeline.web;
 
 import fiftyone.pipeline.core.configuration.PipelineOptions;
+import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.flowelements.PipelineBuilder;
 import fiftyone.pipeline.engines.services.DataUpdateService;
@@ -59,6 +60,8 @@ public class PipelineFilter implements Filter {
 
     private FiftyOneJSServiceCore jsService;
 
+    private UACHServiceCore uachServiceCore;
+    
     FilterConfig config;
 
     @Override
@@ -100,6 +103,7 @@ public class PipelineFilter implements Filter {
         evidenceService = new WebRequestEvidenceServiceCore.Default();
         resultService = new PipelineResultServiceCore.Default(evidenceService, pipeline);
         flowDataProviderCore = new FlowDataProviderCore.Default();
+        uachServiceCore = new UACHServiceCore.Default();
         clientsidePropertyServiceCore = new ClientsidePropertyServiceCore.Default(
             flowDataProviderCore,
             pipeline);
@@ -117,7 +121,16 @@ public class PipelineFilter implements Filter {
         // Populate the request properties and store against the
         // HttpContext.
         resultService.process((HttpServletRequest)request);
+        
+        // Get FlowData from the request.
+        FlowData flowData = flowDataProviderCore.getFlowData((HttpServletRequest)request);
+        
+        // Get reponse header value after getting properties from first detection.
+        uachServiceCore.getResponseHeaderValue(flowData);
 
+        // Set UACH response header.
+        uachServiceCore.setResponseHeader((HttpServletResponse)response);
+        
         // If 51Degrees JavaScript or JSON is being requested then serve it.
         // Otherwise continue down the filter Pipeline.
         if (jsService.serveJS((HttpServletRequest)request, (HttpServletResponse) response) == false &&
