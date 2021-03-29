@@ -292,10 +292,10 @@ fiftyoneDegreesManager = function() {
 
         // Get additional parameters from cookies in case they are not sent
         // by the browser.
-		var params = getParametersFromCookies();
+        var params = getParametersFromCookies();
 
         // Send the cookie parameters as the POST body.
-		xhr.send(params.join('&').replace(/%20/g, '+'));
+        xhr.send(params.join('&').replace(/%20/g, '+'));
     }
 {{/_updateEnabled}}
 
@@ -305,8 +305,8 @@ fiftyoneDegreesManager = function() {
     }
 
     // Populate this instance of the FOD object with getters to access the
-	// properties. If the value is null then get the noValueMessage from the
-	// JSON object corresponding to the property.
+    // properties. If the value is null then get the noValueMessage from the
+    // JSON object corresponding to the property.
     var update = function(data){
         var self = this;
         Object.getOwnPropertyNames(data).forEach(function(key) {
@@ -387,9 +387,9 @@ fiftyoneDegreesManager = function() {
     });
 {{/_supportsPromises}}
 
-	this.onChange = function(resolve) {
-		changeFuncs.push(resolve);
-	}
+    this.onChange = function(resolve) {
+        changeFuncs.push(resolve);
+    }
 
     this.complete = function(resolve, properties) {
 {{#_hasDelayedProperties}}

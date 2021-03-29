@@ -200,6 +200,7 @@ public abstract class LruCacheBase<K, V> implements Cache<K,V>, Closeable {
         }
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void finalize() {
         close(false);
@@ -388,7 +389,6 @@ public abstract class LruCacheBase<K, V> implements Cache<K,V>, Closeable {
          * @param newItem new item to replace it with
          */
         void replace(CachedItem oldItem, CachedItem newItem) {
-            boolean added = false;
             if (oldItem.isValid) {
                 synchronized (this) {
                     if (oldItem.isValid) {

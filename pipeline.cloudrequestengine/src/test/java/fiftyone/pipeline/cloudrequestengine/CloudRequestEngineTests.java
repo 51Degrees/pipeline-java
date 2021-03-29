@@ -31,7 +31,6 @@ import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.flowelements.PipelineBuilder;
 import fiftyone.pipeline.engines.services.HttpClient;
 import org.json.JSONObject;
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
@@ -84,8 +83,8 @@ public class CloudRequestEngineTests {
             .build();
 
         try (Pipeline pipeline = new PipelineBuilder(loggerFactory)
-            .addFlowElement(engine).build()) {
-            FlowData data = pipeline.createFlowData();
+            .addFlowElement(engine).build();
+            FlowData data = pipeline.createFlowData()) {
             data.addEvidence("query.User-Agent", userAgent);
 
             data.process();
@@ -133,8 +132,8 @@ public class CloudRequestEngineTests {
 
         try (Pipeline pipeline = new PipelineBuilder(loggerFactory)
             .addFlowElement(engine)
-            .build()) {
-            FlowData data = pipeline.createFlowData();
+            .build();
+            FlowData data = pipeline.createFlowData()) {
             data.addEvidence("query.User-Agent", userAgent);
 
             data.process();
@@ -266,7 +265,7 @@ public class CloudRequestEngineTests {
         Exception exception = null;
 
         try { 
-            CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
+            new CloudRequestEngineBuilder(loggerFactory, httpClient)
                 .setResourceKey(resourceKey)
                 .build();
         }
@@ -289,14 +288,14 @@ public class CloudRequestEngineTests {
 
     private void configureMockedClient() throws IOException {
         // ARRANGE
-        httpClient = mock(HttpClient.class, new Answer() {
+        httpClient = mock(HttpClient.class, new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 throw new Exception("The method '" +
                         invocationOnMock.getMethod().getName() + "' should not have been called.");
             }
         });
-        final HttpURLConnection connection = mock(HttpURLConnection.class, new Answer() {
+        final HttpURLConnection connection = mock(HttpURLConnection.class, new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 throw new Exception("The method '" +
@@ -305,7 +304,7 @@ public class CloudRequestEngineTests {
         });
         doNothing().when(connection).setConnectTimeout(anyInt());
         doNothing().when(connection).setReadTimeout(anyInt());
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 URL url = (URL)invocationOnMock.getArgument(0);
@@ -320,7 +319,7 @@ public class CloudRequestEngineTests {
             }
         }).when(httpClient).connect(any(URL.class));
         
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 URL url = ((HttpURLConnection)invocationOnMock.getArgument(0)).getURL();

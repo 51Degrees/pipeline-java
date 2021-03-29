@@ -36,7 +36,6 @@ public class ElementDataTests {
 
     Pipeline pipeline = mock(Pipeline.class);
     FlowData flowData = mock(FlowData.class);
-    private ElementData data;
 
     @Test
     public void ElementData_String() {
@@ -59,6 +58,7 @@ public class ElementDataTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void ElementData_ComplexValueType() {
         TestElementData data = new TestElementData(mock(Logger.class), flowData);
         String key = "key";
@@ -70,6 +70,7 @@ public class ElementDataTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void ElementData_ComplexReferenceType() {
         TestElementData data = new TestElementData(mock(Logger.class), flowData);
         String key = "key";
@@ -177,7 +178,7 @@ public class ElementDataTests {
         TestElementData data = new TestElementData(mock(Logger.class), flowData);
         String key = null;
 
-        Object result = data.get(key);
+        data.get(key);
     }
 
     /**

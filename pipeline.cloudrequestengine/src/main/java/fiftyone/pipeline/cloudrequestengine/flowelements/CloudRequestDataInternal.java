@@ -23,7 +23,9 @@
 package fiftyone.pipeline.cloudrequestengine.flowelements;
 
 import fiftyone.pipeline.core.data.FlowData;
+import fiftyone.pipeline.engines.data.AspectData;
 import fiftyone.pipeline.engines.data.AspectDataBase;
+import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 import org.slf4j.Logger;
 
@@ -38,7 +40,7 @@ public class CloudRequestDataInternal extends AspectDataBase {
     public CloudRequestDataInternal(
         Logger logger,
         FlowData flowData,
-        AspectEngine engine) {
+        AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine) {
         super(logger, flowData, engine);
     }
 

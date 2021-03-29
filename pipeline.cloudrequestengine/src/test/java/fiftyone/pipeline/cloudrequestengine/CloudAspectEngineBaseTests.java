@@ -1,5 +1,6 @@
 package fiftyone.pipeline.cloudrequestengine;
 
+import static fiftyone.pipeline.cloudrequestengine.Constants.Messages.ExceptionFailedToLoadProperties;
 import fiftyone.pipeline.cloudrequestengine.data.CloudRequestData;
 import fiftyone.pipeline.cloudrequestengine.flowelements.CloudAspectEngineBase;
 import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngine;
@@ -8,13 +9,13 @@ import fiftyone.pipeline.core.data.factories.ElementDataFactory;
 import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.flowelements.PipelineBuilder;
+import fiftyone.pipeline.engines.data.AspectData;
 import fiftyone.pipeline.engines.data.AspectDataBase;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 import fiftyone.pipeline.engines.flowelements.AspectEngineBase;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,13 +26,14 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class CloudAspectEngineBaseTests {
     private class TestData extends AspectDataBase {
         public TestData(
             Logger logger,
             FlowData flowData,
-            AspectEngine engine) {
+            AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine) {
             super(logger, flowData, engine);
         }
     }
@@ -41,7 +43,7 @@ public class CloudAspectEngineBaseTests {
             super(LoggerFactory.getLogger("TestInstance"), new ElementDataFactory<TestData>() {
                 @Override
                 public TestData create(FlowData flowData, FlowElement<TestData, ?> flowElement) {
-                    return new TestData(null, flowData, (AspectEngine) flowElement);
+                    return new TestData(null, flowData, (AspectEngine<TestData, ?>) flowElement);
                 }
             });
         }
@@ -75,7 +77,7 @@ public class CloudAspectEngineBaseTests {
             super(LoggerFactory.getLogger("TestRequestEngine"), new ElementDataFactory<CloudRequestData>() {
                 @Override
                 public CloudRequestData create(FlowData flowData, FlowElement<CloudRequestData, ?> flowElement) {
-                    return new CloudRequestData(null, flowData, (AspectEngine) flowElement);
+                    return new CloudRequestData(null, flowData, (AspectEngine<CloudRequestData, ?>) flowElement);
                 }
             });
         }
@@ -134,6 +136,7 @@ public class CloudAspectEngineBaseTests {
     public void init() {
         propertiesReturnedByRequestEngine = new HashMap<>();
     }
+    
     private <T extends ElementPropertyMetaData> boolean propertiesContainName(
             List<T> properties,
             String name) {
@@ -144,6 +147,12 @@ public class CloudAspectEngineBaseTests {
         }
         return false;
     }
+    
+    /**
+     * Test the LoadProperties method of the CloudAspectEngine which
+     * retrieves property meta-data from the cloud request engine.
+     * @throws Exception 
+     */
     @Test
     public void loadProperties() throws Exception {
         List<AccessiblePropertyMetaData.PropertyMetaData> properties = new ArrayList<>();
@@ -161,7 +170,62 @@ public class CloudAspectEngineBaseTests {
         assertTrue(propertiesContainName(engine.getProperties(), "hardwarevendor"));
         assertTrue(propertiesContainName(engine.getProperties(), "hardwarevariants"));
     }
+    
+    /**
+    * Test that an exception is thrown by the Properties auto property if 
+    * the cloud request engine returns no properties.
+    * @throws Exception 
+    */
+    @Test
+    public void loadProperties_noProperties() throws Exception {
+        try {
+            createPipeline();
+            fail("RuntimeException should be thrown");
+        } catch (RuntimeException ex){
+            assertEquals(
+                String.format(
+                    ExceptionFailedToLoadProperties,
+                    "test",
+                    "test"),
+                ex.getMessage()
+            );
+        }
+    }
+    
+    /**
+     * Test that an exception is thrown by the Properties auto property if
+     * the cloud engine only returns properties for other engines.
+     * @throws Exception 
+     */
+    @Test
+    public void loadProperties_wrongProperties() throws Exception {
+        List<AccessiblePropertyMetaData.PropertyMetaData> properties = new ArrayList<>();
+        properties.add(new AccessiblePropertyMetaData.PropertyMetaData("ismobile", "Boolean", null, null));
+        properties.add(new AccessiblePropertyMetaData.PropertyMetaData("hardwarevendor", "String", null, null));
+        properties.add(new AccessiblePropertyMetaData.PropertyMetaData("hardwarevariants", "Array", null, null));
+        AccessiblePropertyMetaData.ProductMetaData devicePropertyData = new AccessiblePropertyMetaData.ProductMetaData();
+        devicePropertyData.properties = properties;
+        propertiesReturnedByRequestEngine.put("test2", devicePropertyData);
 
+        try {
+            createPipeline();
+            fail("RuntimeException should be thrown");
+        } catch (RuntimeException ex){
+            assertEquals(
+                String.format(
+                    ExceptionFailedToLoadProperties,
+                    "test",
+                    "test"),
+                ex.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Test loading sub-property meta data where a cloud aspect engine 
+     * has nested properties. E.g. the cloud property keyed engine.
+     * @throws Exception 
+     */
     @Test
     public void loadProperties_subProperties() throws Exception {
         List<AccessiblePropertyMetaData.PropertyMetaData> subProperties = new ArrayList<>();
@@ -186,6 +250,10 @@ public class CloudAspectEngineBaseTests {
         assertTrue(propertiesContainName(engine.getProperties().get(0).getItemProperties(), "hardwarevariants"));
     }
     
+    /**
+     * Test loading delayed evidence property meta data.
+     * @throws Exception 
+     */
     @Test
     public void loadProperties_delayedProperties() throws Exception {
         List<String> evidenceProperties = new ArrayList<>();

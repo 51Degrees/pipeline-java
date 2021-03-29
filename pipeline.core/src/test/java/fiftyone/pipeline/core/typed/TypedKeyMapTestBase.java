@@ -28,6 +28,7 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
+@SuppressWarnings("unused")
 public class TypedKeyMapTestBase {
 
     TypedKeyMap map;
@@ -156,7 +157,7 @@ public class TypedKeyMapTestBase {
         String result = map.get(String.class);
     }
 
-
+    @SuppressWarnings("unchecked")
     protected void TypedMap_GetByTypeInterface() {
         ArrayList<String> dataToStore = new ArrayList<>(Arrays.asList("TEST"));
         TypedKey<List<String>> key = new TypedKeyDefault<>("datakey", List.class);

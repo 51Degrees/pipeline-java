@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 public class CloudRequestEngineBuilderTests {
     @Test(expected = PipelineConfigurationException.class)
+    @SuppressWarnings("unused")
     public void BuildEngine_ResourceKey_NotSet() throws Exception {
         CloudRequestEngine cloudRequestsEngine =
             new CloudRequestEngineBuilder(

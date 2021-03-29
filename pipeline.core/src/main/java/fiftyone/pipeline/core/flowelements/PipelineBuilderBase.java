@@ -37,6 +37,8 @@ import java.util.List;
  * {@link PipelineBuilder}.
  * @param <T> the builder type
  */
+
+@SuppressWarnings("rawtypes")
 public abstract class PipelineBuilderBase<T extends PipelineBuilderBase> {
 
     /**

@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
  *                  the fluent builder methods
  * @param <TEngine> the type of the engine that this builder will build
  */
+@SuppressWarnings("rawtypes")
 public abstract class FiftyOneOnPremiseAspectEngineBuilderBase<
     TBuilder extends FiftyOneOnPremiseAspectEngineBuilderBase<TBuilder, TEngine>,
     TEngine extends FiftyOneAspectEngine> extends
@@ -115,6 +116,7 @@ public abstract class FiftyOneOnPremiseAspectEngineBuilderBase<
      * @param typeName The download type to use. For example 'HashV4'.
      * @return This builder.
      */
+    @SuppressWarnings("unchecked")
     protected TBuilder setDefaultDataDownloadType(String typeName){
         dataDownloadType = typeName;
         return (TBuilder)this;

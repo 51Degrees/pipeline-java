@@ -35,6 +35,7 @@ import static org.mockito.Mockito.mock;
 public class FlowElementTests {
 
     @Test
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public void FlowElement_GetTypedKey() {
         FlowElement element = new TestElement(mock(Logger.class), mock(ElementDataFactory.class));
         TypedKey<TestElementData> typedKey = element.getTypedDataKey();

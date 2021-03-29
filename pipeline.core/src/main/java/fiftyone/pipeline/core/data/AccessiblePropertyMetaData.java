@@ -206,7 +206,7 @@ public class AccessiblePropertyMetaData {
          * represents.
          * @return type class for values of the property
          */
-        public Class getPropertyType()
+        public Class<?> getPropertyType()
         {
             switch (type)
             {

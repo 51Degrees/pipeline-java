@@ -36,6 +36,7 @@ package fiftyone.pipeline.engines.data;
 
     import java.util.*;
     import java.util.concurrent.*;
+    import java.util.stream.Collectors;
 
     import static fiftyone.pipeline.util.CheckArgument.checkNotNull;
     import static fiftyone.pipeline.util.StringManipulation.stringJoin;
@@ -51,9 +52,9 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
 
     private final MissingPropertyService missingPropertyService;
 
-    private final List<AspectEngine> engines;
+    private final List<AspectEngine<? extends AspectData,? extends AspectPropertyMetaData>> engines;
 
-    private final Map<AspectEngine, Future<?>> processFutures;
+    private final Map<AspectEngine<? extends AspectData,? extends AspectPropertyMetaData>, Future<?>> processFutures;
 
     /**
      * Constructs a new instance with a non-thread-safe, case-insensitive
@@ -66,7 +67,7 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
     public AspectDataBase(
         Logger logger,
         FlowData flowData,
-        AspectEngine engine) {
+        AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine) {
         this(logger, flowData, engine, null);
     }
 
@@ -83,7 +84,7 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
     public AspectDataBase(
         Logger logger,
         FlowData flowData,
-        AspectEngine engine,
+        AspectEngine<? extends AspectData,? extends AspectPropertyMetaData> engine,
         MissingPropertyService missingPropertyService) {
         super(logger, flowData);
         this.engines = new ArrayList<>();
@@ -105,7 +106,7 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
     public AspectDataBase(
         Logger logger,
         FlowData flowData,
-        AspectEngine engine,
+        AspectEngine<? extends AspectData,? extends AspectPropertyMetaData> engine,
         MissingPropertyService missingPropertyService,
         Map<String, Object> map) {
         super(logger, flowData, map);
@@ -116,7 +117,7 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
     }
 
     @Override
-    public List<AspectEngine> getEngines() {
+    public List<AspectEngine<? extends AspectData,? extends AspectPropertyMetaData>> getEngines() {
         return Collections.unmodifiableList(engines);
     }
 
@@ -176,7 +177,7 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
      * this instance.
      * @param engine engine adding data
      */
-    public void addEngine(AspectEngine engine) {
+    public void addEngine(AspectEngine<? extends AspectData,? extends AspectPropertyMetaData> engine) {
         engines.add(engine);
     }
 
@@ -274,7 +275,9 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
                     "Failed to retrieve property '" + key + "' " +
                         "because processing threw multiple exceptions in engine(s) " +
                         stringJoin(getDistinctEngineNames(), ", ") + ".",
-                    errors);
+                    errors.stream()
+                    .map(FlowError::getThrowable)
+                    .collect(Collectors.toList()));
             }
         }
         return result.getValue();
@@ -314,11 +317,11 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
 
     /**
      * Returns true if any of the engines added have lazy loading configured.
-     * @param engines the engines to check
+     * @param engines2 the engines to check
      * @return true if any engines have lazy loading
      */
-    private static boolean anyLazyLoaded(List<AspectEngine> engines) {
-        for (AspectEngine engine : engines) {
+    private static boolean anyLazyLoaded(List<AspectEngine<? extends AspectData,? extends AspectPropertyMetaData>> engines2) {
+        for (AspectEngine<? extends AspectData,? extends AspectPropertyMetaData> engine : engines2) {
             if (engine.getLazyLoadingConfiguration() != null) {
                 return true;
             }
@@ -334,7 +337,7 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
      */
     private List<FlowError> waitOnAllProcessFutures() {
         List<FlowError> errors = new ArrayList<>();
-        for (Map.Entry<AspectEngine, Future<?>> entry :
+        for (Map.Entry<AspectEngine<? extends AspectData,? extends AspectPropertyMetaData>, Future<?>> entry :
             processFutures.entrySet()) {
             try {
                 entry.getValue().get(
@@ -354,7 +357,7 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
      */
     private List<String> getDistinctEngineNames() {
         List<String> strings = new ArrayList<>();
-        for (AspectEngine engine : processFutures.keySet()) {
+        for (AspectEngine<? extends AspectData,? extends AspectPropertyMetaData> engine : processFutures.keySet()) {
             if (strings.contains(engine.getClass().getName()) == false) {
                 strings.add(engine.getClass().getName());
             }

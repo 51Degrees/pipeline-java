@@ -38,7 +38,7 @@ import java.util.Map;
  * FlowData instance is finished with. Calling a FlowData method which then
  * calls its creator will throw a runtime error.
  */
-public interface FlowData {
+public interface FlowData extends AutoCloseable {
 
     /**
      * Process this FlowData via the owning Pipeline. Once this method returns
@@ -83,6 +83,7 @@ public interface FlowData {
      * @param e error which was thrown
      * @param element the {@link FlowElement} which threw the error
      */
+    @SuppressWarnings("rawtypes")
     void addError(Throwable e, FlowElement element);
 
     /**

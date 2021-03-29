@@ -29,6 +29,7 @@ import fiftyone.pipeline.engines.configuration.CacheConfiguration;
 import fiftyone.pipeline.engines.testhelpers.data.MockFlowData;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,7 +40,7 @@ import static org.mockito.Mockito.mock;
 public class TrackerBaseTests {
 
     @Test
-    public void TrackerBase_Track() {
+    public void TrackerBase_Track() throws IOException {
         CacheConfiguration cacheConfig = new CacheConfiguration(
             new LruPutCache.Builder(),
             100);
@@ -53,6 +54,7 @@ public class TrackerBaseTests {
 
         assertTrue(tracker.track(data1));
         assertFalse(tracker.track(data2));
+        tracker.close();
     }
 
     public class TestTracker extends TrackerBase<TestTracker.TrackerCount> {

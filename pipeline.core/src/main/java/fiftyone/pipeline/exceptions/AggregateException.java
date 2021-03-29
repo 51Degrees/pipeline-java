@@ -22,8 +22,6 @@
 
 package fiftyone.pipeline.exceptions;
 
-import fiftyone.pipeline.core.data.FlowError;
-
 import java.util.Collection;
 
 /**
@@ -34,14 +32,19 @@ import java.util.Collection;
 public class AggregateException extends RuntimeException {
 
     /**
+     * Serializable class version number, which is used during deserialization.
+     */
+    private static final long serialVersionUID = 4875303941913611736L;
+
+    /**
      * Construct a new instance
      * @param message the message to give to the exception
      * @param causes multiple causes to be contained in the exception
      */
-    public AggregateException(String message, Collection<FlowError> causes) {
+    public AggregateException(String message, Collection<Throwable> causes) {
         super(message);
-        for (FlowError cause : causes) {
-            super.addSuppressed(cause.getThrowable());
+        for (Throwable cause : causes) {
+            super.addSuppressed(cause);
         }
     }
 
@@ -49,10 +52,10 @@ public class AggregateException extends RuntimeException {
      * Construct a new instance with no message.
      * @param causes multiple causes to be contained in the exception
      */
-    public AggregateException(Collection<FlowError> causes) {
+    public AggregateException(Collection<Throwable> causes) {
         super();
-        for (FlowError cause : causes) {
-            super.addSuppressed(cause.getThrowable());
+        for (Throwable cause : causes) {
+            super.addSuppressed(cause);
         }
     }
 }

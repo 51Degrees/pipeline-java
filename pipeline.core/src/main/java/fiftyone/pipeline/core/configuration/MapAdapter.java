@@ -42,7 +42,6 @@ public class MapAdapter extends XmlAdapter<Object, Map<String, Object>> {
         Node node = (Node) v;
         Node current = node.getFirstChild();
         while (current != null) {
-            Object value;
             NodeList values = current.getChildNodes();
             if (values.getLength() > 1) {
                 map.put(current.getNodeName(), unmarshal(current));

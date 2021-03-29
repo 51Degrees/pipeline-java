@@ -36,11 +36,13 @@ public interface FlowCache extends DataKeyedCache<ElementData> {
      * Get the {@link FlowElement} that this cache is associated with.
      * @return this cache's {@link FlowElement}
      */
+    @SuppressWarnings("rawtypes")
     FlowElement getFlowElement();
 
     /**
      * Set the {@link FlowElement} that this cache is associated with.
      * @param flowElement this cache's {@link FlowElement}
      */
+    @SuppressWarnings("rawtypes")
     void setFlowElement(FlowElement flowElement);
 }

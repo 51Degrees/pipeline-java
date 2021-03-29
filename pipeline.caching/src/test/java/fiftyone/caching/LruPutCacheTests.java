@@ -89,7 +89,7 @@ public class LruPutCacheTests {
         cache.put(1, "test1");
         cache.put(2, "test2");
         // Access the first one.
-        String temp = cache.get(1);
+        cache.get(1);
         // Add a third item.
         cache.put(3, "test3");
         String result1 = cache.get(1);
@@ -148,14 +148,14 @@ public class LruPutCacheTests {
         }
 
         // Start all the tasks as simultaneously as we can.
-        List<Future> futures = new ArrayList<>();
+        List<Future<?>> futures = new ArrayList<>();
         for (Runnable runnable : runnables) {
             futures.add(service.submit(runnable));
         }
 
         // Wait for all the tasks to finish.
         // Check that all the tasks completed successfully.
-        for (Future future : futures) {
+        for (Future<?> future : futures) {
             future.get();
             assertTrue(future.isDone() && future.isCancelled() == false);
         }

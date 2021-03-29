@@ -31,6 +31,7 @@ import fiftyone.pipeline.engines.configuration.CacheConfiguration;
  * Default implementation of {@link FlowCache} using the
  * {@link DataKeyedCacheBase}.
  */
+@SuppressWarnings("rawtypes")
 public class FlowCacheDefault
     extends DataKeyedCacheBase<ElementData>
     implements FlowCache {

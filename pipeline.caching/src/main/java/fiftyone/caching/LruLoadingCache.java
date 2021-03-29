@@ -112,7 +112,6 @@ public class LruLoadingCache<K, V>
      * @throws java.io.IOException if there was a problem accessing data file
      */
     public V get(K key, ValueLoader<K, V> loader) throws IOException {
-        boolean added = false;
         V result = super.get(key);
 
         if (result == null) {

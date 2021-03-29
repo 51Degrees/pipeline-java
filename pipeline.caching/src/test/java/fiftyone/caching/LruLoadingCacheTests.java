@@ -32,6 +32,7 @@ import static org.mockito.Mockito.*;
 public class LruLoadingCacheTests {
 
     @Test
+    @SuppressWarnings("unchecked")
     public void LruLoadingCache_Get() throws IOException {
         ValueLoader<Integer, String> loader = mock(ValueLoader.class);
         // Configure the loader to return 'test' for key '1'.
@@ -46,6 +47,7 @@ public class LruLoadingCacheTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void LruLoadingCache_Get2() throws IOException {
         ValueLoader<Integer, String> loader = mock(ValueLoader.class);
         // Configure the loader to return 'test' for key '1'.

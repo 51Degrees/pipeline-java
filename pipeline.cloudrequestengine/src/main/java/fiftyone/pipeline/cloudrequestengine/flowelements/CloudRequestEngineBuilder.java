@@ -66,7 +66,7 @@ public class CloudRequestEngineBuilder extends
 
     @Override
     protected CloudRequestEngine newEngine(List<String> properties) {
-		if(resourceKey == null || resourceKey.isEmpty()){
+        if(resourceKey == null || resourceKey.isEmpty()){
             throw new PipelineConfigurationException("A resource key is " +
                     "required to access the cloud server. Please use the " +
                     "'setResourceKey(String) method to supply your resource " +

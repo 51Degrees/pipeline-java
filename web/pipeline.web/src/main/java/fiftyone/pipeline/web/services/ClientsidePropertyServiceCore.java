@@ -136,6 +136,7 @@ public interface ClientsidePropertyServiceCore {
         /**
          * Initialise the service.
          */
+        @SuppressWarnings("rawtypes")
         protected void init() {
             headersAffectingJavaScript = new ArrayList<>();
             // Get evidence filters for all elements.

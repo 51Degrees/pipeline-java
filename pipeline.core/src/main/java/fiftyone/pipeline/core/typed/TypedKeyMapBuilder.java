@@ -30,10 +30,13 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static fiftyone.pipeline.util.StringManipulation.stringJoin;
+
 /**
  * Public builder for instances of {@link TypedKeyMap}. This follows the fluent
  * builder pattern.
  */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class TypedKeyMapBuilder {
 
     private final TypedKeyMap _map;
@@ -120,6 +123,13 @@ public class TypedKeyMapBuilder {
             return findWithPrevious(typedKeyName)[1];
         }
 
+        private String getKeyMissingMessage(String key) {
+            return "There is no data for '" + key + "' against this " +
+                "instance of '" + getClass().getSimpleName() +
+                "'. Available keys are: " +
+                stringJoin(getKeys(), ", ");
+        }
+
         @Override
         public <T> T get(TypedKey<T> typedKey) {
             Entry current = find(typedKey.getName());
@@ -127,7 +137,7 @@ public class TypedKeyMapBuilder {
                 // Note - can throw java equivalent of invalid cast exception.
                 return typedKey.getType().cast(current._value);
             }
-            throw new NoSuchElementException();
+            throw new NoSuchElementException(getKeyMissingMessage(typedKey.getName()));
         }
 
         @Override
@@ -193,7 +203,6 @@ public class TypedKeyMapBuilder {
                 if (current[1] == _head) {
                     _head = current[1]._next;
                 }
-                @SuppressWarnings("unchecked")
                 T value = (T) current[1]._value;
                 current[1].closeValue();
                 current[1]._value = null;
@@ -365,9 +374,7 @@ public class TypedKeyMapBuilder {
 
             public void closeValue() {
                 try {
-                    if (_value instanceof Closeable) {
-                        ((Closeable) _value).close();
-                    } else if (_value instanceof AutoCloseable) {
+                    if (_value instanceof AutoCloseable) {
                         ((AutoCloseable) _value).close();
                     }
                 } catch (Exception ex) {

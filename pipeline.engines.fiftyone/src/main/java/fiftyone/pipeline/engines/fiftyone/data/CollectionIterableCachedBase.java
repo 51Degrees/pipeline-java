@@ -28,7 +28,6 @@ import java.util.List;
 public abstract class CollectionIterableCachedBase<T> extends CollectionIterableBase<T> {
 
     private final List<T> list;
-    private boolean closed = false;
 
     public CollectionIterableCachedBase(List<T> list, long size) {
         super(size);

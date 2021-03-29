@@ -122,7 +122,7 @@ public interface AspectEngineBuilder {
      * @param dataFile path to the file to be used
      * @return constructed {@link AspectEngine}
      */
-    AspectEngine build(@BuildArg("dataFile") String dataFile);
+    AspectEngine<? extends AspectData,? extends AspectPropertyMetaData> build(@BuildArg("dataFile") String dataFile);
 
     /**
      * Build the {@link AspectEngine} that has been defined in this instance of
@@ -131,5 +131,5 @@ public interface AspectEngineBuilder {
      * @param data in memory data to be used
      * @return constructed {@link AspectEngine}
      */
-    AspectEngine build(byte[] data);
+    AspectEngine<? extends AspectData,? extends AspectPropertyMetaData> build(byte[] data);
 }

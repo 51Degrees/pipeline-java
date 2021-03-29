@@ -80,8 +80,13 @@ public class MultiplyByElement
         TestElementData elementData = data.getOrAdd(
             getTypedDataKey(),
             getDataFactory());
-        int value = (int) data.getEvidence().get(evidenceKeys.get(0));
-        elementData.setResult(value * multiple);
+        if (data.getEvidence().asKeyMap().containsKey(evidenceKeys.get(0))) {
+            int value = (int) data.getEvidence().get(evidenceKeys.get(0));
+            elementData.setResult(value * multiple);
+        }
+        else {
+            elementData.setResult(null);
+        }
     }
 
     @Override

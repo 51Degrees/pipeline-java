@@ -30,12 +30,13 @@ import java.util.List;
 /**
  * Default implementation of the {@link ElementPropertyMetaData} interface.
  */
+@SuppressWarnings("rawtypes")
 public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
 
     private final String name;
     private final FlowElement element;
     private final String category;
-    private final Class type;
+    private final Class<?> type;
     private final boolean available;
     private final List<ElementPropertyMetaData> itemProperties;
     private final boolean delayExecution;
@@ -53,7 +54,7 @@ public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
         String name,
         FlowElement element,
         String category,
-        Class type,
+        Class<?> type,
         boolean available) {
         this(
             name,
@@ -81,7 +82,7 @@ public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
         String name,
         FlowElement element,
         String category,
-        Class type,
+        Class<?> type,
         boolean available,
         List<ElementPropertyMetaData> itemProperties) {
         this(
@@ -122,7 +123,7 @@ public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
         String name,
         FlowElement element,
         String category,
-        Class type,
+        Class<?> type,
         boolean available,
         List<ElementPropertyMetaData> itemProperties,
         boolean delayExecution,
@@ -153,7 +154,7 @@ public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
     }
 
     @Override
-    public Class getType() {
+    public Class<?> getType() {
         return type;
     }
 

@@ -33,6 +33,7 @@ import java.util.concurrent.*;
 /**
  * ParallelElements executes it's child {@link FlowElement} objects in parallel.
  */
+@SuppressWarnings("rawtypes")
 class ParallelElements
     extends FlowElementBase<ElementData, ElementPropertyMetaData> {
 

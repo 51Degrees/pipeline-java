@@ -24,6 +24,8 @@ package fiftyone.pipeline.engines.fiftyone.flowelements;
 
 import fiftyone.common.testhelpers.TestLogger;
 import fiftyone.common.testhelpers.TestLoggerFactory;
+import fiftyone.pipeline.core.data.ElementData;
+import fiftyone.pipeline.core.data.ElementPropertyMetaData;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.core.flowelements.Pipeline;
@@ -57,6 +59,7 @@ import static fiftyone.pipeline.engines.Constants.FIFTYONE_COOKIE_PREFIX;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings({"rawtypes", "unused"})
 public class ShareUsageElementTests {
 
     // Share usage instance that is being tested

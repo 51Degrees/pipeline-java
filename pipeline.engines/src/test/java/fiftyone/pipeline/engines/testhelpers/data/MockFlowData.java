@@ -32,6 +32,7 @@ import static org.mockito.Mockito.*;
 
 public class MockFlowData {
 
+    @SuppressWarnings("unchecked")
     public static FlowData createFromEvidence(
         final Map<String, Object> evidenceData,
         boolean dataKeyFromAllEvidence) {

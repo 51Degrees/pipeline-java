@@ -40,10 +40,11 @@ import static org.mockito.Mockito.*;
 public class AspectDataBaseTests {
 
     private TestData data;
-    private AspectEngine engine;
+    private AspectEngine<? extends AspectData,? extends AspectPropertyMetaData> engine;
     private FlowData flowData;
     private MissingPropertyService missingPropertyService;
 
+    @SuppressWarnings("unchecked")
     @Before
     public void Initisalise() {
         engine = mock(AspectEngine.class);
@@ -64,7 +65,7 @@ public class AspectDataBaseTests {
 
     @Test(expected = IllegalArgumentException.class)
     public void AspectData_Indexer_NullKey() {
-        Object result = data.get(null);
+        data.get(null);
     }
 
     @Test
@@ -76,14 +77,14 @@ public class AspectDataBaseTests {
 
     @Test(expected = PropertyMissingException.class)
     public void AspectData_Indexer_GetMissing() {
-        Object result = data.get("testproperty");
+        data.get("testproperty");
     }
 
     private class TestData extends AspectDataBase {
         public TestData(
             Logger logger,
             FlowData flowData,
-            AspectEngine engine,
+            AspectEngine<? extends AspectData,? extends AspectPropertyMetaData> engine,
             MissingPropertyService missingPropertyService) {
             super(logger, flowData, engine, missingPropertyService);
         }

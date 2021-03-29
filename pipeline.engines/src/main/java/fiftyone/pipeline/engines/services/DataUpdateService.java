@@ -23,7 +23,9 @@
 package fiftyone.pipeline.engines.services;
 
 import fiftyone.pipeline.core.services.PipelineService;
+import fiftyone.pipeline.engines.data.AspectData;
 import fiftyone.pipeline.engines.data.AspectEngineDataFile;
+import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 import fiftyone.pipeline.engines.flowelements.OnPremiseAspectEngine;
 
@@ -51,10 +53,9 @@ public interface DataUpdateService extends Closeable, PipelineService {
      *                           parameter is ignored
      * @return {@link AutoUpdateStatus#AUTO_UPDATE_SUCCESS} if the data file was
      * successfully updated
+     * 
      */
-    AutoUpdateStatus checkForUpdate(
-        OnPremiseAspectEngine engine,
-        String dataFileIdentifier);
+    AutoUpdateStatus checkForUpdate(OnPremiseAspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine, String dataFileIdentifier);
 
     /**
      * Check for an available download of a new data file, or a local data file
@@ -67,7 +68,7 @@ public interface DataUpdateService extends Closeable, PipelineService {
      * @return {@link AutoUpdateStatus#AUTO_UPDATE_SUCCESS} if the data file was
      * successfully updated
      */
-    AutoUpdateStatus checkForUpdate(OnPremiseAspectEngine engine);
+    AutoUpdateStatus checkForUpdate(OnPremiseAspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine);
 
     /**
      * Update the Engine with the byte array provided. If the Engine is is using

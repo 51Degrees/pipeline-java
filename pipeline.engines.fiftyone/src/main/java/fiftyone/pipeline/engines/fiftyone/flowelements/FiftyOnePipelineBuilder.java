@@ -62,6 +62,7 @@ public class FiftyOnePipelineBuilder extends PipelineBuilder {
         return this;
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     protected void onPreBuild() {
         

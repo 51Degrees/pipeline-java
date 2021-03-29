@@ -22,22 +22,21 @@
 
 package fiftyone.pipeline.core.flowelements;
 
-import fiftyone.pipeline.core.data.ElementPropertyMetaData;
-import fiftyone.pipeline.core.data.EvidenceKeyFilter;
-import fiftyone.pipeline.core.data.EvidenceKeyFilterAggregator;
-import fiftyone.pipeline.core.data.FlowData;
+import fiftyone.pipeline.core.data.*;
 import fiftyone.pipeline.core.data.factories.FlowDataFactory;
 import fiftyone.pipeline.core.exceptions.PipelineDataException;
 import fiftyone.pipeline.exceptions.AggregateException;
 import org.slf4j.Logger;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A pipeline is used to create {@link FlowData} instances which then
  * automatically use the pipeline when their {@link FlowData#process()} method
  * is called.
  */
+@SuppressWarnings("rawtypes")
 class PipelineDefault implements PipelineInternal {
 
     /**
@@ -257,7 +256,6 @@ class PipelineDefault implements PipelineInternal {
             }
             // Otherwise, just add the element directly.
             else {
-                List<FlowElement> typeElements;
                 if (elementsByType.containsKey(type) == false) {
                     elementsByType.put(type, new ArrayList<FlowElement>());
                 }
@@ -278,7 +276,7 @@ class PipelineDefault implements PipelineInternal {
     private <T extends FlowElement> boolean anyAssignableFrom(
         Map<Class, List<FlowElement>> elements,
         Class<T> type) {
-        for (Class element : elements.keySet()) {
+        for (Class<?> element : elements.keySet()) {
             if (type.isAssignableFrom(element)) {
                 return true;
             }
@@ -374,6 +372,7 @@ class PipelineDefault implements PipelineInternal {
         close(true);
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     protected void finalize() throws Throwable {
         try {
@@ -413,7 +412,10 @@ class PipelineDefault implements PipelineInternal {
             suppressProcessExceptions == false) {
             throw new AggregateException(
                 "Exception(s) occurred processing evidence.",
-                data.getErrors());
+                data.getErrors()
+                .stream()
+                .map(FlowError::getThrowable)
+                .collect(Collectors.toList()));
         }
 
         logger.debug("Pipeline '" + hashCode() + "' finished processing.");

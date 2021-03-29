@@ -125,6 +125,7 @@ class FlowDataDefault implements FlowData {
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public void addError(Throwable e, FlowElement element) {
         addError(new FlowError.Default(e, element));
     }
@@ -275,7 +276,6 @@ class FlowDataDefault implements FlowData {
     public <T extends ElementData> T getOrAdd(
         String elementDataKey,
         FlowElement.DataFactory<T> dataFactory) {
-        ElementData result = null;
 
         TypedKey<ElementData> typedKey = new TypedKeyDefault<>(
             elementDataKey,
@@ -340,6 +340,7 @@ class FlowDataDefault implements FlowData {
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public Map<String, String> getWhere(PropertyMatcher matcher) {
         Map<String, String> map = new HashMap<>();
         for (FlowElement element : pipeline.getFlowElements()) {
@@ -378,5 +379,14 @@ class FlowDataDefault implements FlowData {
     @Override
     public EvidenceKeyFilter getEvidenceKeyFilter() {
         return pipeline.getEvidenceKeyFilter();
+    }
+
+    @Override
+    public void close() throws Exception {
+        for (Object elementData : data.asStringKeyMap().values()) {
+            if (AutoCloseable.class.isAssignableFrom(elementData.getClass())) {
+                ((AutoCloseable) elementData).close();
+            }
+        }
     }
 }

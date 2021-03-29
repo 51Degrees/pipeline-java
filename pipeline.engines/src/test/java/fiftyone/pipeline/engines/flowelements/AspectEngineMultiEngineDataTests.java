@@ -47,8 +47,6 @@ public class AspectEngineMultiEngineDataTests {
     private TestLoggerFactory loggerFactory;
     private Pipeline pipeline;
 
-    private int timeoutMS = 1000;
-
     @Before
     public void Init() {
         ILoggerFactory internalLoggerFactory = mock(ILoggerFactory.class);
@@ -81,34 +79,36 @@ public class AspectEngineMultiEngineDataTests {
     public void MultiEngineData_SimpleTest() throws Exception {
         buildEngine();
 
-        FlowData data = pipeline.createFlowData();
-        EmptyEngineData engineData = data.getOrAdd(
-            engine.getTypedDataKey(),
-            engine.getDataFactory());
-        engineData.setValueOne(0);
-        engineData.setValueTwo(50);
-        data.process();
-
-        EmptyEngineData result = data.get(EmptyEngineData.class);
-        assertEquals(1, result.getValueOne());
-        assertEquals(2, result.getValueTwo());
+        try (FlowData data = pipeline.createFlowData()) {
+            EmptyEngineData engineData = data.getOrAdd(
+                engine.getTypedDataKey(),
+                engine.getDataFactory());
+            engineData.setValueOne(0);
+            engineData.setValueTwo(50);
+            data.process();
+    
+            EmptyEngineData result = data.get(EmptyEngineData.class);
+            assertEquals(1, result.getValueOne());
+            assertEquals(2, result.getValueTwo());
+        }
     }
 
     @Test
     public void MultiEngineData_LazyLoadingTest() throws Exception {
         buildEngine();
 
-        FlowData data = pipeline.createFlowData();
-        EmptyEngineData engineData = data.getOrAdd(
-            engine.getTypedDataKey(),
-            engine.getDataFactory());
-        engineData.setValueOne(0);
-        engineData.setValueTwo(50);
-
-        data.process();
-
-        EmptyEngineData result = data.get(EmptyEngineData.class);
-        assertEquals(1, result.getValueOne());
-        assertEquals(2, result.getValueTwo());
+        try (FlowData data = pipeline.createFlowData()) {
+            EmptyEngineData engineData = data.getOrAdd(
+                engine.getTypedDataKey(),
+                engine.getDataFactory());
+            engineData.setValueOne(0);
+            engineData.setValueTwo(50);
+    
+            data.process();
+    
+            EmptyEngineData result = data.get(EmptyEngineData.class);
+            assertEquals(1, result.getValueOne());
+            assertEquals(2, result.getValueTwo());
+        }
     }
 }

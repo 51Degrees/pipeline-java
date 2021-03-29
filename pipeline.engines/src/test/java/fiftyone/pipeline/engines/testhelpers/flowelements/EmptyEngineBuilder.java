@@ -25,6 +25,8 @@ package fiftyone.pipeline.engines.testhelpers.flowelements;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
 import fiftyone.pipeline.core.flowelements.FlowElement;
+import fiftyone.pipeline.engines.data.AspectData;
+import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 import fiftyone.pipeline.engines.flowelements.AspectEngineBuilderBase;
 import fiftyone.pipeline.engines.services.MissingPropertyServiceDefault;
@@ -49,12 +51,13 @@ public class EmptyEngineBuilder extends AspectEngineBuilderBase<EmptyEngineBuild
         EmptyEngine engine = new EmptyEngine(
             loggerFactory.getLogger(EmptyEngine.class.getName()),
             new ElementDataFactory<EmptyEngineData>() {
+                @SuppressWarnings("unchecked")
                 @Override
                 public EmptyEngineData create(FlowData flowData, FlowElement<EmptyEngineData, ?> flowElement) {
                     return new EmptyEngineData(
                         loggerFactory.getLogger(EmptyEngineData.class.getName()),
                         flowData,
-                        (AspectEngine) flowElement,
+                        (AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData>) flowElement,
                         MissingPropertyServiceDefault.getInstance());
                 }
             });

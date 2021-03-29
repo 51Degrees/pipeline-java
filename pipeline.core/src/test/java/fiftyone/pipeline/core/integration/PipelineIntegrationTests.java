@@ -58,12 +58,13 @@ public class PipelineIntegrationTests {
             .addFlowElement(fiveElement)
             .build();
 
-        FlowData flowData = pipeline.createFlowData();
-        flowData.addEvidence(fiveElement.evidenceKeys.get(0), 2);
-
-        flowData.process();
-
-        assertEquals(10, flowData.getFromElement(fiveElement).getResult());
+        try (FlowData flowData = pipeline.createFlowData()) {
+            flowData.addEvidence(fiveElement.evidenceKeys.get(0), 2);
+    
+            flowData.process();
+    
+            assertEquals(10, flowData.getFromElement(fiveElement).getResult());
+        }
     }
 
     @Test
@@ -75,15 +76,17 @@ public class PipelineIntegrationTests {
             .addFlowElement(tenElement)
             .build();
 
-        FlowData flowData = pipeline.createFlowData();
-        flowData.addEvidence(fiveElement.evidenceKeys.get(0), 2);
+        try (FlowData flowData = pipeline.createFlowData()) {
+            flowData.addEvidence(fiveElement.evidenceKeys.get(0), 2);
 
-        flowData.process();
+            flowData.process();
 
-        assertEquals(10, flowData.getFromElement(fiveElement).getResult());
-        assertEquals(20, flowData.getFromElement(tenElement).getResult());
+            assertEquals(10, flowData.getFromElement(fiveElement).getResult());
+            assertEquals(20, flowData.getFromElement(tenElement).getResult());
+        }
     }
 
+    @SuppressWarnings("rawtypes")
     @Test
     public void PipelineIntegration_MultipleElementsParallel() throws Exception {
         MultiplyByFiveElement fiveElement = new MultiplyByFiveElement(mock(Logger.class));
@@ -92,16 +95,18 @@ public class PipelineIntegrationTests {
             .addFlowElementsParallel(new FlowElement[]{fiveElement, tenElement})
             .build();
 
-        FlowData flowData = pipeline.createFlowData();
-        flowData.addEvidence(fiveElement.evidenceKeys.get(0), 2);
-
-        flowData.process();
-
-        assertEquals(10, flowData.getFromElement(fiveElement).getResult());
-        assertEquals(20, flowData.getFromElement(tenElement).getResult());
+        try (FlowData flowData = pipeline.createFlowData()) {
+            flowData.addEvidence(fiveElement.evidenceKeys.get(0), 2);
+    
+            flowData.process();
+    
+            assertEquals(10, flowData.getFromElement(fiveElement).getResult());
+            assertEquals(20, flowData.getFromElement(tenElement).getResult());
+        }
     }
 
     @Test
+    @SuppressWarnings("rawtypes")
     public void PipelineIntegration_StopFlag() throws Exception {
         // Configure the pipeline
         StopElement stopElement = new StopElement(mock(Logger.class));
@@ -114,12 +119,13 @@ public class PipelineIntegrationTests {
             .build();
 
         // Create and process flow data
-        FlowData flowData = pipeline.createFlowData();
-        flowData.process();
-
-        // Check that the stop flag is set
-        assertTrue(flowData.isStopped());
-        // Check that the second element was never processed
-        verify(testElement, never()).process(any(FlowData.class));
+        try (FlowData flowData = pipeline.createFlowData()) {
+            flowData.process();
+    
+            // Check that the stop flag is set
+            assertTrue(flowData.isStopped());
+            // Check that the second element was never processed
+            verify(testElement, never()).process(any(FlowData.class));
+        }
     }
 }
