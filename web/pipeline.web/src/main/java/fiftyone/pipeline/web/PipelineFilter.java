@@ -125,11 +125,9 @@ public class PipelineFilter implements Filter {
         // Get FlowData from the request.
         FlowData flowData = flowDataProviderCore.getFlowData((HttpServletRequest)request);
         
-        // Get reponse header value after getting properties from first detection.
-        uachServiceCore.getResponseHeaderValue(flowData);
-
-        // Set UACH response header.
-        uachServiceCore.setResponseHeader((HttpServletResponse)response);
+        // Set UACH response headers.
+        uachServiceCore.setResponseHeaders(
+        	flowData, (HttpServletResponse)response);
         
         // If 51Degrees JavaScript or JSON is being requested then serve it.
         // Otherwise continue down the filter Pipeline.

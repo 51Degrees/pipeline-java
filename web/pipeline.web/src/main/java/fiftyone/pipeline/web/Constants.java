@@ -73,34 +73,5 @@ public class Constants {
      * Default value for the client-side enabled option.
      */
     public static final boolean DEFAULT_CLIENTSIDE_ENABLED = true;
-    
-    /**
-     * Array of values to be excluded from UACH response header value.
-     */
-    public static final String[] EXCLUDED_VALUES_UACH = {"test", "123", "test123", "null", "Unknown"};
-    
-    /**
-     * Element datakey to get response set header properties.
-     */
-    public static final String ELEMENT_DATAKEY = "device";
-    
-    /**
-     * UACH response header name.
-     */
-    public static final String ACCEPTCH_HEADER = "Accept-CH";
-    
-    /**
-     * UACH SetHeaderBrowserAccept-CH property key value.
-     */
-    public static final String ACCEPTCH_BROWSER = "setheaderbrowseraccept-ch";
-    
-    /**
-     * UACH SetHeaderPlatformAccept-CH property key value.
-     */
-    public static final String ACCEPTCH_PLATFORM = "setheaderplatformaccept-ch";
-    
-    /**
-     * UACH SetHeaderHardwareAccept-CH property key value.
-     */
-    public static final String ACCEPTCH_HARDWARE = "setheaderhardwareaccept-ch";
+
 }

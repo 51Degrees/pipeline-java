@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static fiftyone.pipeline.setheader.Constants.*;
 import static fiftyone.pipeline.web.Constants.*;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.*;
@@ -85,10 +86,9 @@ public class PipelineFilterTests {
         when(request.getRequestURL()).thenReturn(new StringBuffer(""));
         when(request.getRequestURI()).thenReturn("");
         
-        Map<String, Object> device = new HashMap<>();
-        device.put(ACCEPTCH_BROWSER, new AspectPropertyValueDefault<>("UA,UA-Full-Version"));
-        device.put(ACCEPTCH_PLATFORM, new AspectPropertyValueDefault<>("UA-Platform,UA-Platform-Version"));
-        device.put(ACCEPTCH_HARDWARE, new AspectPropertyValueDefault<>("UA-Model,UA-Mobile,UA-Arch"));
+        Map<String, Object> setHeader = new HashMap<String, Object>();
+        setHeader.put("Accept-CH", "TestAcceptCHs");
+        setHeader.put("Critical-CH", "TestCriticalCHs");
         
         doAnswer(invocationOnMock -> {
             // Don't store the real data as we wont use it, and we want to verify
@@ -97,8 +97,8 @@ public class PipelineFilterTests {
             assertNotNull(realData);
             flowData = mock(FlowData.class);
             elementData = mock(ElementData.class);
-            when(flowData.get(anyString())).thenReturn(elementData);
-            when(elementData.asKeyMap()).thenReturn(device);
+            when(elementData.get(RESPONSE_HEADER_PROPERTY_NAME)).thenReturn(setHeader);
+            when(flowData.get(SET_HEADER_ELEMENT_DATAKEY)).thenReturn(elementData);
             return null;
         }).when(request).setAttribute(eq(HTTPCONTEXT_FLOWDATA), any(Object.class));       
 	}
@@ -130,8 +130,11 @@ public class PipelineFilterTests {
             eq(HTTPCONTEXT_FLOWDATA),
             any(FlowData.class));
         verify(response, times(1)).setHeader(
-                eq(ACCEPTCH_HEADER),
-                any(String.class));
+        	eq("Accept-CH"),
+            any(String.class));
+        verify(response, times(1)).setHeader(
+            eq("Critical-CH"),
+            any(String.class));
     }
 
     /**

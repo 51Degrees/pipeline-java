@@ -24,14 +24,11 @@ package fiftyone.pipeline.web.services;
 
 import fiftyone.pipeline.core.data.ElementData;
 import fiftyone.pipeline.core.data.FlowData;
-import fiftyone.pipeline.engines.data.AspectPropertyValue;
-import fiftyone.pipeline.engines.exceptions.NoValueException;
-
-import java.util.Arrays;
-import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
-import static fiftyone.pipeline.web.Constants.*;
+import static fiftyone.pipeline.setheader.Constants.*;
+
+import java.util.Map;
 
 /**
  * Service to set UACH request headers in the response
@@ -39,25 +36,12 @@ import static fiftyone.pipeline.web.Constants.*;
 public interface UACHServiceCore {
 
     /**
-     * Set UACH response header in web response (sets Accept-CH header in response).  
+     * Set UACH response header in web response (sets Accept-CH header in response).
+     * @param floseData: A FlowData object  
      * @param response: A Response object
      * @return A response object with Accept-CH header set in response if its value is not null
      */	
-    void setResponseHeader(HttpServletResponse response);
-    
-    /**
-     * Get response header value using set header properties from FlowData
-     * @param A processed FlowData {@link FlowData} object containing setheader properties from
-     * @return A concatenated string to be set in response header for UACH
-     */	
-    String getResponseHeaderValue(FlowData flowData);
-
-    /**
-     * Get property map from FlowData
-     * @param FlowData {@link FlowData} object
-     * @return HashMap containing device element properties from flowdata  
-     */	
-    Map<String, Object> getPropertyMap(FlowData flowData);
+    void setResponseHeaders(FlowData flowData, HttpServletResponse response);
     
     /**
      * Default implementation of the {@link UACHServiceCore} service.
@@ -65,87 +49,25 @@ public interface UACHServiceCore {
     class Default implements UACHServiceCore {
         
         /**
-         * Response header value containing UACH.
-         */
-        protected String responseHeaderValue;
-        
-        /**
-         * Create a new instance.
-         */
-        public Default() {
-            this.responseHeaderValue = "";
-        }
-        
-        /**
-         * Set UACH response header in web response (sets Accept-CH header in response).  
+         * Set UACH response headers in web response.
+         * @param flowData: A FlowData object  
          * @param response: A Response object
-         * @return A response object with Accept-CH header set in response if its value is not null
          */	
-		@Override
-		public void setResponseHeader(HttpServletResponse response) {
-		if(responseHeaderValue.length()>0) {
-			responseHeaderValue = responseHeaderValue.replace(",", ", ");
-            response.setHeader(ACCEPTCH_HEADER, responseHeaderValue);
-		}
-        responseHeaderValue = "";
-	  } 
-
-	    /**
-	     * Get response header value using set header properties from FlowData
-	     * @param A processed FlowData {@link FlowData} object containing setheader properties from
-	     * @return A concatenated string to be set in response header for UACH
-	     */	
-		@Override
-		public String getResponseHeaderValue(FlowData flowData) {
-			Map<String, Object> propertyMap = getPropertyMap(flowData);		
-			try {				
-				responseHeaderValue = checkSetHeaderPropertyValue(propertyMap, ACCEPTCH_BROWSER);
-				responseHeaderValue = responseHeaderValue + checkSetHeaderPropertyValue(propertyMap, ACCEPTCH_PLATFORM);
-				responseHeaderValue = responseHeaderValue + checkSetHeaderPropertyValue(propertyMap, ACCEPTCH_HARDWARE);
-	            
-			} catch (NoValueException e) {
-				e.printStackTrace();
-			} 
-			
-			return responseHeaderValue;
-		}
-		
-        /**
-         * Get and validate SetHeader property value.
-         * @param propertyMap map contains UACH properties built from {@link FlowData}
-         * @param key for SetHeaderAcceptCH property
-         * @return SetHeaderAcceptCH property
-         */
 		@SuppressWarnings("unchecked")
-		public String checkSetHeaderPropertyValue(Map<String, Object> propertyMap, String propertyKey) throws NoValueException {
-			String value = "";
-			if(propertyMap.containsKey(propertyKey)) {
-				   AspectPropertyValue<String> property = (AspectPropertyValue<String>) propertyMap.get(propertyKey);
-				   if(property.hasValue() && !Arrays.asList(EXCLUDED_VALUES_UACH).contains(property.getValue())) {
-					   if(responseHeaderValue.length()>0) {
-						   value = "," + property.getValue();
-					   }
-					   else {
-						   value = property.getValue();
-					   }
-				   }
-				   else {
-					   value = "";
-				   }
-				}
-			return value;
-		}
-
-	    /**
-	     * Get property map from FlowData
-	     * @param FlowData {@link FlowData} object
-	     * @return HashMap containing device element properties from flowdata  
-	     */
 		@Override
-		public Map<String, Object> getPropertyMap(FlowData flowData) {
-			ElementData elementData = flowData.get(ELEMENT_DATAKEY);
-			Map<String, Object> propertyMap = elementData.asKeyMap();			
-			return propertyMap;
+		public void setResponseHeaders(FlowData flowData, HttpServletResponse response) {
+			ElementData setHeaderData = flowData.get(SET_HEADER_ELEMENT_DATAKEY);
+			if (setHeaderData != null) {
+				Map<String, String> responseHeaders =
+					(Map<String, String>)
+						setHeaderData.get(RESPONSE_HEADER_PROPERTY_NAME);
+				if (responseHeaders != null) {
+					responseHeaders.forEach((k, v) -> {
+						response.setHeader(k, (String)v);
+					});
+					
+				}
+			}
 		}
     }
 }

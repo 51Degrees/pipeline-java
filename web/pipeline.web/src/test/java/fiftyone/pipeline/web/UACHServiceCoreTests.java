@@ -22,119 +22,92 @@
 
 package fiftyone.pipeline.web;
 
+import fiftyone.pipeline.core.data.ElementData;
 import fiftyone.pipeline.core.data.FlowData;
-import fiftyone.pipeline.engines.data.AspectPropertyValue;
-import fiftyone.pipeline.engines.data.AspectPropertyValueDefault;
+import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.web.services.UACHServiceCore;
+
+import static fiftyone.pipeline.setheader.Constants.*;
 import static fiftyone.pipeline.web.Constants.*;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import javax.servlet.*;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@RunWith(Parameterized.class)
 public class UACHServiceCoreTests {
 
     private HttpServletResponse response;
     private UACHServiceCore uachServiceCore;
     private FlowData flowData;
-    private String responseHeaderValue;
-    private Map<String, Object> device;
-    private String expectedValue;
-    
-    /** Each parameter should be placed as an argument here
-     * Every time runner triggers, it will pass the arguments
-     * from parameters we defined in primeNumbers() method
-     */
-    public UACHServiceCoreTests(Map<String, Object> device, String expectedValue) {
-       this.device = device;
-       this.expectedValue = expectedValue;
-    }
-    
+    private Map<String, String> responseHeaderValues;
+	private ElementData elementData;
+	private Pipeline pipeline;
+
+	public UACHServiceCoreTests() {
+		System.out.println("Hello World");
+	}
+	
 	@Before
-    public void init() throws IOException, ServletException {
+    public void init() {
 	    
         // Configure mocks
         response = mock(HttpServletResponse.class);
         uachServiceCore = spy(new UACHServiceCore.Default());
         flowData = mock(FlowData.class);
+        pipeline = mock(Pipeline.class);
+        
+        // Init response header values
+        responseHeaderValues = new HashMap<String, String>();
+        
+        // Set expected returned value for flowData
+		when(flowData.getPipeline()).thenReturn(pipeline);
         
         doAnswer(invocationOnMock -> {
-            return this.device;
-        }).when(uachServiceCore).getPropertyMap(any(FlowData.class));
+        	responseHeaderValues.put(
+        		invocationOnMock.getArgument(0),
+        		invocationOnMock.getArgument(1));
+        	return null;
+        }).when(response).setHeader(anyString(), anyString());
         
-        doAnswer(invocationOnMock -> {
-        	responseHeaderValue = invocationOnMock.getArgument(1);
-            assertNotNull(responseHeaderValue);
-            return null;
-        }).when(response).setHeader(eq(ACCEPTCH_HEADER), anyString());   
-        
-	}
-	
-	@SuppressWarnings("rawtypes")
-	@Parameterized.Parameters
-    public static Collection input() {
-		
-		AspectPropertyValue<String> unknownValue = new AspectPropertyValueDefault<>("Unknown");
-		AspectPropertyValue<String> nullValue = new AspectPropertyValueDefault<>("null");
-		AspectPropertyValue<String> testValue = new AspectPropertyValueDefault<>("test");
-		AspectPropertyValue<String> browserValue = new AspectPropertyValueDefault<>("SEC-CH-UA,SEC-CH-UA-Full-Version");
-		AspectPropertyValue<String> platformValue = new AspectPropertyValueDefault<>("SEC-CH-UA-Platform,SEC-CH-UA-Platform-Version");
-		AspectPropertyValue<String> hardwareValue = new AspectPropertyValueDefault<>("SEC-CH-UA-Model,SEC-CH-UA-Mobile,SEC-CH-UA-Arch");
-		
-        Map<String, Object> map1 = new HashMap<>();
-        map1.put(ACCEPTCH_BROWSER, browserValue);
-         
-        Map<String, Object> map2 = new HashMap<>();
-        map2.put(ACCEPTCH_BROWSER, browserValue);
-        map2.put(ACCEPTCH_PLATFORM, platformValue);
-        
-        Map<String, Object> map3 = new HashMap<>();
-        map3.put(ACCEPTCH_BROWSER, browserValue);
-        map3.put(ACCEPTCH_PLATFORM, unknownValue);
-        map3.put(ACCEPTCH_HARDWARE, testValue);
-        
-        Map<String, Object> map4 = new HashMap<>();
-        map4.put(ACCEPTCH_BROWSER, nullValue);
-        map4.put(ACCEPTCH_PLATFORM, testValue);
-        map4.put(ACCEPTCH_HARDWARE, hardwareValue);
-
-        return Arrays.asList(new Object[][] {
-            { map1, "SEC-CH-UA, SEC-CH-UA-Full-Version" },
-            { map2, "SEC-CH-UA, SEC-CH-UA-Full-Version, SEC-CH-UA-Platform, SEC-CH-UA-Platform-Version" },
-            { map3, "SEC-CH-UA, SEC-CH-UA-Full-Version" },
-            { map4, "SEC-CH-UA-Model, SEC-CH-UA-Mobile, SEC-CH-UA-Arch"}
-        });
 	}
 	
     /**
      * Check that the SetResponseHeaders correctly construct response header value 
      * and adds it to the response header.
-     * @throws ServletException
-     * @throws IOException
      */   
     @Test
-    public void UACHServiceCore_GetResponseHeaderValue() throws ServletException, IOException {
-           
-        uachServiceCore.getResponseHeaderValue(flowData);
-        uachServiceCore.setResponseHeader(response);
-        verify(response, times(1)).setHeader(
-                eq(ACCEPTCH_HEADER),
-                any(String.class));
-        assertEquals(responseHeaderValue, this.expectedValue);
+    public void UACHServiceCore_GetResponseHeaderValue() {
+    	flowData = mock(FlowData.class);
+    	elementData = mock(ElementData.class);
+    	
+    	// Set the mock input
+    	HashMap<String, String> responseHeaders = new HashMap<String, String>();
+    	responseHeaders.put("Accept-CH", "TestAcceptCHs");
+    	responseHeaders.put("Critical-CH", "TestCriticalCHs");
+    	
+    	// Set the static return value when accessing response header properties
+        when(elementData.get(RESPONSE_HEADER_PROPERTY_NAME)).thenReturn(responseHeaders);
+    	
+    	// Set the static return value when accessing set header data key
+    	when(flowData.get(SET_HEADER_ELEMENT_DATAKEY)).thenReturn(elementData);
+    	
+    	// Perform set response headers
+        uachServiceCore.setResponseHeaders(flowData, response);
+        
+        // Check if the set response header set the headers correctly
+        verify(response, times(1))
+        	.setHeader(eq("Accept-CH"), any(String.class));
+        verify(response, times(1))
+        	.setHeader(eq("Critical-CH"), any(String.class));
+        assertEquals(2, responseHeaderValues.size());
+        assertEquals("TestAcceptCHs", responseHeaderValues.get("Accept-CH"));
+        assertEquals("TestCriticalCHs", responseHeaderValues.get("Critical-CH"));
     }
     
 }
