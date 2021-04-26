@@ -39,7 +39,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static fiftyone.pipeline.setheader.Constants.*;
+import static fiftyone.pipeline.engines.fiftyone.data.SetHeadersData.*;
+import static fiftyone.pipeline.engines.fiftyone.flowelements.SetHeadersElement.*;
 import static fiftyone.pipeline.web.Constants.*;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.*;

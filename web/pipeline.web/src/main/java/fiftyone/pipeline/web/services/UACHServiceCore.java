@@ -26,7 +26,8 @@ import fiftyone.pipeline.core.data.ElementData;
 import fiftyone.pipeline.core.data.FlowData;
 import javax.servlet.http.HttpServletResponse;
 
-import static fiftyone.pipeline.setheader.Constants.*;
+import static fiftyone.pipeline.engines.fiftyone.data.SetHeadersData.*;
+import static fiftyone.pipeline.engines.fiftyone.flowelements.SetHeadersElement.*;
 
 import java.util.Map;
 
@@ -63,7 +64,7 @@ public interface UACHServiceCore {
 						setHeaderData.get(RESPONSE_HEADER_PROPERTY_NAME);
 				if (responseHeaders != null) {
 					responseHeaders.forEach((k, v) -> {
-						response.setHeader(k, (String)v);
+						response.setHeader(k, v);
 					});
 					
 				}

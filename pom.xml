@@ -127,7 +127,6 @@
         <module>pipeline.engines</module>
         <module>pipeline.caching</module>
         <module>pipeline.cloudrequestengine</module>
-        <module>pipeline.setheader</module>
         <module>pipeline.engines.fiftyone</module>
         <module>web/pipeline.web.shared</module>
         <module>web/pipeline.web</module>

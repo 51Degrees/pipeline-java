@@ -27,8 +27,8 @@ import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.web.services.UACHServiceCore;
 
-import static fiftyone.pipeline.setheader.Constants.*;
-import static fiftyone.pipeline.web.Constants.*;
+import static fiftyone.pipeline.engines.fiftyone.data.SetHeadersData.*;
+import static fiftyone.pipeline.engines.fiftyone.flowelements.SetHeadersElement.*;
 
 import org.junit.Before;
 import org.junit.Test;
