@@ -22,7 +22,10 @@
 
 package fiftyone.pipeline.web;
 
+import fiftyone.pipeline.core.data.ElementData;
 import fiftyone.pipeline.core.data.FlowData;
+import fiftyone.pipeline.engines.data.AspectPropertyValueDefault;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,8 +36,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
-import static fiftyone.pipeline.web.Constants.HTTPCONTEXT_FLOWDATA;
+import static fiftyone.pipeline.engines.fiftyone.data.SetHeadersData.*;
+import static fiftyone.pipeline.engines.fiftyone.flowelements.SetHeadersElement.*;
+import static fiftyone.pipeline.web.Constants.*;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -47,10 +54,10 @@ public class PipelineFilterTests {
     private HttpServletRequest request;
     private HttpServletResponse response;
     private FilterChain chain;
-
     private FlowData flowData;
-
-    @Before
+    private ElementData elementData;
+    
+	@Before
     public void init() throws IOException, ServletException {
         config = mock(FilterConfig.class);
         when(config.getInitParameter(anyString())).thenAnswer((Answer<String>) invocationOnMock -> {
@@ -79,15 +86,23 @@ public class PipelineFilterTests {
         when(request.getLocalAddr()).thenReturn("");
         when(request.getRequestURL()).thenReturn(new StringBuffer(""));
         when(request.getRequestURI()).thenReturn("");
+        
+        Map<String, Object> setHeader = new HashMap<String, Object>();
+        setHeader.put("Accept-CH", "TestAcceptCHs");
+        setHeader.put("Critical-CH", "TestCriticalCHs");
+        
         doAnswer(invocationOnMock -> {
             // Don't store the real data as we wont use it, and we want to verify
             // calls.
             FlowData realData = invocationOnMock.getArgument(1);
             assertNotNull(realData);
             flowData = mock(FlowData.class);
+            elementData = mock(ElementData.class);
+            when(elementData.get(RESPONSE_HEADER_PROPERTY_NAME)).thenReturn(setHeader);
+            when(flowData.get(SET_HEADER_ELEMENT_DATAKEY)).thenReturn(elementData);
             return null;
-        }).when(request).setAttribute(eq(HTTPCONTEXT_FLOWDATA), any(Object.class));
-    }
+        }).when(request).setAttribute(eq(HTTPCONTEXT_FLOWDATA), any(Object.class));       
+	}
 
     /**
      * Check that the filter can be initialised.
@@ -115,6 +130,12 @@ public class PipelineFilterTests {
         verify(request, times(1)).setAttribute(
             eq(HTTPCONTEXT_FLOWDATA),
             any(FlowData.class));
+        verify(response, times(1)).setHeader(
+        	eq("Accept-CH"),
+            any(String.class));
+        verify(response, times(1)).setHeader(
+            eq("Critical-CH"),
+            any(String.class));
     }
 
     /**

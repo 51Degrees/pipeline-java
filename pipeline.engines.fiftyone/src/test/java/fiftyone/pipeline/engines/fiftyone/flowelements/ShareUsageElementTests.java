@@ -32,8 +32,8 @@ import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.engines.services.HttpClient;
 import fiftyone.pipeline.engines.testhelpers.data.MockFlowData;
 import fiftyone.pipeline.engines.trackers.Tracker;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -79,7 +79,7 @@ public class ShareUsageElementTests {
     private List<String> xmlContent = new ArrayList<>();
     private SequenceElement sequenceElement;
 
-    @Before
+    @BeforeEach
     public void Init() throws IOException {
         // Create the HttpClient using the mock handler
         httpClient = mock(HttpClient.class);

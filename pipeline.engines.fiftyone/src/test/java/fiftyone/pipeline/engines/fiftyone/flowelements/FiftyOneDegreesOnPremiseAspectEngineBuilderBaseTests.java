@@ -6,8 +6,8 @@ import fiftyone.pipeline.engines.data.AspectEngineDataFile;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.fiftyone.data.FiftyOneDataFile;
 import fiftyone.pipeline.engines.services.DataUpdateService;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.slf4j.ILoggerFactory;
@@ -71,7 +71,7 @@ public class FiftyOneDegreesOnPremiseAspectEngineBuilderBaseTests {
         }
     }
 
-    @Before
+    @BeforeEach
     public void init() {
         doAnswer(new Answer<Object>() {
             @Override
