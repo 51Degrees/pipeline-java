@@ -24,6 +24,9 @@ package fiftyone.pipeline.web.services;
 
 import fiftyone.pipeline.core.data.ElementData;
 import fiftyone.pipeline.core.data.FlowData;
+import fiftyone.pipeline.core.flowelements.Pipeline;
+
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import static fiftyone.pipeline.engines.fiftyone.data.SetHeadersData.*;
@@ -38,25 +41,23 @@ public interface UACHServiceCore {
 
     /**
      * Set UACH response header in web response (sets Accept-CH header in response).
-     * @param floseData: A FlowData object  
-     * @param response: A Response object
+     * @param flowData a FlowData object
+     * @param response http response
      * @return A response object with Accept-CH header set in response if its value is not null
      */	
-    void setResponseHeaders(FlowData flowData, HttpServletResponse response);
+    void setResponseHeaders(
+    	FlowData flowData, HttpServletResponse response);
     
     /**
      * Default implementation of the {@link UACHServiceCore} service.
      */
     class Default implements UACHServiceCore {
         
-        /**
-         * Set UACH response headers in web response.
-         * @param flowData: A FlowData object  
-         * @param response: A Response object
-         */	
 		@SuppressWarnings("unchecked")
 		@Override
-		public void setResponseHeaders(FlowData flowData, HttpServletResponse response) {
+		public void setResponseHeaders(
+			FlowData flowData, HttpServletResponse response) {
+			
 			ElementData setHeaderData = flowData.get(SET_HEADER_ELEMENT_DATAKEY);
 			if (setHeaderData != null) {
 				Map<String, String> responseHeaders =
@@ -66,7 +67,6 @@ public interface UACHServiceCore {
 					responseHeaders.forEach((k, v) -> {
 						response.setHeader(k, v);
 					});
-					
 				}
 			}
 		}

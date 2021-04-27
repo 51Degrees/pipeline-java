@@ -38,6 +38,7 @@ import fiftyone.pipeline.core.flowelements.FlowElementBase;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.engines.data.AspectPropertyValue;
 import fiftyone.pipeline.engines.exceptions.NoValueException;
+import fiftyone.pipeline.engines.fiftyone.flowelements.SetHeadersElement;
 import fiftyone.pipeline.jsonbuilder.Constants;
 import fiftyone.pipeline.jsonbuilder.data.JsonBuilderData;
 
@@ -94,6 +95,7 @@ public class JsonBuilderElement
         elementBlacklist = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         elementBlacklist.add("cloud-response");
         elementBlacklist.add("json-builder");
+        elementBlacklist.add(SetHeadersElement.SET_HEADER_ELEMENT_DATAKEY);
     }
 //! [constructor]
 

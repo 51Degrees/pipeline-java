@@ -48,10 +48,6 @@ public class UACHServiceCoreTests {
     private Map<String, String> responseHeaderValues;
 	private ElementData elementData;
 	private Pipeline pipeline;
-
-	public UACHServiceCoreTests() {
-		System.out.println("Hello World");
-	}
 	
 	@Before
     public void init() {
@@ -83,7 +79,6 @@ public class UACHServiceCoreTests {
      */   
     @Test
     public void UACHServiceCore_GetResponseHeaderValue() {
-    	flowData = mock(FlowData.class);
     	elementData = mock(ElementData.class);
     	
     	// Set the mock input

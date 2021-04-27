@@ -28,7 +28,7 @@ public class ExampleInitializer extends AbstractAnnotationConfigDispatcherServle
 
     @Override
     protected Class<?>[] getRootConfigClasses() {
-        return new Class[] { ExampleConfig.class };
+        return new Class<?>[] { ExampleConfig.class };
     }
 
     @Override
