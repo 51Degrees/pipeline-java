@@ -65,7 +65,10 @@ public interface UACHServiceCore {
 						setHeaderData.get(RESPONSE_HEADER_PROPERTY_NAME);
 				if (responseHeaders != null) {
 					responseHeaders.forEach((k, v) -> {
-						response.setHeader(k, v);
+						if(response.getHeader(k) != null) {
+							v = response.getHeader(k) + ", " + v;
+						}
+						    response.setHeader(k, v);
 					});
 				}
 			}
