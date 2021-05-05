@@ -43,6 +43,11 @@ public class SetHeadersElement
 	 */
 	public static final String SET_HEADER_PREFIX = "SetHeader";
 	
+	/**
+	 * Lower case prefix of the SetHeader* properties.
+	 */
+	public static final String SET_HEADER_PREFIX_LOWER_CASE = "setheader";
+	
 	private final EvidenceKeyFilter evidenceKeyFilter;
 	private final List<ElementPropertyMetaData> properties;
 	private final Hashtable<Pipeline, PipelineConfig> pipelineConfigs;
@@ -180,7 +185,7 @@ public class SetHeadersElement
 		pipeline.getElementAvailableProperties().forEach((k, v) -> {
 			v.forEach((p, m) -> {
 				if (p.toLowerCase()
-					.startsWith(SET_HEADER_PREFIX.toLowerCase())) {
+					.startsWith(SET_HEADER_PREFIX_LOWER_CASE)) {
 					PropertyDetails details = new PropertyDetails();
 					details.propertyMetaData = m;
 					details.responseHeaderName = getResponseHeader(p);
@@ -208,7 +213,7 @@ public class SetHeadersElement
 		for (int i = new String(SET_HEADER_PREFIX).length() + 1;
 			i < key.length();
 			i++) {
-			if (key.charAt(i) <= 'Z' && key.charAt(i) >= 'A') {
+			if (Character.isUpperCase(key.charAt(i))) {
 				return key.substring(i).trim();
 			}
 		}
