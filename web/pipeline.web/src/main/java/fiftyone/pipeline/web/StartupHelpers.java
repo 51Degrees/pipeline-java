@@ -6,6 +6,7 @@ import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.flowelements.PipelineBuilder;
 import fiftyone.pipeline.engines.fiftyone.flowelements.SequenceElement;
+import fiftyone.pipeline.engines.fiftyone.flowelements.SetHeadersElement;
 import fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElement;
 import fiftyone.pipeline.jsonbuilder.flowelements.JsonBuilderElement;
 
@@ -145,6 +146,16 @@ public class StartupHelpers {
 
         }
 
+        // Add the set-headers element.
+        if (getElementIndex(
+            options,
+            SetHeadersElement.class.getSimpleName()) == -1) {
+            // The set-headers element is not included so add it.
+            ElementOptions setHeadersElement = new ElementOptions();
+            setHeadersElement.builderName = SetHeadersElement.class.getSimpleName();
+            options.elements.add(setHeadersElement);
+        }
+        
         return builder.buildFromConfiguration(options);
     }
 }

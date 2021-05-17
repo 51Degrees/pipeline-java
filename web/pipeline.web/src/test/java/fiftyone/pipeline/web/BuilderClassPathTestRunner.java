@@ -25,6 +25,7 @@ package fiftyone.pipeline.web;
 import com.sun.xml.bind.v2.ContextFactory;
 import fiftyone.pipeline.core.testclasses.flowelements.MultiplyByElementBuilder;
 import fiftyone.pipeline.engines.fiftyone.flowelements.SequenceElement;
+import fiftyone.pipeline.engines.fiftyone.flowelements.SetHeadersElementBuilder;
 import fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElement;
 import fiftyone.pipeline.jsonbuilder.flowelements.JsonBuilderElement;
 import org.junit.runner.notification.RunNotifier;
@@ -118,6 +119,11 @@ public class BuilderClassPathTestRunner extends BlockJUnit4ClassRunner {
                     .getProtectionDomain()
                     .getCodeSource()
                     .getLocation());
+            classpathUrls.add(
+                    SetHeadersElementBuilder.class
+                        .getProtectionDomain()
+                        .getCodeSource()
+                        .getLocation());
             classpathUrls.add(
                 MultiplyByElementBuilder.class
                     .getProtectionDomain()
