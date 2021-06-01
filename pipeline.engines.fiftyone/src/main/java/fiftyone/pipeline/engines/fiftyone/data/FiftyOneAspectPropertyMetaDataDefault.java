@@ -3,7 +3,7 @@
  * Copyright 2019 51 Degrees Mobile Experts Limited, 5 Charlotte Close,
  * Caversham, Reading, Berkshire, United Kingdom RG4 7BY.
  *
- * This Original Work is licensed under the European Union Public Licence (EUPL) 
+ * This Original Work is licensed under the European Union Public Licence (EUPL)
  * v.1.2 and is subject to its terms as set out below.
  *
  * If a copy of the EUPL was not distributed with this file, You can obtain
@@ -13,10 +13,10 @@
  * amended by the European Commission) shall be deemed incompatible for
  * the purposes of the Work and the provisions of the compatibility
  * clause in Article 5 of the EUPL shall not apply.
- * 
- * If using the Work as, or as part of, a network application, by 
+ *
+ * If using the Work as, or as part of, a network application, by
  * including the attribution notice(s) required under Article 5 of the EUPL
- * in the end user terms of the application under an appropriate heading, 
+ * in the end user terms of the application under an appropriate heading,
  * such notice(s) shall fulfill the requirements of that article.
  * ********************************************************************* */
 
@@ -26,6 +26,7 @@ import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaDataDefault;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 
 public class FiftyOneAspectPropertyMetaDataDefault
@@ -41,15 +42,14 @@ public class FiftyOneAspectPropertyMetaDataDefault
     private final boolean showValues;
     private final String description;
     private final ComponentMetaData component;
-    private final Iterable<ValueMetaData> values;
-    private final ValueMetaData defaultValue;
+    private final Iterable<ValueMetaDataDefault> values;
+    private final ValueMetaDataDefault defaultValue;
 
-    @SuppressWarnings("rawtypes") 
     public FiftyOneAspectPropertyMetaDataDefault(
         String name,
         FlowElement element,
         String category,
-        Class<?> type,
+        Class type,
         List<String> dataTiersWherePresent,
         boolean available,
         String url,
@@ -61,8 +61,8 @@ public class FiftyOneAspectPropertyMetaDataDefault
         boolean showValues,
         String description,
         ComponentMetaData component,
-        Iterable<ValueMetaData> values,
-        ValueMetaData defaultValue) {
+        Iterable<ValueMetaDataDefault> values,
+        ValueMetaDataDefault defaultValue) {
         super(name, element, category, type, dataTiersWherePresent, available);
         this.url = url;
         this.displayOrder = displayOrder;
@@ -75,6 +75,12 @@ public class FiftyOneAspectPropertyMetaDataDefault
         this.component = component;
         this.values = values;
         this.defaultValue = defaultValue;
+
+        // Set the property of the default value to this.
+        defaultValue.setProperty(this);
+        for (ValueMetaDataDefault value : this.values) {
+            value.setProperty(this);
+        }
     }
 
     @Override
@@ -124,7 +130,21 @@ public class FiftyOneAspectPropertyMetaDataDefault
 
     @Override
     public Iterable<ValueMetaData> getValues() {
-        return values;
+        return () -> {
+            Iterator<ValueMetaDataDefault> innerValues =
+                    values.iterator();
+            return new Iterator<ValueMetaData>() {
+                @Override
+                public boolean hasNext() {
+                    return innerValues.hasNext();
+                }
+
+                @Override
+                public ValueMetaData next() {
+                    return innerValues.next();
+                }
+            };
+        };
     }
 
     @Override
