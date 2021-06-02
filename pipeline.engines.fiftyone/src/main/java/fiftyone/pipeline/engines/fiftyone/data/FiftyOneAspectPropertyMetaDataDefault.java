@@ -47,9 +47,9 @@ public class FiftyOneAspectPropertyMetaDataDefault
 
     public FiftyOneAspectPropertyMetaDataDefault(
         String name,
-        FlowElement element,
+        FlowElement<?,?> element,
         String category,
-        Class type,
+        Class<?> type,
         List<String> dataTiersWherePresent,
         boolean available,
         String url,
