@@ -3,19 +3,42 @@ trigger:
 - develop
 - release/*
 
+# Don't trigger for a pull request
+pr: none
+
+# Schedule to run overnight
+schedules:
+- cron: "0 20 * * *"
+  displayName: Daily overnight build
+  branches:
+    include:
+    - develop
+    
 variables:
   - group: CertificateVariables
   # Access token for the git repository. Used by the git tag task.
   - name: system_accesstoken
     value: $(System.AccessToken)
-
+  # Include shared variables
+  - template: shared-variables.yml
+  
 stages:
 
-- stage: Build_Linux
+- template: shared-build-and-test-platforms.yml
+  parameters:
+    windowsImage: $(windowsImage)
+    linuxImage: $(linuxImage)
+    macImage: $(macImage)
+
+- stage: Build_Packages
+  displayName: Build Packages
+  dependsOn: [Windows,Linux,MacOS]
   jobs:
-  - job: Build
+  - job: Create_Packages
+    displayName: Create Packages
+     
     pool:
-      vmImage: 'ubuntu-16.04'
+      vmImage: $(linuxImage)
 
     steps:
     - checkout: self
@@ -31,7 +54,8 @@ stages:
       displayName: GitVersion
       inputs:
         preferBundledVersion: true
-
+        failOnStderr: true
+        
     # The secure file to download will be stored in the
     # Pipelines/Library/SecureFiles section in Azure DevOps.
     - task: DownloadSecureFile@1
@@ -39,13 +63,13 @@ stages:
       name: CodeSigningCert
       inputs:
         secureFile: '51Degrees Code Signing Certificate.asc'
-
-    - task: Bash@3
       continueOnError: true
+    - task: Bash@3
+      displayName: 'Import Code Signing Certificate'
       inputs:
         targetType: 'inline'
         script: 'echo $(gpg_passphrase) | gpg --import --batch --yes --passphrase-fd 0 "$(CodeSigningCert.secureFilePath)"'
-
+        
     - task: Maven@2
       displayName: 'Maven version set'
       inputs:
@@ -60,7 +84,7 @@ stages:
         mavenPomFile: 'pom.xml'
         goals: 'clean install'
         options: '-Pbuild -Dhttps.protocols=TLSv1.2 -Dbuildversion=$(GitVersion.SemVer) -Dskippackagesign=false -Dgpg.passphrase=$(gpg_passphrase)'
-        jdkVersionOption: '1.8'
+        jdkVersionOption: $(jdkVersionDefault)
 
     - task: CopyFiles@2
       displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
@@ -70,6 +94,7 @@ stages:
         TargetFolder: '$(build.artifactstagingdirectory)'
 
     - task: Bash@3
+      displayName: 'Write GitVersion to version.txt'
       inputs:
         targetType: 'inline'
         script: 'echo $(GitVersion.SemVer) >> version.txt'
@@ -80,11 +105,13 @@ stages:
         SourceFolder: '$(build.sourcesdirectory)'
         Contents: 'version.txt'
         TargetFolder: '$(build.artifactstagingdirectory)'
+        failOnStderr: true
 
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifact: drop'
       inputs:
         PathtoPublish: '$(build.artifactstagingdirectory)'
+        failOnStderr: true
         
     # Add a tag to the git repository with the version number of
     # the package that has just been published
@@ -93,6 +120,7 @@ stages:
       inputs:
         tagUser: 'Azure DevOps'
         tagEmail: 'CIUser@51Degrees.com'
+        failOnStderr: true
       # Only create the tag if we also published a package as defined in
       # the previous task.
       condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/master'), or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), or(startsWith(variables['Build.SourceBranch'], 'refs/heads/release/'), eq('true', variables['ForcePushMaven'])))))

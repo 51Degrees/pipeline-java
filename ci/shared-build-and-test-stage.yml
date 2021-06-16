@@ -1,0 +1,50 @@
+# Build and test stage template
+
+parameters:
+# stageName: Stage name
+# imageName: image on which stage needs to be run
+- name: stageName
+- name: imageName
+
+stages:
+
+- stage: ${{ parameters.stageName }}
+  dependsOn: []
+  
+  jobs:
+  - job: Build_and_Test
+    displayName: Build and Test
+    
+    strategy:
+      matrix:
+        JDK8:
+          jdkVersion: '1.8'
+        JDK11:
+          jdkVersion: '1.11'
+
+    pool:
+      vmImage: ${{ parameters.imageName }}
+
+    steps:
+
+    - checkout: self
+      submodules: recursive
+      lfs: true
+      persistCredentials: true
+
+    - task: Maven@1
+      displayName: 'Maven test'
+      inputs:
+        mavenPomFile: 'pom.xml'
+        goals: 'clean test'
+        options: '-Dhttps.protocols=TLSv1.2 -DfailIfNoTests=false -DXmx2048m'
+        jdkVersionOption: $(jdkVersion)
+        testRunTitle: '${{ parameters.imageName }}-$(jdkVersion)'
+        
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '**/TEST-*.xml' 
+        testRunTitle: '${{ parameters.imageName }}-$(jdkVersion)'
+        failTaskOnFailedTests: true
+      condition: succeededOrFailed()
