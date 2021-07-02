@@ -22,13 +22,16 @@
 
 package fiftyone.pipeline.engines.fiftyone.flowelements;
 
+import fiftyone.pipeline.annotations.ElementBuilder;
 import fiftyone.pipeline.engines.services.HttpClient;
+import java.io.IOException;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 
 /**
  * Builder class that is used to create {@link ShareUsageElement}.
  */
+@ElementBuilder
 public class ShareUsageBuilder extends ShareUsageBuilderBase<ShareUsageElement> {
 
     private final HttpClient httpClient;
@@ -64,13 +67,13 @@ public class ShareUsageBuilder extends ShareUsageBuilderBase<ShareUsageElement> 
     }
 
     @Override
-    public ShareUsageElement build() {
+    public ShareUsageElement build() throws IOException {
         return new ShareUsageElement(
             loggerFactory.getLogger(ShareUsageElement.class.getName()),
             httpClient,
             sharePercentage,
             minimumEntriesPerMessage,
-            maximumQueueSize,
+            getMaximumQueueSize(),
             addTimeout,
             takeTimeout,
             repeatEvidenceInterval,

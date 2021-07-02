@@ -32,7 +32,7 @@ import java.util.*;
  * Abstract base class for ShareUsageElement builders.
  * @param <T> element type
  */
-public abstract class ShareUsageBuilderBase<T> {
+public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
 
     protected final ILoggerFactory loggerFactory;
 
@@ -41,7 +41,8 @@ public abstract class ShareUsageBuilderBase<T> {
     protected int repeatEvidenceInterval;
     protected double sharePercentage = 1;
     protected int minimumEntriesPerMessage = 50;
-    protected int maximumQueueSize = Constants.SHARE_USAGE_DEFAULT_MAX_QUEUE_SIZE;
+    // This value must be accessed through the corresponding getter/setter.
+    private int maximumQueueSize = 0;
     protected int addTimeout = Constants.SHARE_USAGE_DEFAULT_ADD_TIMEOUT;
     protected int takeTimeout = Constants.SHARE_USAGE_DEFAULT_TAKE_TIMEOUT;
     protected String shareUsageUrl = Constants.SHARE_USAGE_DEFAULT_URL;
@@ -74,9 +75,12 @@ public abstract class ShareUsageBuilderBase<T> {
     }
 
     /**
-     * Add parameter names to the (case insensitive) list of names of query
-     * string parameters that will be sent to 51Degrees.
-     * @param queryStringParameterNames the names of the query string parameter
+     * By default query string and HTTP form parameters are not shared 
+     * unless prefixed with '51D_'.
+     * This setting allows you to share these parameters with 51Degrees
+     * if needed.
+     * @param queryStringParameterNames the (case insensitive) names of 
+     *                                  the query string parameters
      *                                  to include
      * @return this builder
      */
@@ -87,10 +91,13 @@ public abstract class ShareUsageBuilderBase<T> {
     }
 
     /**
-     * Add parameter names to the (case insensitive) list of names of query
-     * string parameters that will be sent to 51Degrees.
-     * @param queryStringParameterNames a comma separated list of names of the
-     *                                  query string parameter to include
+     * By default query string and HTTP form parameters are not shared 
+     * unless prefixed with '51D_'.
+     * This setting allows you to share these parameters with 51Degrees
+     * if needed.
+     * @param queryStringParameterNames a comma separated list of 
+     *                                  (case insensitive) names of the
+     *                                  query string parameters to include
      * @return this builder
      */
     public ShareUsageBuilderBase<T> setIncludedQueryStringParameters(
@@ -100,10 +107,12 @@ public abstract class ShareUsageBuilderBase<T> {
     }
 
     /**
-     * Add a parameter name to the (case insensitive) list of names of query
-     * string parameters that will be sent to 51Degrees.
-     * @param queryStringParameterName the name of the query string parameter to
-     *                                 include
+     * By default query string and HTTP form parameters are not shared 
+     * unless prefixed with '51D_'.
+     * This setting allows you to share these parameters with 51Degrees
+     * if needed.
+     * @param queryStringParameterName the (case insensitive) name of the 
+     *                                 query string parameter to include
      * @return this builder
      */
     public ShareUsageBuilderBase<T> setIncludedQueryStringParameter(
@@ -113,10 +122,10 @@ public abstract class ShareUsageBuilderBase<T> {
     }
 
     /**
-     * Set the (case insensitive) names of HTTP headers that will not be sent to
-     * 51Degrees. Some headers, such as 'cookies' are hard-coded to be blocked
-     * regardless of this setting.
-     * @param blockedHeaders the names of the headers to block
+     * By default, all HTTP headers (excluding a few such as 'cookies')
+     * are shared. Individual headers can be excluded from sharing by 
+     * adding them to this list.
+     * @param blockedHeaders the (case insensitive) names of the headers to block
      * @return this builder
      */
     public ShareUsageBuilderBase<T> setBlockedHttpHeaders(
@@ -126,10 +135,10 @@ public abstract class ShareUsageBuilderBase<T> {
     }
 
     /**
-     * Add a header to the (case insensitive) list of names of HTTP headers that
-     * will not be sent to 51Degrees. Some headers, such as 'cookies' are
-     * hard-coded to be blocked regardless of this setting.
-     * @param blockedHeader the name of the header to block
+     * By default, all HTTP headers (excluding a few such as 'cookies')
+     * are shared. Individual headers can be excluded from sharing by 
+     * adding them to this list.
+     * @param blockedHeader the (case insensitive) name of the header to block
      * @return this builder
      */
     public ShareUsageBuilderBase<T> setBlockedHttpHeader(String blockedHeader) {
@@ -138,10 +147,15 @@ public abstract class ShareUsageBuilderBase<T> {
     }
 
     /**
-     * Adds evidence key:values to the filter such that requests which contain
-     * this evidence are ignored.
-     * @param evidenceFilter comma separated string containing evidence keys and
-     *                       evidence to ignore
+     * This setting can be used to stop the usage sharing element 
+     * from sharing anything about specific requests.
+     * For example, if you wanted to stop sharing any details from requests
+     * where the user-agent header was 'ABC', you would set this
+     * to "header.user-agent:ABC"
+     * @param evidenceFilter Comma separated string containing entries 
+     *                       in the format [evidenceKey]:[evidenceValue].
+     *                       Any requests with evidence matching these 
+     *                       entries will not be shared.
      * @return this builder
      */
     public ShareUsageBuilderBase<T> setIgnoreFlowDataEvidenceFilter(
@@ -182,8 +196,11 @@ public abstract class ShareUsageBuilderBase<T> {
     }
 
     /**
-     * Set the minimum number of entries to be aggregated by the
-     * {@link ShareUsageElement} before they are sent to the remote service.
+     * The usage element will group data into single requests before sending it.
+     * This setting controls the minimum number of entries before data is sent.
+     * If you are sharing large amounts of data, increasing this value is 
+     * recommended in order to reduce the overhead of sending HTTP messages.
+     * For example, the 51Degrees cloud service uses a value of 2500.
      * @param minimumEntriesPerMessage the minimum number of entries to be
      *                                 aggregated by the {@link ShareUsageElement}
      *                                 before they are sent to the remote
@@ -197,13 +214,29 @@ public abstract class ShareUsageBuilderBase<T> {
 
     /**
      * Set the maximum number of entries to be stored in the queue to be sent.
-     * This must be more than the minimum entries per message.
+     * This must be more than the minimum entries per message.        
+     * By default, the value is calculated automatically based on the 
+     * MinimumEntriesPerMessage setting.
      * @param size the size to set
      * @return this builder
      */
     public ShareUsageBuilderBase<T> setMaximumQueueSize(int size) {
         maximumQueueSize = size;
         return this;
+    }
+
+    /**
+     * Get the maximum number of entries to be stored in the queue to be sent. 
+     * @return the maximum queue size
+     * */
+    public int getMaximumQueueSize() {
+        int result = maximumQueueSize;
+        if(result == 0) {
+            result = Constants.SHARE_USAGE_DEFAULT_MAX_QUEUE_SIZE;
+            int calc = minimumEntriesPerMessage * 10;
+            if(calc > result) { result = calc; }            
+        }
+        return result;
     }
 
     /**
@@ -241,6 +274,7 @@ public abstract class ShareUsageBuilderBase<T> {
 
     /**
      * Set the name of the cookie that contains the session id.
+     * This setting has no effect if TrackSession is false.
      * @param cookieName the name of the cookie that contains the session id
      * @return this builder
      */
@@ -250,8 +284,8 @@ public abstract class ShareUsageBuilderBase<T> {
     }
 
     /**
-     * Set the interval which determines if a non-unique piece of evidence is
-     * repeat evidence or new.
+     * If exactly the same evidence values are seen multiple times within this
+     * time limit then they will only be shared once.
      * @param interval the interval in minutes
      * @return this builder
      */
@@ -261,7 +295,10 @@ public abstract class ShareUsageBuilderBase<T> {
     }
 
     /**
-     * Enable or disable session tracking.
+     * If set to true, the configured session cookie will be used to
+     * identify user sessions.
+     * This will help to differentiate duplicate values that should not be 
+     * shared.
      * @param track boolean value sets whether the usage element should track
      *              sessions
      * @return this builder

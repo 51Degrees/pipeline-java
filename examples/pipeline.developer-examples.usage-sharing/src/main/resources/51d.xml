@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<PipelineOptions>
+    <Elements>
+        <Element>
+            <BuildParameters>
+                <SharePercentage>0.1</SharePercentage>
+                <ShareUsageUrl>https://devices-v4.51degrees.com/new.ashx</ShareUsageUrl>
+                <MinimumEntriesPerMessage>50</MinimumEntriesPerMessage>
+                <RepeatEvidenceIntervalMinutes>10</RepeatEvidenceIntervalMinutes>
+                <TrackSession>false</TrackSession>
+                <SessionCookieName></SessionCookieName>
+                <IncludedQueryStringParameters>parameter1,parameter2</IncludedQueryStringParameters>
+                <BlockedHttpHeader>mySecretHeader</BlockedHttpHeader>
+                <IgnoreFlowDataEvidenceFilter>evidenceKey:evidenceValue</IgnoreFlowDataEvidenceFilter>
+                <AddTimeout>5</AddTimeout>
+                <TakeTimeout>100</TakeTimeout>
+            </BuildParameters>
+            <BuilderName>ShareUsage</BuilderName>
+        </Element>
+    </Elements>
+</PipelineOptions>

@@ -22,6 +22,7 @@
 
 package fiftyone.pipeline.engines.services;
 
+import fiftyone.pipeline.core.services.PipelineService;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -30,7 +31,7 @@ import java.util.Map;
 /**
  * Interface used by the {@link DataUpdateService} to process HTTP requests.
  */
-public interface HttpClient {
+public interface HttpClient extends PipelineService {
 
     /**
      * Connect to a URL.
