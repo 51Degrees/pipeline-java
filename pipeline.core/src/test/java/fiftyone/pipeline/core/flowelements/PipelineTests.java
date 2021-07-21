@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.*;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -331,6 +332,47 @@ public class PipelineTests {
 
         // Get the requested property meta data
         ElementPropertyMetaData metaData = pipeline.getMetaDataForProperty("testproperty");
+    }
+
+    @Test
+    public void Pipeline_GetPropertyMetaData_Concurrent() 
+        throws InterruptedException {
+        FlowElement element1 = getMockFlowElement();
+        when(element1.getProperties()).thenReturn(Arrays.asList(
+            new ElementPropertyMetaDataDefault("testproperty", element1, "", String.class, true)
+        ));
+
+        int repeatLimit = 100;
+        // This test can just happen to work correctly by chance so
+        // we repeat it 100 times in order to try and make sure
+        // we eliminate the element of chance.
+        for (int repeatCount = 0; repeatCount < repeatLimit; repeatCount++)
+        {
+            // Create the pipeline
+            PipelineInternal pipeline = createPipeline(
+                false,
+                true,
+                new FlowElement[]{element1});
+
+            // Get the requested property meta data on two
+            // threads simultaneously.
+            int threadCount = 2;
+            ExecutorService service = Executors.newFixedThreadPool(threadCount);
+            CountDownLatch latch = new CountDownLatch(threadCount);
+            
+            for (int i = 0; i < threadCount; i++)
+            {
+                service.execute(() -> {
+                    try {
+                        pipeline.getMetaDataForProperty("testproperty");
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            }
+            
+            latch.await();
+        }
     }
 
 
