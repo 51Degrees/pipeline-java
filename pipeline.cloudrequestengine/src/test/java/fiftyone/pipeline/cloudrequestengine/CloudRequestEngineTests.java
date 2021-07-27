@@ -34,6 +34,7 @@ import org.json.JSONObject;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
+import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.slf4j.ILoggerFactory;
@@ -44,6 +45,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -283,8 +285,57 @@ public class CloudRequestEngineTests {
         assertTrue("Exception message did not contain the expected text.", 
                 realEx.getMessage().contains(
             "resource_key not a valid resource key"));
+    }    
+
+    /**
+     * Verify that the request to the cloud service will contain 
+     * the configured origin header value.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void OriginHeader() throws Exception {
+        final String resourceKey = "resource_key";
+        final String userAgent = "iPhone";
+        final String origin = "51degrees.com";
+
+        configureMockedClient();
+
+        CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
+            .setResourceKey(resourceKey)
+            .setCloudRequestOrigin(origin)
+            .build();
+
+        try (Pipeline pipeline = new PipelineBuilder(loggerFactory)
+            .addFlowElement(engine).build();
+            FlowData data = pipeline.createFlowData()) {
+            data.addEvidence("query.User-Agent", userAgent);
+
+            data.process();
+        }
+
+        ArgumentCaptor<Map<String, String>> argumentsCaptured = ArgumentCaptor.forClass(Map.class);
+
+        verify(httpClient, times(1)) // we expected a single external POST request
+            .postData(
+            argThat(new ArgumentMatcher<HttpURLConnection>() {
+                @Override
+                public boolean matches(HttpURLConnection c) {
+                    return c.getURL().equals(expectedUrl); // to this uri
+                }}),
+            argumentsCaptured.capture(),
+            argThat(new ArgumentMatcher<byte[]>() {
+                @Override
+                public boolean matches(byte[] bytes) {
+                    String string = new String(bytes);
+                    return string.contains("resource=" + resourceKey) && // content contains resource key
+                        string.contains("User-Agent=" + userAgent); // content contains user agent
+                }}));
+        
+        // Verify that the origin header has the expected value.
+        Map<String, String> headers = argumentsCaptured.getValue();
+        assertTrue(headers.containsKey(Constants.OriginHeaderName)); 
+        assertEquals(origin, headers.get(Constants.OriginHeaderName)); 
     }
-    
 
     private void configureMockedClient() throws IOException {
         // ARRANGE

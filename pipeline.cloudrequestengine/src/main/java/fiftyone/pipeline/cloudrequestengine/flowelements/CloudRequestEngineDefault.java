@@ -71,6 +71,7 @@ public class CloudRequestEngineDefault
     private String licenseKey;
     private String propertiesEndpoint;
     private String evidenceKeysEndpoint;
+    private String cloudRequestOrigin;
     private Integer timeoutMillis;
 
     private List<AspectPropertyMetaData> propertyMetaData;
@@ -96,7 +97,30 @@ public class CloudRequestEngineDefault
             null,
             propertiesEndpoint,
             evidenceKeysEndpoint,
-            timeoutMillis);
+            timeoutMillis,
+            null);
+    }
+    public CloudRequestEngineDefault(
+        Logger logger,
+        ElementDataFactory<CloudRequestData> aspectDataFactory,
+        HttpClient httpClient,
+        String endPoint,
+        String resourceKey,
+        String propertiesEndpoint,
+        String evidenceKeysEndpoint,
+        int timeoutMillis,
+        String cloudRequestOrigin) {
+        this(
+            logger,
+            aspectDataFactory,
+            httpClient,
+            endPoint,
+            resourceKey,
+            null,
+            propertiesEndpoint,
+            evidenceKeysEndpoint,
+            timeoutMillis,
+            cloudRequestOrigin);
     }
     public CloudRequestEngineDefault(
         Logger logger,
@@ -107,7 +131,8 @@ public class CloudRequestEngineDefault
         String licenseKey,
         String propertiesEndpoint,
         String evidenceKeysEndpoint,
-        int timeoutMillis) {
+        int timeoutMillis,
+        String cloudRequestOrigin) {
         super(logger, aspectDataFactory);
         try
         {
@@ -117,6 +142,7 @@ public class CloudRequestEngineDefault
             this.propertiesEndpoint = propertiesEndpoint;
             this.evidenceKeysEndpoint = evidenceKeysEndpoint;
             this.httpClient = httpClient;
+            this.cloudRequestOrigin = cloudRequestOrigin;
 
             if (timeoutMillis > 0) {
                 this.timeoutMillis = timeoutMillis;
@@ -182,6 +208,10 @@ public class CloudRequestEngineDefault
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
         headers.put("Content-Length", Integer.toString(content.length));
+        if(cloudRequestOrigin != null &&
+            cloudRequestOrigin.length() > 0) {
+            headers.put(fiftyone.pipeline.cloudrequestengine.Constants.OriginHeaderName, cloudRequestOrigin);
+        }
         String response = httpClient.postData(connection, headers, content);
 
         ((CloudRequestDataInternal)aspectData).setJsonResponse(response);

@@ -45,6 +45,8 @@ public abstract class CloudPipelineBuilderBase<
 
     protected String licenseKey = "";
 
+    protected String cloudRequestOrigin = "";
+
     /**
      * Construct a new instance.
      * @param loggerFactory the {@link ILoggerFactory} used to create any
@@ -125,6 +127,23 @@ public abstract class CloudPipelineBuilderBase<
     @SuppressWarnings("unchecked")
     public TBuilder setLicenseKey(String key) {
         this.licenseKey = key;
+        return (TBuilder)this;
+    }
+
+    /**
+     * The value to set for the Origin header when making requests
+     * to the cloud service.
+     * This is used by the cloud service to check that the request
+     * is being made from a origin matching those allowed by the 
+     * resource key.
+     * For more detail, see the 'Request Headers' section in the 
+     * <a href="https://cloud.51degrees.com/api-docs/index.html">cloud documentation</a>.
+     * @param key the value to set the origin header to
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
+    public TBuilder setCloudRequestOrigin(String cloudRequestOrigin) {
+        this.cloudRequestOrigin = cloudRequestOrigin;
         return (TBuilder)this;
     }
 }

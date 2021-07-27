@@ -51,6 +51,7 @@ public class CloudRequestEngineBuilder extends
     private String evidenceKeysEndpoint = null;
     private String resourceKey = null;
     private String licenseKey = null;
+    private String cloudRequestOrigin = null;
     private int timeout = 100000;
 
     public CloudRequestEngineBuilder(ILoggerFactory loggerFactory) {
@@ -82,7 +83,8 @@ public class CloudRequestEngineBuilder extends
             licenseKey,
             propertiesEndpoint,
             evidenceKeysEndpoint,
-            timeout);
+            timeout,
+            cloudRequestOrigin);
     }
 
     public CloudRequestEngine build() throws Exception {
@@ -165,6 +167,22 @@ public class CloudRequestEngineBuilder extends
      */
     public CloudRequestEngineBuilder setTimeOutSeconds(int timeout) {
         this.timeout = timeout;
+        return this;
+    }
+
+    /**
+     * The value to set for the Origin header when making requests
+     * to the cloud service.
+     * This is used by the cloud service to check that the request
+     * is being made from a origin matching those allowed by the 
+     * resource key.
+     * For more detail, see the 'Request Headers' section in the 
+     * <a href="https://cloud.51degrees.com/api-docs/index.html">cloud documentation</a>.
+     * @param cloudRequestOrigin The value to use for the Origin header.
+     * @return this builder
+     */
+    public CloudRequestEngineBuilder setCloudRequestOrigin(String cloudRequestOrigin) {
+        this.cloudRequestOrigin = cloudRequestOrigin;
         return this;
     }
 
