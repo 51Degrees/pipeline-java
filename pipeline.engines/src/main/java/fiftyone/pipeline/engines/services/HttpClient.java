@@ -61,5 +61,18 @@ public interface HttpClient extends PipelineService {
      * @return response string from request
      * @throws IOException if an HTTP exception occurred
      */
-    String getResponseString(HttpURLConnection connection) throws IOException;
+    String getResponseString(
+        HttpURLConnection connection) throws IOException;
+
+    /**
+     * Carry out a get request to a connection opened by the {@link #connect(URL)}
+     * method and return the response string.
+     * @param connection open connection to get
+     * @param headers HTTP header to send with the request
+     * @return response string from request
+     * @throws IOException if an HTTP exception occurred
+     */
+    String getResponseString(
+        HttpURLConnection connection,
+        Map<String, String> headers) throws IOException;
 }

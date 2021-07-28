@@ -385,7 +385,9 @@ public class CloudRequestEngineTests {
                             url + "'");
                 }
             }
-        }).when(httpClient).getResponseString(any(HttpURLConnection.class));
+        }).when(httpClient).getResponseString(
+            any(HttpURLConnection.class), 
+            ArgumentMatchers.<String, String>anyMap());
 
         doReturn(jsonResponse)
                 .when(httpClient)

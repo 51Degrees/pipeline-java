@@ -73,7 +73,7 @@ public class CloudRequestEngineBuilder extends
                     "'setResourceKey(String) method to supply your resource " +
                     "key obtained from https://configure.51degrees.com");
         }
-
+        
         return new CloudRequestEngineDefault(
             loggerFactory.getLogger(CloudRequestEngine.class.getName()),
             new CloudRequestDataFactory(loggerFactory),

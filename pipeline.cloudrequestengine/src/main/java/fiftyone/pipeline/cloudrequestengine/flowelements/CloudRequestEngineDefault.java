@@ -206,12 +206,10 @@ public class CloudRequestEngineDefault
         }
 
         Map<String, String> headers = new HashMap<>();
+        setCommonHeaders(headers);
         headers.put("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
         headers.put("Content-Length", Integer.toString(content.length));
-        if(cloudRequestOrigin != null &&
-            cloudRequestOrigin.length() > 0) {
-            headers.put(fiftyone.pipeline.cloudrequestengine.Constants.OriginHeaderName, cloudRequestOrigin);
-        }
+
         String response = httpClient.postData(connection, headers, content);
 
         ((CloudRequestDataInternal)aspectData).setJsonResponse(response);
@@ -243,13 +241,23 @@ public class CloudRequestEngineDefault
     protected void unmanagedResourcesCleanup() {
     }
 
+    private void setCommonHeaders(Map<String, String> headers) {        
+        if(cloudRequestOrigin != null &&
+            cloudRequestOrigin.length() > 0) {
+            headers.put(fiftyone.pipeline.cloudrequestengine.Constants.OriginHeaderName, cloudRequestOrigin);
+        }
+    }
+
     private void getCloudProperties() {
         int response;
         String jsonResult;
 
+        Map<String, String> headers = new HashMap<>();
+        setCommonHeaders(headers);
+
         try {
             HttpURLConnection connection = httpClient.connect(new URL(propertiesEndpoint.trim()));
-            jsonResult = httpClient.getResponseString(connection);
+            jsonResult = httpClient.getResponseString(connection, headers);
             response = connection.getResponseCode();
         }
         catch (Exception ex) {
@@ -289,9 +297,13 @@ public class CloudRequestEngineDefault
 
     private void getCloudEvidenceKeys() {
         String jsonResult;
+
+        Map<String, String> headers = new HashMap<>();
+        setCommonHeaders(headers);
+
         try {
             HttpURLConnection connection = httpClient.connect(new URL(evidenceKeysEndpoint.trim()));
-            jsonResult = httpClient.getResponseString(connection);
+            jsonResult = httpClient.getResponseString(connection, headers);
         }
         catch (Exception ex) {
             throw new RuntimeException("Failed to retrieve evidence keys " +
