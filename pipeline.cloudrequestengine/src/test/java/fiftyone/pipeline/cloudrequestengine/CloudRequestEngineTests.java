@@ -33,10 +33,6 @@ import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-import org.slf4j.ILoggerFactory;
-import org.slf4j.Logger;
 
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -319,65 +315,5 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
         Map<String, String> headers = argumentsCaptured.getValue();
         assertTrue(headers.containsKey(Constants.OriginHeaderName)); 
         assertEquals(origin, headers.get(Constants.OriginHeaderName)); 
-    }
-
-    private void configureMockedClient() throws IOException {
-        // ARRANGE
-        httpClient = mock(HttpClient.class, new Answer<Object>() {
-            @Override
-            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-                throw new Exception("The method '" +
-                        invocationOnMock.getMethod().getName() + "' should not have been called.");
-            }
-        });
-        final HttpURLConnection connection = mock(HttpURLConnection.class, new Answer<Object>() {
-            @Override
-            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-                throw new Exception("The method '" +
-                        invocationOnMock.getMethod().getName() + "' should not have been called.");
-            }
-        });
-        doNothing().when(connection).setConnectTimeout(anyInt());
-        doNothing().when(connection).setReadTimeout(anyInt());
-        doAnswer(new Answer<Object>() {
-            @Override
-            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-                URL url = (URL)invocationOnMock.getArgument(0);
-                doReturn(url).when(connection).getURL();
-                if (url.getPath().endsWith("properties")) {
-                    doReturn(accessiblePropertiesResponseCode).when(connection).getResponseCode();
-                }
-                else {
-                    doReturn(200).when(connection).getResponseCode();
-                }
-                return (Object)connection;
-            }
-        }).when(httpClient).connect(any(URL.class));
-        
-        doAnswer(new Answer<Object>() {
-            @Override
-            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-                URL url = ((HttpURLConnection)invocationOnMock.getArgument(0)).getURL();
-                if (url.getPath().endsWith("properties")) {
-                    return accessiblePropertiesResponse;
-                }
-                else if (url.getPath().endsWith("evidencekeys")) {
-                    return evidenceKeysResponse;
-                }
-                else {
-                    throw new Exception("A request was made with the URL '" +
-                            url + "'");
-                }
-            }
-        }).when(httpClient).getResponseString(
-            any(HttpURLConnection.class), 
-            ArgumentMatchers.<String, String>anyMap());
-
-        doReturn(jsonResponse)
-                .when(httpClient)
-                .postData(
-                        any(HttpURLConnection.class),
-                        ArgumentMatchers.<String, String>anyMap(),
-                        (byte[])any());
     }
 }
