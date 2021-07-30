@@ -11,6 +11,13 @@ schedules:
 # Include shared variables
 variables:
 - template: shared-variables.yml
+- group: CIAutomation
+
+resources:
+  repositories:
+  - repository: ciTemplates # Id of the repository used to reference to in this script
+    type: git
+    name: common-ci # Name of the actual repository
 
 stages:
 - template: shared-build-and-test-platforms.yml
@@ -18,3 +25,10 @@ stages:
     windowsImage: $(windowsImage)
     linuxImage: $(linuxImage)
     macImage: $(macImage)
+    runTests: variables['RunTests']
+
+# Try to complete the corresponding pull request if
+# this is triggered by one.    
+- template: shared-auto-complete-pr-stage.yml@ciTemplates
+  parameters:
+    stageDependencies: [Windows,Linux,MacOS]

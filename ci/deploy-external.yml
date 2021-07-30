@@ -11,7 +11,7 @@ resources:
   pipelines:
   - pipeline: build-pipeline   # The name for the triggering build pipeline within this script
     source: pipeline-java-create-packages # Name of the pipeline
-    trigger: true 
+    trigger: true
   repositories:
   - repository: ciTemplates # Id of the repository used to reference to in this script
     type: git
@@ -22,32 +22,13 @@ variables:
 - template: shared-variables.yml
 - name: targetBranch
   value: 'refs/heads/master'
+- group: CIAutomation
 
-# Publish to Internal Feed  
 stages:
-- stage: publish_internal
-  displayName: Publish Internal
-  jobs:
-  # Note - A 'deployment' job will automatically download the artifacts created by the triggering pipeline.
-  - deployment: deploy_internal
-    displayName: Deploy Internal
-    pool:
-      vmImage: $(linuxImage)
-      workspace:
-        clean: all
-    environment: packages-internal
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - template: shared-publish-packages-internal.yml
-            parameters:
-              publishEndpoint: 'internal-feed'
-
 # Publish to Staging              
 - stage: publish_staging
   displayName: Publish to Staging
-  dependsOn: []
+
   condition: eq(variables['build.sourceBranch'], variables['targetBranch'])
   jobs:
   - deployment: deploy_staging
@@ -65,6 +46,8 @@ stages:
           - template: shared-publish-packages-internal.yml
             parameters:
               publishEndpoint: 'staging'
+              internalFeedName: $(InternalFeedName)
+              templates: 'ciTemplates'
  
 # Promote from staging to Maven 
 - stage: publish_maven
