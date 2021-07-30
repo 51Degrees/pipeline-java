@@ -191,7 +191,10 @@ public class PipelineBuilder
         // Get the methods on the builder
         List<Method> buildMethods = new ArrayList<>();
         for (Method method : builderType.getMethods()) {
-            if (method.getName().equals("build")) {
+            if (method.getName().equals("build") &&
+                // We need to exclude methods on base classes that have been 
+                // overridden. (see https://stackoverflow.com/questions/6204339/java-class-getmethods-behavior-on-overridden-methods)
+                method.isBridge() == false) {
                 buildMethods.add(method);
             }
         }

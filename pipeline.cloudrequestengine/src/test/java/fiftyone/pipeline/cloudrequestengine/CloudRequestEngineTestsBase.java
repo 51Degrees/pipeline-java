@@ -22,9 +22,7 @@
 
 package fiftyone.pipeline.cloudrequestengine;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
@@ -94,8 +92,8 @@ public class CloudRequestEngineTestsBase {
                 return (Object)connection;
             }
         }).when(httpClient).connect(any(URL.class));
-        
-        doAnswer(new Answer<Object>() {
+
+        Answer<Object> responseStringAnswer = new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 URL url = ((HttpURLConnection)invocationOnMock.getArgument(0)).getURL();
@@ -110,7 +108,14 @@ public class CloudRequestEngineTestsBase {
                             url + "'");
                 }
             }
-        }).when(httpClient).getResponseString(any(HttpURLConnection.class));
+        };
+
+        doAnswer(responseStringAnswer)
+            .when(httpClient)
+            .getResponseString(any(HttpURLConnection.class));
+        doAnswer(responseStringAnswer)
+            .when(httpClient)
+            .getResponseString(any(HttpURLConnection.class), anyMap());
 
         doReturn(jsonResponse)
                 .when(httpClient)

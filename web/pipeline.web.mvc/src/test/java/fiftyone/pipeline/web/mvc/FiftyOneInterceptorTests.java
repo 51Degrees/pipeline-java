@@ -41,6 +41,7 @@ import fiftyone.pipeline.web.mvc.configuration.FiftyOneInterceptorConfig;
 import fiftyone.pipeline.web.mvc.services.ClientsidePropertyService;
 import fiftyone.pipeline.web.mvc.services.FiftyOneJSService;
 import fiftyone.pipeline.web.mvc.services.PipelineResultService;
+import fiftyone.pipeline.web.mvc.services.UACHService;
 
 @RunWith(BuilderClassPathTestRunner.class)
 public class FiftyOneInterceptorTests {
@@ -73,6 +74,8 @@ public class FiftyOneInterceptorTests {
                 any(HttpServletResponse.class)))
             .thenReturn(true);
         
+        UACHService uachService = mock(UACHService.class);
+        
         resultService = mock(PipelineResultService.class);
         flowData = mock(FlowData.class);
         
@@ -90,7 +93,8 @@ public class FiftyOneInterceptorTests {
                 resultService, 
                 flowDataProvider, 
                 clientsidePropertyService, 
-                fiftyOneJsService);
+                fiftyOneJsService,
+                uachService);
     }
     
     /**

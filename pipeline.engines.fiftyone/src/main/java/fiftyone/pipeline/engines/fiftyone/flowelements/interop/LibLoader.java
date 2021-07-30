@@ -77,6 +77,14 @@ public class LibLoader {
     private static String getArch() throws UnsupportedOperationException {
         String arch = System.getProperty("os.arch").toLowerCase();
 
+        if (arch.contains("arm")) {
+            return "arm";
+        }
+
+        if (arch.contains("aarch64")) {
+            return "aarch64";
+        }
+
         // Check for 64 bit
         if (arch.contains("64")) {
             return "x64";
@@ -212,8 +220,9 @@ public class LibLoader {
             switch (this) {
                 case WINDOWS:
                     return ".dll";
-                case UNIX:
                 case MAC:
+                    return ".dylib";
+                case UNIX:
                 case OTHER:
                 default:
                     return ".so";

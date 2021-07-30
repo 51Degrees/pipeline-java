@@ -43,7 +43,7 @@ public class Main {
 //! [usage]
             CloudRequestEngine cloudRequestEngine =
                 new CloudRequestEngineBuilder(loggerFactory, httpClient)
-                    .setEndpoint("http://starsigncloudexample.51degrees.com/api/")
+                    .setEndpoint("http://51degrees.com/starsign/api/")
                     .setResourceKey("cloudexample")
                     .build();
 
