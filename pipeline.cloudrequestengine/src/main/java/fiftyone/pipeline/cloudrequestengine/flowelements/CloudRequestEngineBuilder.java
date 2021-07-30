@@ -35,6 +35,7 @@ import fiftyone.pipeline.engines.services.HttpClientDefault;
 import org.slf4j.ILoggerFactory;
 
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Builder for the {@link CloudRequestEngine}.
@@ -42,10 +43,10 @@ import java.util.List;
 @ElementBuilder
 public class CloudRequestEngineBuilder extends
     AspectEngineBuilderBase<CloudRequestEngineBuilder, CloudRequestEngine> {
-
+	
     private final HttpClient httpClient;
 
-    private String endPoint = "https://cloud.51degrees.com/api/v4";
+    private String endPoint = null;
     private String dataEndpoint = null;
     private String propertiesEndpoint = null;
     private String evidenceKeysEndpoint = null;
@@ -53,6 +54,11 @@ public class CloudRequestEngineBuilder extends
     private String licenseKey = null;
     private String cloudRequestOrigin = null;
     private int timeout = 100000;
+    
+    // Function to get environment variable value. This enable testable code.
+    private Function<String, String> getEnvVar = (name) -> {
+    	return System.getenv(name);
+    };
 
     public CloudRequestEngineBuilder(ILoggerFactory loggerFactory) {
         this(loggerFactory, new HttpClientDefault());
@@ -73,6 +79,22 @@ public class CloudRequestEngineBuilder extends
                     "'setResourceKey(String) method to supply your resource " +
                     "key obtained from https://configure.51degrees.com");
         }
+
+        /*
+         *  Check if endPoint has been explicitly set via setEndpoint.
+         *  If not check for environment variable FOD_CLOUD_API_URL.
+         *  If nothing else is set, use default value.
+         */
+        if (endPoint == null || endPoint.isEmpty()) {
+        	String envVarEndPoint = getEnvVar.apply(
+        		Constants.FOD_CLOUD_API_URL);
+        	if (envVarEndPoint == null || envVarEndPoint.isEmpty()) {
+        		setEndpoint(Constants.END_POINT_DEFAULT);
+        	}
+        	else {
+        		setEndpoint(envVarEndPoint);
+        	}
+        }
         
         return new CloudRequestEngineDefault(
             loggerFactory.getLogger(CloudRequestEngine.class.getName()),
@@ -85,6 +107,10 @@ public class CloudRequestEngineBuilder extends
             evidenceKeysEndpoint,
             timeout,
             cloudRequestOrigin);
+    }
+    
+    private String getEnvironmentVariable(String name) {
+    	return System.getenv(name);
     }
 
     public CloudRequestEngine build() throws Exception {
@@ -147,7 +173,7 @@ public class CloudRequestEngineBuilder extends
      */
     public CloudRequestEngineBuilder setResourceKey(String resourceKey) {
         this.resourceKey = resourceKey;
-        return this.setEndpoint(endPoint);
+        return this;
     }
 
     /**

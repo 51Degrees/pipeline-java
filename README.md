@@ -2,7 +2,7 @@
 
 ![51Degrees](https://51degrees.com/DesktopModules/FiftyOne/Distributor/Logo.ashx?utm_source=github&utm_medium=repository&utm_content=readme_main&utm_campaign=node-open-source "Data rewards the curious") **Java Pipeline**
 
-[Developer Documentation](https://51degrees.com/pipeline-java/4.2/index.html?utm_source=github&utm_medium=repository&utm_content=documentation&utm_campaign=java-open-source "developer documentation")
+[Developer Documentation](https://51degrees.com/pipeline-java/index.html?utm_source=github&utm_medium=repository&utm_content=documentation&utm_campaign=java-open-source "developer documentation")
 
 ## Introduction
 This repository contains all the projects required to build the Java implementation of the 51Degrees Pipeline API.
