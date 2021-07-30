@@ -71,6 +71,7 @@ public class CloudRequestEngineDefault
     private String licenseKey;
     private String propertiesEndpoint;
     private String evidenceKeysEndpoint;
+    private String cloudRequestOrigin;
     private Integer timeoutMillis;
 
     private List<AspectPropertyMetaData> propertyMetaData;
@@ -96,7 +97,30 @@ public class CloudRequestEngineDefault
             null,
             propertiesEndpoint,
             evidenceKeysEndpoint,
-            timeoutMillis);
+            timeoutMillis,
+            null);
+    }
+    public CloudRequestEngineDefault(
+        Logger logger,
+        ElementDataFactory<CloudRequestData> aspectDataFactory,
+        HttpClient httpClient,
+        String endPoint,
+        String resourceKey,
+        String propertiesEndpoint,
+        String evidenceKeysEndpoint,
+        int timeoutMillis,
+        String cloudRequestOrigin) {
+        this(
+            logger,
+            aspectDataFactory,
+            httpClient,
+            endPoint,
+            resourceKey,
+            null,
+            propertiesEndpoint,
+            evidenceKeysEndpoint,
+            timeoutMillis,
+            cloudRequestOrigin);
     }
     public CloudRequestEngineDefault(
         Logger logger,
@@ -107,7 +131,8 @@ public class CloudRequestEngineDefault
         String licenseKey,
         String propertiesEndpoint,
         String evidenceKeysEndpoint,
-        int timeoutMillis) {
+        int timeoutMillis,
+        String cloudRequestOrigin) {
         super(logger, aspectDataFactory);
         try
         {
@@ -117,6 +142,7 @@ public class CloudRequestEngineDefault
             this.propertiesEndpoint = propertiesEndpoint;
             this.evidenceKeysEndpoint = evidenceKeysEndpoint;
             this.httpClient = httpClient;
+            this.cloudRequestOrigin = cloudRequestOrigin;
 
             if (timeoutMillis > 0) {
                 this.timeoutMillis = timeoutMillis;
@@ -180,8 +206,10 @@ public class CloudRequestEngineDefault
         }
 
         Map<String, String> headers = new HashMap<>();
+        setCommonHeaders(headers);
         headers.put("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
         headers.put("Content-Length", Integer.toString(content.length));
+
         String response = httpClient.postData(connection, headers, content);
 
         ((CloudRequestDataInternal)aspectData).setJsonResponse(response);
@@ -213,13 +241,23 @@ public class CloudRequestEngineDefault
     protected void unmanagedResourcesCleanup() {
     }
 
+    private void setCommonHeaders(Map<String, String> headers) {        
+        if(cloudRequestOrigin != null &&
+            cloudRequestOrigin.length() > 0) {
+            headers.put(fiftyone.pipeline.cloudrequestengine.Constants.OriginHeaderName, cloudRequestOrigin);
+        }
+    }
+
     private void getCloudProperties() {
         int response;
         String jsonResult;
 
+        Map<String, String> headers = new HashMap<>();
+        setCommonHeaders(headers);
+
         try {
             HttpURLConnection connection = httpClient.connect(new URL(propertiesEndpoint.trim()));
-            jsonResult = httpClient.getResponseString(connection);
+            jsonResult = httpClient.getResponseString(connection, headers);
             response = connection.getResponseCode();
         }
         catch (Exception ex) {
@@ -259,9 +297,13 @@ public class CloudRequestEngineDefault
 
     private void getCloudEvidenceKeys() {
         String jsonResult;
+
+        Map<String, String> headers = new HashMap<>();
+        setCommonHeaders(headers);
+
         try {
             HttpURLConnection connection = httpClient.connect(new URL(evidenceKeysEndpoint.trim()));
-            jsonResult = httpClient.getResponseString(connection);
+            jsonResult = httpClient.getResponseString(connection, headers);
         }
         catch (Exception ex) {
             throw new RuntimeException("Failed to retrieve evidence keys " +

@@ -73,4 +73,5 @@ public class Constants {
      * Default value for the client-side enabled option.
      */
     public static final boolean DEFAULT_CLIENTSIDE_ENABLED = true;
+
 }

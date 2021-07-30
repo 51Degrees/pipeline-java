@@ -64,7 +64,6 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>pipeline.engines.fiftyone</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>

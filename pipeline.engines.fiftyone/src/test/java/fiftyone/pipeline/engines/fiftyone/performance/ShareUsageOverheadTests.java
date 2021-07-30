@@ -32,8 +32,8 @@ import fiftyone.pipeline.engines.fiftyone.flowelements.ShareUsageElement;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 import fiftyone.pipeline.engines.services.HttpClient;
 import fiftyone.pipeline.engines.testhelpers.flowelements.EmptyEngineBuilder;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 
@@ -56,7 +56,7 @@ public class ShareUsageOverheadTests {
     private AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine;
 
     @SuppressWarnings("unchecked")
-    @Before
+    @BeforeEach
     public void Initialise() throws Exception {
         ILoggerFactory loggerFactory = mock(ILoggerFactory.class);
         Logger logger = mock(Logger.class);

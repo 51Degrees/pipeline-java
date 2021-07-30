@@ -29,6 +29,8 @@ import fiftyone.pipeline.exceptions.AggregateException;
 import org.slf4j.Logger;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 /**
@@ -109,8 +111,8 @@ class PipelineDefault implements PipelineInternal {
      * The pipeline maintains a map of property meta data indexed by property
      * name. This is used by the {@link #getMetaDataForProperty(String)} method.
      */
-    private final Map<String, ElementPropertyMetaData> metaDataByPropertyName =
-        new HashMap<>();
+    private final ConcurrentMap<String, ElementPropertyMetaData> metaDataByPropertyName =
+        new ConcurrentHashMap<>();
 
     /**
      * Construct a new instance.
@@ -454,7 +456,7 @@ class PipelineDefault implements PipelineInternal {
                 throw new PipelineDataException(message);
             }
             result = properties.get(0);
-            metaDataByPropertyName.put(propertyName, result);
+            metaDataByPropertyName.putIfAbsent(propertyName, result);
         }
 
         return result;

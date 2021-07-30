@@ -32,10 +32,16 @@ import org.json.JSONObject;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
+import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+import org.slf4j.ILoggerFactory;
+import org.slf4j.Logger;
 
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -263,5 +269,115 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
         assertTrue("Exception message did not contain the expected text.", 
                 realEx.getMessage().contains(
             "resource_key not a valid resource key"));
+    }    
+
+    /**
+     * Verify that the request to the cloud service will contain 
+     * the configured origin header value.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void OriginHeader() throws Exception {
+        final String resourceKey = "resource_key";
+        final String userAgent = "iPhone";
+        final String origin = "51degrees.com";
+
+        configureMockedClient();
+
+        CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
+            .setResourceKey(resourceKey)
+            .setCloudRequestOrigin(origin)
+            .build();
+
+        try (Pipeline pipeline = new PipelineBuilder(loggerFactory)
+            .addFlowElement(engine).build();
+            FlowData data = pipeline.createFlowData()) {
+            data.addEvidence("query.User-Agent", userAgent);
+
+            data.process();
+        }
+
+        ArgumentCaptor<Map<String, String>> argumentsCaptured = ArgumentCaptor.forClass(Map.class);
+
+        verify(httpClient, times(1)) // we expected a single external POST request
+            .postData(
+            argThat(new ArgumentMatcher<HttpURLConnection>() {
+                @Override
+                public boolean matches(HttpURLConnection c) {
+                    return c.getURL().equals(expectedUrl); // to this uri
+                }}),
+            argumentsCaptured.capture(),
+            argThat(new ArgumentMatcher<byte[]>() {
+                @Override
+                public boolean matches(byte[] bytes) {
+                    String string = new String(bytes);
+                    return string.contains("resource=" + resourceKey) && // content contains resource key
+                        string.contains("User-Agent=" + userAgent); // content contains user agent
+                }}));
+        
+        // Verify that the origin header has the expected value.
+        Map<String, String> headers = argumentsCaptured.getValue();
+        assertTrue(headers.containsKey(Constants.OriginHeaderName)); 
+        assertEquals(origin, headers.get(Constants.OriginHeaderName)); 
+    }
+
+    private void configureMockedClient() throws IOException {
+        // ARRANGE
+        httpClient = mock(HttpClient.class, new Answer<Object>() {
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                throw new Exception("The method '" +
+                        invocationOnMock.getMethod().getName() + "' should not have been called.");
+            }
+        });
+        final HttpURLConnection connection = mock(HttpURLConnection.class, new Answer<Object>() {
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                throw new Exception("The method '" +
+                        invocationOnMock.getMethod().getName() + "' should not have been called.");
+            }
+        });
+        doNothing().when(connection).setConnectTimeout(anyInt());
+        doNothing().when(connection).setReadTimeout(anyInt());
+        doAnswer(new Answer<Object>() {
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                URL url = (URL)invocationOnMock.getArgument(0);
+                doReturn(url).when(connection).getURL();
+                if (url.getPath().endsWith("properties")) {
+                    doReturn(accessiblePropertiesResponseCode).when(connection).getResponseCode();
+                }
+                else {
+                    doReturn(200).when(connection).getResponseCode();
+                }
+                return (Object)connection;
+            }
+        }).when(httpClient).connect(any(URL.class));
+        
+        doAnswer(new Answer<Object>() {
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                URL url = ((HttpURLConnection)invocationOnMock.getArgument(0)).getURL();
+                if (url.getPath().endsWith("properties")) {
+                    return accessiblePropertiesResponse;
+                }
+                else if (url.getPath().endsWith("evidencekeys")) {
+                    return evidenceKeysResponse;
+                }
+                else {
+                    throw new Exception("A request was made with the URL '" +
+                            url + "'");
+                }
+            }
+        }).when(httpClient).getResponseString(
+            any(HttpURLConnection.class), 
+            ArgumentMatchers.<String, String>anyMap());
+
+        doReturn(jsonResponse)
+                .when(httpClient)
+                .postData(
+                        any(HttpURLConnection.class),
+                        ArgumentMatchers.<String, String>anyMap(),
+                        (byte[])any());
     }
 }

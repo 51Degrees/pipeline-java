@@ -26,6 +26,7 @@ import com.sun.xml.bind.v2.ContextFactory;
 
 import fiftyone.pipeline.core.testclasses.flowelements.MultiplyByElementBuilder;
 import fiftyone.pipeline.engines.fiftyone.flowelements.SequenceElement;
+import fiftyone.pipeline.engines.fiftyone.flowelements.SetHeadersElementBuilder;
 import fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElement;
 import fiftyone.pipeline.jsonbuilder.flowelements.JsonBuilderElement;
 import org.junit.runner.notification.RunNotifier;
@@ -104,6 +105,7 @@ public class BuilderClassPathTestRunner extends BlockJUnit4ClassRunner {
             classpathUrls.add(SequenceElement.class.getProtectionDomain().getCodeSource().getLocation());
             classpathUrls.add(JsonBuilderElement.class.getProtectionDomain().getCodeSource().getLocation());
             classpathUrls.add(JavaScriptBuilderElement.class.getProtectionDomain().getCodeSource().getLocation());
+            classpathUrls.add(SetHeadersElementBuilder.class.getProtectionDomain().getCodeSource().getLocation());
             classpathUrls.add(MultiplyByElementBuilder.class.getProtectionDomain().getCodeSource().getLocation());
             if (Integer.parseInt(System.getProperty("java.version").split("\\.")[0]) >= 9) {
                 classpathUrls.add(JAXBContext.class.getProtectionDomain().getCodeSource().getLocation());

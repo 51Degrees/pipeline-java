@@ -68,6 +68,21 @@ public class HttpClientDefault implements HttpClient {
 
     @Override
     public String getResponseString(HttpURLConnection connection) throws IOException {
+        return getResponseString(connection, null);
+    }
+
+    @Override
+    public String getResponseString(
+        HttpURLConnection connection,
+        Map<String, String> headers) throws IOException {
+            
+        connection.setRequestMethod("GET");
+        if (headers != null) {
+            for (Map.Entry<String, String> e : headers.entrySet()) {
+                connection.setRequestProperty(e.getKey(), e.getValue());
+            }
+        }
+
         BufferedReader in = new BufferedReader(
             new InputStreamReader(connection.getInputStream()));
         String inputLine;

@@ -23,6 +23,9 @@
 package fiftyone.pipeline.cloudrequestengine;
 
 public class Constants {
+    
+    public static final String OriginHeaderName = "Origin";
+
     public class Messages {
         public static final String MessageNoDataInResponse =
             "No data in response from cloud service at '%s'";
@@ -40,5 +43,6 @@ public class Constants {
                 + "properties under '%s'. For more details on resource keys, "
                 + "see our explainer: "
                 + "https://51degrees.com/documentation/4.2/_info__resourcekeys.html";
+
     }
 }

@@ -34,6 +34,7 @@ import fiftyone.pipeline.web.mvc.configuration.FiftyOneInterceptorConfig;
 import fiftyone.pipeline.web.mvc.services.ClientsidePropertyService;
 import fiftyone.pipeline.web.mvc.services.FiftyOneJSService;
 import fiftyone.pipeline.web.mvc.services.PipelineResultService;
+import fiftyone.pipeline.web.mvc.services.UACHService;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -66,6 +67,8 @@ public class FiftyOneInterceptor extends HandlerInterceptorAdapter {
     private final ClientsidePropertyService clientsidePropertyService;
 
     private final FiftyOneJSService fiftyOneJsService;
+    
+    private final UACHService uachService;
 
     @Autowired
     public FiftyOneInterceptor(
@@ -73,12 +76,14 @@ public class FiftyOneInterceptor extends HandlerInterceptorAdapter {
         PipelineResultService resultService,
         FlowDataProvider flowDataProvider,
         ClientsidePropertyService clientsidePropertyService,
-        FiftyOneJSService fiftyOneJsService) throws RuntimeException {
+        FiftyOneJSService fiftyOneJsService,
+        UACHService uachService) throws RuntimeException {
         super();
         this.resultService = resultService;
         this.clientsidePropertyService = clientsidePropertyService;
         this.flowDataProvider = flowDataProvider;
         this.fiftyOneJsService = fiftyOneJsService;
+        this.uachService = uachService;
 
         String configFileName = config.getDataFilePath();
 
@@ -120,6 +125,10 @@ public class FiftyOneInterceptor extends HandlerInterceptorAdapter {
         HttpServletResponse response,
         Object handler) throws Exception {
         resultService.process(request);
+        
+        // Set the Client Hints request headers
+        uachService.setResponseHeaders(request, response);
+        
         if (fiftyOneJsService.serveJS(request,  response) == false &&
                 fiftyOneJsService.serveJson(request, response) == false) {
             return super.preHandle(request, response, handler);

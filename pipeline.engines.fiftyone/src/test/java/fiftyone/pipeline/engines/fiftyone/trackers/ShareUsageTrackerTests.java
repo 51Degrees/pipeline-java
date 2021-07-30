@@ -27,8 +27,8 @@ import fiftyone.pipeline.core.data.*;
 import fiftyone.pipeline.engines.configuration.CacheConfiguration;
 import fiftyone.pipeline.engines.fiftyone.data.EvidenceKeyFilterShareUsage;
 import fiftyone.pipeline.engines.testhelpers.data.MockFlowData;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -56,7 +56,7 @@ public class ShareUsageTrackerTests {
     private Map<String, Object> evidenceData;
     private FlowData data;
 
-    @Before
+    @BeforeEach
     public void Init() {
         blockedHttpHeaders = new ArrayList<>();
         includedQueryStringParameters = new ArrayList<>();
