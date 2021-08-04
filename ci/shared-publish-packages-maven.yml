@@ -47,7 +47,7 @@ steps:
    function WaitFor-NexusPackage {
    Param ([string]$id)
        Write-Host "Waiting for '${id}'"
-       $transitioning = True
+       $transitioning = $true
        do {
            Start-Sleep -Seconds 5
            $packages = Invoke-WebRequest -Uri "${root}/staging/profile_repositories" -Headers $headers | ConvertFrom-Json
