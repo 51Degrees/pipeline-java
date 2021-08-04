@@ -76,3 +76,5 @@ steps:
    
    Alter-NexusPackage -command "promote" -id $targetId
   displayName: 'PowerShell Script'
+  env:
+    NEXUSPASSWORD: $(nexuspassword)
