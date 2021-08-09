@@ -45,10 +45,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -217,24 +214,153 @@ public class CloudRequestEngineDefault
         validateResponse(response, connection.getResponseCode());
     }
 
+    /**
+     * Generate the Content to send in the POST request. The evidence keys
+     * e.g. 'query.' and 'header.' have an order of precedence. These are
+     * added to the evidence in reverse order, if there is conflict then
+     * the queryData value is overwritten.
+     * 'query.' evidence should take precedence over all other evidence.
+     * If there are evidence keys other than 'query.' that conflict then
+     * this is unexpected so a warning will be logged.
+     * @param data the FlowData
+     * @return form content for a POST request
+     * @throws UnsupportedEncodingException
+     */
     private byte[] getContent(FlowData data) throws UnsupportedEncodingException {
-        Map<String, Object> evidence = data.getEvidence().asKeyMap();
-        List<String> formData = new ArrayList<>();
 
-        formData.add("resource=" + resourceKey);
+        Map<String, Object> formData = getFormData(data);
+        List<String> formItems = new ArrayList<>();
 
+        formItems.add("resource=" + resourceKey);
         if(licenseKey != null && licenseKey.isEmpty() == false){
-            formData.add("license=" + licenseKey);
+            formItems.add("license=" + licenseKey);
         }
 
-        for (Map.Entry<String, Object> item : evidence.entrySet()) {
-            String[] key = item.getKey().split(Pattern.quote(Constants.EVIDENCE_SEPERATOR));
-            formData.add(key[key.length - 1] + "=" + URLEncoder.encode(item.getValue().toString(), "UTF-8"));
+        List<String> formKeys = Arrays.asList(formData.keySet().toArray(new String[0]));
+        Collections.sort(formKeys, Collections.reverseOrder());
+        for (String key : formKeys) {
+            formItems.add(key + "=" + URLEncoder.encode(formData.get(key).toString(), "UTF-8"));
+
         }
 
-        String string = stringJoin(formData, "&");
+        String string = stringJoin(formItems, "&");
 
         return string.getBytes(StandardCharsets.UTF_8);
+    }
+
+    Map<String, Object> getFormData(FlowData flowData) {
+        Map<String, Object> evidence = flowData.getEvidence().asKeyMap();
+        Map<String, Object> formData = new HashMap<>();
+
+        // Add evidence in reverse alphabetical order, excluding special keys.
+        addFormData(formData, evidence, getSelectedEvidence(evidence, "other"));
+        // Add cookie evidence.
+        addFormData(formData, evidence, getSelectedEvidence(evidence, "cookie"));
+        // Add header evidence.
+        addFormData(formData, evidence, getSelectedEvidence(evidence, "header"));
+        // Add query evidence.
+        addFormData(formData, evidence, getSelectedEvidence(evidence, "query"));
+
+        return formData;
+    }
+
+    /**
+     * Add form data to the evidence.
+     * @param formData the destination map to add the data to
+     * @param allEvidence all evidence in the FlowData. This is used to
+     *                    report which evidence keys are conflicting
+     * @param evidence evidence to add to the form data
+     */
+    private void addFormData(
+        Map<String, Object> formData,
+        Map<String, Object> allEvidence,
+        Map<String, Object> evidence) {
+
+        List<String> evidenceKeys = Arrays.asList(evidence.keySet().toArray(new String[0]));
+        Collections.sort(evidenceKeys, Collections.reverseOrder());
+
+        for (String evidenceKey : evidenceKeys) {
+            // Get the key parts
+            String[] evidenceKeyParts = evidenceKey.split(Pattern.quote(Constants.EVIDENCE_SEPERATOR));
+            String prefix = evidenceKeyParts[0];
+            String suffix = evidenceKeyParts[1];
+
+            // Check and add the evidence to the query parameters.
+            if (formData.containsKey(suffix) == false) {
+                formData.put(suffix, evidence.get(evidenceKey));
+            }
+            else {
+                // If the queryParameter exists already.
+                // Get the conflicting pieces of evidence and then log a
+                // warning, if the evidence prefix is not query. Otherwise a
+                // warning is not needed as query evidence is expected
+                // to overwrite any existing evidence with the same suffix.
+                if (prefix.equals("query") == false) {
+                    Map<String, Object> conflicts = new HashMap<>();
+                    for (String key : allEvidence.keySet()) {
+                        if (key.equals(evidenceKey) == false && key.contains(suffix)) {
+                            conflicts.put(key, allEvidence.get(key));
+                        }
+                    }
+
+                    StringBuilder conflictStr = new StringBuilder();
+                    for (Map.Entry<String, Object> conflict : conflicts.entrySet()) {
+                        if (conflictStr.length() > 0) {
+                            conflictStr.append(", ");
+                        }
+                        conflictStr.append(String.format("%s:%s", conflict.getKey(), conflict.getValue()));
+                    }
+
+                    String warningMessage = String.format(
+                            fiftyone.pipeline.cloudrequestengine.Constants.Messages.EvidenceConflict,
+                            evidenceKey,
+                            evidence.get(evidenceKey),
+                            conflictStr.toString());
+                    logger.warn(warningMessage);
+                }
+                // Overwrite the existing queryParameter value.
+                formData.put(suffix, evidence.get(evidenceKey));
+            }
+        }
+    }
+
+    /**
+     * Get evidence with specified prefix.
+     * @param evidence all evidence in the FlowData
+     * @param type required evidence key prefix
+     * @return evidence with the required key prefix
+     */
+    Map<String, Object> getSelectedEvidence(Map<String, Object> evidence, String type) {
+        Map<String, Object> selectedEvidence = new HashMap<>();
+
+        List<String> keys = new ArrayList<>();
+        if (type.equals("other")) {
+            for (Map.Entry<String, Object> entry : evidence.entrySet()) {
+                if (hasKeyPrefix(entry.getKey(), "query") == false &&
+                    hasKeyPrefix(entry.getKey(), "header") == false &&
+                    hasKeyPrefix(entry.getKey(), "cookie") == false ) {
+                    selectedEvidence.put(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+        else {
+            for (Map.Entry<String, Object> entry : evidence.entrySet()) {
+                if (hasKeyPrefix(entry.getKey(), type)) {
+                    selectedEvidence.put(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+        return selectedEvidence;
+    }
+
+    /**
+     * Check that the key of a KeyValuePair has the given prefix.
+     * @param itemKey key to check
+     * @param prefix the prefix to check for
+     * @return true if the key has the prefix
+     */
+    private boolean hasKeyPrefix(String itemKey, String prefix) {
+        return itemKey.startsWith(prefix + ".");
     }
 
     @Override
@@ -264,16 +390,20 @@ public class CloudRequestEngineDefault
             throw new RuntimeException("Failed to retrieve available properties " +
                 "from cloud service at " + propertiesEndpoint + ".", ex);
         }
-        
-        if (response >= 400)
-        {
+
+        JSONObject jsonObj = null;
+        if (jsonResult.isEmpty() == false) {
+            jsonObj = new JSONObject(jsonResult);
+        }
+
+        if (response >= 400 ||
+            (jsonObj != null &&
+                jsonObj.has("errors") &&
+                jsonObj.getJSONArray("errors").length() > 0)) {
             RuntimeException exception = new RuntimeException();
-            if (jsonResult.isEmpty() == false)
-            {
-                JSONObject jsonObj = new JSONObject(jsonResult);
-                for (Object o : jsonObj.getJSONArray("errors"))
-                {
-                    if(o instanceof String){
+            if (jsonObj != null && jsonObj.has("errors")) {
+                for (Object o : jsonObj.getJSONArray("errors")) {
+                    if(o instanceof String) {
                         exception.addSuppressed(new Exception(o.toString()));
                     }
                 }
@@ -282,8 +412,7 @@ public class CloudRequestEngineDefault
         }
 
 
-        if (jsonResult != null && jsonResult.isEmpty() == false) {
-            JSONObject jsonObj = new JSONObject(jsonResult);
+        if (jsonObj != null) {
             AccessiblePropertyMetaData.LicencedProducts accessiblePropertyData =
                 new AccessiblePropertyMetaData.LicencedProducts(jsonObj.getJSONObject("Products"));
 

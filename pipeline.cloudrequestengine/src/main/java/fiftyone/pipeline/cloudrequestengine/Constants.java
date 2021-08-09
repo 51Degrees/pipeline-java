@@ -27,6 +27,8 @@ public class Constants {
     public static final String OriginHeaderName = "Origin";
 
     public class Messages {
+        public static final String EvidenceConflict =
+            "'%s:%s' evidence conflicts with %s";
         public static final String MessageNoDataInResponse =
             "No data in response from cloud service at '%s'";
 

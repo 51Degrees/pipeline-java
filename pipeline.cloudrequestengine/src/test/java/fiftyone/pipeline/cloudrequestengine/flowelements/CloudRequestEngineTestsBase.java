@@ -20,7 +20,7 @@
  * such notice(s) shall fulfill the requirements of that article.
  * ********************************************************************* */
 
-package fiftyone.pipeline.cloudrequestengine;
+package fiftyone.pipeline.cloudrequestengine.flowelements;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doAnswer;

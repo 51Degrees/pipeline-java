@@ -1,9 +1,9 @@
-package fiftyone.pipeline.cloudrequestengine;
+package fiftyone.pipeline.cloudrequestengine.flowelements;
 
 import static fiftyone.pipeline.cloudrequestengine.Constants.Messages.ExceptionFailedToLoadProperties;
+import static org.junit.jupiter.api.Assertions.*;
+
 import fiftyone.pipeline.cloudrequestengine.data.CloudRequestData;
-import fiftyone.pipeline.cloudrequestengine.flowelements.CloudAspectEngineBase;
-import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngine;
 import fiftyone.pipeline.core.data.*;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
 import fiftyone.pipeline.core.flowelements.FlowElement;
@@ -14,8 +14,8 @@ import fiftyone.pipeline.engines.data.AspectDataBase;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 import fiftyone.pipeline.engines.flowelements.AspectEngineBase;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,10 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class CloudAspectEngineBaseTests {
     private class TestData extends AspectDataBase {
@@ -132,7 +128,7 @@ public class CloudAspectEngineBaseTests {
 
     private Map<String, AccessiblePropertyMetaData.ProductMetaData> propertiesReturnedByRequestEngine;
 
-    @Before
+    @BeforeEach
     public void init() {
         propertiesReturnedByRequestEngine = new HashMap<>();
     }
