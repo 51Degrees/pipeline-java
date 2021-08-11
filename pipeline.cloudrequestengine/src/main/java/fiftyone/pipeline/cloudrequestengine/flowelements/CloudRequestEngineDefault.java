@@ -333,7 +333,6 @@ public class CloudRequestEngineDefault
     Map<String, Object> getSelectedEvidence(Map<String, Object> evidence, String type) {
         Map<String, Object> selectedEvidence = new HashMap<>();
 
-        List<String> keys = new ArrayList<>();
         if (type.equals("other")) {
             for (Map.Entry<String, Object> entry : evidence.entrySet()) {
                 if (hasKeyPrefix(entry.getKey(), "query") == false &&
