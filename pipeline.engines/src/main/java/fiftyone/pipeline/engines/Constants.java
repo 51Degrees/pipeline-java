@@ -49,13 +49,13 @@ public class Constants {
             "This is because your resource key does not include access to " +
             "any properties under '%s'. For more details on resource keys, " +
             "see our explainer: " +
-            "https://51degrees.com/documentation/_info__resourcekeys.html";
+            "https://51degrees.com/documentation/_info__resource_keys.html";
         public static final String PROPERTY_NOT_IN_CLOUD_RESOURCE =
             "This is because your resource key does not include access to " +
             "this property. Properties that are included for this key under " +
             "'%s' are %s. For more details on resource keys, see our " +
             "explainer: " +
-            "https://51degrees.com/documentation/4.1/_info__resourcekeys.html";
+            "https://51degrees.com/documentation/_info__resource_keys.html";
         public static final String UNKNOWN =
             "The reason for this is unknown. Please check that the aspect " +
             "and property name are correct.";

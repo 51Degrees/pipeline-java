@@ -44,7 +44,7 @@ public class Constants {
                 + "because your resource key does not include access to any "
                 + "properties under '%s'. For more details on resource keys, "
                 + "see our explainer: "
-                + "https://51degrees.com/documentation/4.2/_info__resourcekeys.html";
+                + "https://51degrees.com/documentation/_info__resource_keys.html";
 
     }
 }
