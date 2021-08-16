@@ -20,24 +20,35 @@
  * such notice(s) shall fulfill the requirements of that article.
  * ********************************************************************* */
 
-package fiftyone.pipeline.cloudrequestengine;
+package fiftyone.pipeline.cloudrequestengine.flowelements;
 
+import fiftyone.common.testhelpers.TestLogger;
+import fiftyone.common.testhelpers.TestLoggerFactory;
+import fiftyone.pipeline.cloudrequestengine.Constants;
 import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngine;
 import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngineBuilder;
+import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngineDefault;
 import fiftyone.pipeline.core.data.AccessiblePropertyMetaData;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.flowelements.PipelineBuilder;
 import org.json.JSONObject;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
 import org.mockito.ArgumentCaptor;
 
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -223,33 +234,43 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
         }
         return false;
     }
-       
-    
-    /** 
-     * Test cloud request engine handles errors from the cloud service 
+
+    private static Stream<Arguments> getValidateErrorArgs() {
+        return Stream.of(
+            Arguments.of("include message", 400, true),
+            Arguments.of("no message", 400, false),
+            Arguments.of("include message", 200, true));
+    }
+
+    /**
+     * Test cloud request engine handles errors from the cloud service
      * as expected.
      * An AggregateException should be thrown by the cloud request engine
      * containing the errors from the cloud service
-     * and the pipeline is configured to throw any exceptions up 
+     * and the pipeline is configured to throw any exceptions up
      * the stack in an AggregateException.
-     * We also check that the exception message includes the content 
+     * We also check that the exception message includes the content
      * from the JSON response.
-     */ 
-    @Test
-    public void validateErrorHandling_InvalidResourceKey() throws Exception
+     */
+    @ParameterizedTest(name = "response code {1} - {0}")
+    @MethodSource("getValidateErrorArgs")
+    public void validateErrorHandling(String name, int responseCode, boolean includeMessage) throws Exception
     {
         final String resourceKey = "resource_key";
-        accessiblePropertiesResponse = "{ \"errors\":[\"58982060: resource_key not a valid resource key\"]}";
-        accessiblePropertiesResponseCode = 400;
+        String errorMessage = "some error message";
+        if (includeMessage) {
+            accessiblePropertiesResponse = "{ \"errors\":[\"" + errorMessage + "\"]}";
+        }
+        accessiblePropertiesResponseCode = responseCode;
 
         configureMockedClient();
 
         Exception exception = null;
 
-        try { 
+        try {
             new CloudRequestEngineBuilder(loggerFactory, httpClient)
-                .setResourceKey(resourceKey)
-                .build();
+                    .setResourceKey(resourceKey)
+                    .build();
         }
         catch (Exception ex)
         {
@@ -259,13 +280,156 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
         assertNotNull("Expected exception to occur", exception);
         assertTrue(exception instanceof RuntimeException);
         Exception aggEx = (RuntimeException)exception;
-        assertEquals(1, aggEx.getSuppressed().length);
-        Throwable realEx = aggEx.getSuppressed()[0];
-        assertTrue(realEx instanceof Exception);
-        assertTrue("Exception message did not contain the expected text.", 
-                realEx.getMessage().contains(
-            "resource_key not a valid resource key"));
-    }    
+        if (includeMessage) {
+            assertEquals(1, aggEx.getSuppressed().length);
+            Throwable realEx = aggEx.getSuppressed()[0];
+            assertTrue(realEx instanceof Exception);
+            assertEquals("Exception message did not contain the expected text.",
+                errorMessage,
+                realEx.getMessage());
+        }
+    }
+
+    private static Stream<Arguments> getPrecidenceArgs() {
+        return Stream.of(
+            Arguments.of("query+header (no conflict)", false, "query.User-Agent=iPhone", "header.User-Agent=iPhone"),
+            Arguments.of("query+cookie (no conflict)", false, "query.User-Agent=iPhone", "cookie.User-Agent=iPhone"),
+            Arguments.of("header+cookie (conflict)", true, "header.User-Agent=iPhone", "cookie.User-Agent=iPhone"),
+            Arguments.of("query+a (no conflict)", false, "query.value=1", "a.value=1"),
+            Arguments.of("a+b (conflict)", true, "a.value=1", "b.value=1"),
+            Arguments.of("e+f (conflict)", true, "e.value=1", "f.value=1"));
+    }
+
+    /**
+     * Test cloud request engine adds correct information to post request
+     * following the order of precedence when processing evidence and
+     * returns the response in the ElementData. Evidence parameters
+     * should be added in descending order of precedence.
+     */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("getPrecidenceArgs")
+    public void evidencePrecidence(String name, boolean shouldWarn, String evidence1, String evidence2) throws Exception {
+        loggerFactory.loggers.clear();
+        String[] evidence1Parts = evidence1.split("=");
+        String[] evidence2Parts = evidence2.split("=");
+        configureMockedClient();
+
+        CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
+            .setResourceKey("resourcekey")
+            .build();
+
+        Pipeline pipeline = new PipelineBuilder(loggerFactory)
+            .addFlowElement(engine)
+            .build();
+
+        try (FlowData flowData = pipeline.createFlowData()) {
+            flowData.addEvidence(evidence1Parts[0], evidence1Parts[1]);
+
+            flowData.addEvidence(evidence2Parts[0], evidence2Parts[1]);
+
+            flowData.process();
+
+            if (shouldWarn) {
+                // If warn is expected then check for warnings from cloud request
+                // engine.
+                loggerFactory.assertMaxWarnings(1);
+                String warning = "";
+                for (TestLogger logger : loggerFactory.loggers) {
+                    if (logger.warningsLogged.size() == 1) {
+                        warning = logger.warningsLogged.get(0);
+                        break;
+                    }
+                }
+                assertEquals(
+                    String.format(Constants.Messages.EvidenceConflict,
+                        evidence1Parts[0],
+                        evidence1Parts[1],
+                        String.format("%s:%s", evidence2Parts[0], evidence2Parts[1])),
+                        warning);
+            }
+            else {
+                loggerFactory.assertMaxWarnings(0);
+            }
+        }
+    }
+
+    @SuppressWarnings("serial")
+    private static Stream<Arguments> getSelectedEvidenceArgs() {
+        return Stream.of(
+            Arguments.of(
+                "query",
+                new HashMap<String, Object>() {{put("query.User-Agent","iPhone");put("header.User-Agent","iPhone");}},
+                "query",
+                new HashMap<String, Object>(){{put("query.User-Agent","iPhone");}}),
+            Arguments.of(
+                "other",
+                new HashMap<String, Object>(){{put("header.User-Agent","iPhone");put("a.User-Agent","iPhone");put("z.User-Agent","iPhone");}},
+                "other",
+                new HashMap<String, Object>(){{put("z.User-Agent","iPhone");put("a.User-Agent","iPhone");}}));
+    }
+
+    /**
+     * Test evidence of specific type is returned from all
+     * the evidence passed, if type is not from query, header
+     * or cookie then evidences are returned sorted in descensing order
+     */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("getSelectedEvidenceArgs")
+    public void getSelectedEvidence(String name, Map<String, Object> evidence, String type, Map<String, Object> expectedValue) throws Exception {
+        configureMockedClient();
+        CloudRequestEngineDefault engine = (CloudRequestEngineDefault) new CloudRequestEngineBuilder(loggerFactory, httpClient)
+            .setResourceKey("resourcekey")
+            .build();
+
+        Map<String, Object> result = engine.getSelectedEvidence(evidence, type);
+
+        assertTrue(expectedValue.equals(result));
+    }
+
+    @SuppressWarnings("serial")
+    private static Stream<Arguments> getFormDataArgs() {
+        return Stream.of(
+            Arguments.of(
+                "query > header",
+                new HashMap<String, Object>(){{put("query.User-Agent","query-iPhone");put("header.User-Agent","header-iPhone");}},
+                "query-iPhone"),
+            Arguments.of(
+                "header > cookie",
+                new HashMap<String, Object>(){{put("header.User-Agent","header-iPhone");put("cookie.User-Agent","cookie-iPhone");}},
+                "header-iPhone"),
+            Arguments.of(
+                "a > b > z",
+                new HashMap<String, Object>(){{put("a.User-Agent","a-iPhone");put("b.User-Agent","b-iPhone");put("z.User-Agent","z-iPhone");}},
+                "a-iPhone"));
+    }
+
+    /**
+     * Test Content to send in the POST request is generated as
+     * per the precedence rule of The evidence keys. These are
+     * added to the evidence in reverse order, if there is conflict then
+     * the queryData value is overwritten.
+     */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("getFormDataArgs")
+    public void getFormData(String name, Map<String, Object> evidence, String expectedValue) throws Exception {
+        configureMockedClient();
+        CloudRequestEngineDefault engine = (CloudRequestEngineDefault) new CloudRequestEngineBuilder(loggerFactory, httpClient)
+            .setResourceKey("resourcekey")
+            .build();
+
+        Pipeline pipeline = new PipelineBuilder(loggerFactory)
+            .addFlowElement(engine)
+            .build();
+
+        try (FlowData data = pipeline.createFlowData()) {
+            for (Map.Entry<String, Object> entry : evidence.entrySet()) {
+                data.addEvidence(entry.getKey(), entry.getValue());
+            }
+
+            Map<String, Object> result = engine.getFormData(data);
+            assertEquals(expectedValue, result.get("User-Agent"));
+        }
+    }
 
     /**
      * Verify that the request to the cloud service will contain 

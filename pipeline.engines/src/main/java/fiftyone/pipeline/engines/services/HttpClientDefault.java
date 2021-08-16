@@ -34,6 +34,7 @@ public class HttpClientDefault implements HttpClient {
 
     @Override
     public HttpURLConnection connect(URL url) throws IOException {
+        System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
         return (HttpURLConnection)url.openConnection();
     }
 
@@ -55,7 +56,10 @@ public class HttpClientDefault implements HttpClient {
             connection.getOutputStream().write(data);
         }
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader((connection.getInputStream())));
+        BufferedReader reader = new BufferedReader(new InputStreamReader((
+            connection.getResponseCode() / 100 == 2 ? 
+                connection.getInputStream() : 
+                connection.getErrorStream())));
         StringBuilder builder = new StringBuilder();
         String current;
         while ((current = reader.readLine()) != null) {
@@ -84,7 +88,9 @@ public class HttpClientDefault implements HttpClient {
         }
 
         BufferedReader in = new BufferedReader(
-            new InputStreamReader(connection.getInputStream()));
+            new InputStreamReader(connection.getResponseCode() / 100 == 2 ? 
+                connection.getInputStream() : 
+                connection.getErrorStream()));
         String inputLine;
         StringBuilder response = new StringBuilder();
 

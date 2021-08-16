@@ -20,24 +20,20 @@
  * such notice(s) shall fulfill the requirements of that article.
  * ********************************************************************* */
 
-package fiftyone.pipeline.cloudrequestengine;
+package fiftyone.pipeline.cloudrequestengine.flowelements;
 
-import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngine;
-import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngineBuilder;
-import fiftyone.pipeline.cloudrequestengine.flowelements.Constants;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.engines.services.HttpClientDefault;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.util.function.Function;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.slf4j.LoggerFactory;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CloudRequestEngineBuilderTests extends CloudRequestEngineTestsBase {
     private final String testResourceKey = "resource_key";
@@ -48,19 +44,21 @@ public class CloudRequestEngineBuilderTests extends CloudRequestEngineTestsBase 
         super();
     }
 	
-    @Before
+    @BeforeEach
     public void setUp() throws IOException {
     	configureMockedClient();
     }
     
-    @Test(expected = PipelineConfigurationException.class)
+    @Test
     @SuppressWarnings("unused")
-    public void BuildEngine_ResourceKey_NotSet() throws Exception {
-        CloudRequestEngine cloudRequestsEngine =
-            new CloudRequestEngineBuilder(
-                LoggerFactory.getILoggerFactory(),
-                new HttpClientDefault())
-                .build();
+    public void BuildEngine_ResourceKey_NotSet() {
+        assertThrows(PipelineConfigurationException.class, () -> {
+            CloudRequestEngine cloudRequestsEngine =
+                new CloudRequestEngineBuilder(
+                    LoggerFactory.getILoggerFactory(),
+                    new HttpClientDefault())
+                    .build();
+        });
     }
 
     private void setExpectedEnvVarValue(
