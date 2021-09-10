@@ -179,7 +179,7 @@ public abstract class AspectEngineBuilderBase<
      * @param properties the properties list to create the engine with
      * @return an {@link AspectEngine}
      */
-    protected abstract TEngine newEngine(List<String> properties);
+    protected abstract TEngine newEngine(List<String> properties) throws Exception;
 
     /**
      * Build an engine using the configured options. Derived classes should call

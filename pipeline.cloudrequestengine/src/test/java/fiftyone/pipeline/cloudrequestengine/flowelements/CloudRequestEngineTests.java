@@ -24,6 +24,7 @@ package fiftyone.pipeline.cloudrequestengine.flowelements;
 
 import fiftyone.common.testhelpers.TestLogger;
 import fiftyone.common.testhelpers.TestLoggerFactory;
+import fiftyone.pipeline.cloudrequestengine.CloudRequestException;
 import fiftyone.pipeline.cloudrequestengine.Constants;
 import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngine;
 import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngineBuilder;
@@ -32,6 +33,8 @@ import fiftyone.pipeline.core.data.AccessiblePropertyMetaData;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.flowelements.PipelineBuilder;
+import fiftyone.pipeline.engines.services.HttpClientDefault;
+
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -278,15 +281,11 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
         }
 
         assertNotNull("Expected exception to occur", exception);
-        assertTrue(exception instanceof RuntimeException);
-        Exception aggEx = (RuntimeException)exception;
+        assertTrue(exception instanceof CloudRequestException);
+        CloudRequestException cloudEx = (CloudRequestException)exception;
         if (includeMessage) {
-            assertEquals(1, aggEx.getSuppressed().length);
-            Throwable realEx = aggEx.getSuppressed()[0];
-            assertTrue(realEx instanceof Exception);
-            assertEquals("Exception message did not contain the expected text.",
-                errorMessage,
-                realEx.getMessage());
+            assertTrue("Exception message did not contain the expected text.",
+                cloudEx.getMessage().contains(errorMessage));
         }
     }
 
@@ -479,5 +478,25 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
         Map<String, String> headers = argumentsCaptured.getValue();
         assertTrue(headers.containsKey(Constants.OriginHeaderName)); 
         assertEquals(origin, headers.get(Constants.OriginHeaderName)); 
+    }
+
+    /**
+     * Verify that the request to the cloud service will contain 
+     * the configured origin header value.
+     */
+    @Test
+    public void HttpDataSetInException() throws Exception {
+        final String resourceKey = "resource_key";
+
+        try{
+            new CloudRequestEngineBuilder(loggerFactory, new HttpClientDefault())
+                .setResourceKey(resourceKey)
+                .build();
+            assertTrue("Expected exception was not thrown", false);
+        } catch(CloudRequestException ex) {
+            assertTrue("Status code should not be 0", ex.getHttpStatusCode() > 0); 
+            assertNotNull("Response headers not populated", ex.getResponseHeaders()); 
+            assertTrue("Response headers not populated", ex.getResponseHeaders().size() > 0); 
+        }
     }
 }

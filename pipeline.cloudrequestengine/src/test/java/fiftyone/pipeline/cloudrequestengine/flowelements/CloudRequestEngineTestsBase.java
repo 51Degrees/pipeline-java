@@ -33,6 +33,9 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.mockito.ArgumentMatchers;
 import org.mockito.invocation.InvocationOnMock;
@@ -78,6 +81,8 @@ public class CloudRequestEngineTestsBase {
         });
         doNothing().when(connection).setConnectTimeout(anyInt());
         doNothing().when(connection).setReadTimeout(anyInt());
+        Map<String, List<String>> responseHeaders = new HashMap<String, List<String>>();
+        doReturn(responseHeaders).when(connection).getHeaderFields();
         doAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
