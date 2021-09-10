@@ -31,6 +31,8 @@ public class Constants {
             "'%s:%s' evidence conflicts with %s";
         public static final String MessageNoDataInResponse =
             "No data in response from cloud service at '%s'";
+        public static final String MessageErrorCodeReturned =
+            "Cloud service at '%s' returned status code '%d' with content: %s";
 
         public static final String ExceptionCloudErrorsMultiple =
             "Multiple errors returned from 51Degrees cloud service. See inner " +

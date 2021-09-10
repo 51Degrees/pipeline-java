@@ -22,6 +22,7 @@
 
 package fiftyone.pipeline.cloudrequestengine.flowelements;
 
+import fiftyone.pipeline.cloudrequestengine.CloudRequestException;
 import fiftyone.pipeline.cloudrequestengine.data.CloudRequestData;
 import fiftyone.pipeline.core.Constants;
 import fiftyone.pipeline.core.data.AccessiblePropertyMetaData;
@@ -29,7 +30,6 @@ import fiftyone.pipeline.core.data.EvidenceKeyFilter;
 import fiftyone.pipeline.core.data.EvidenceKeyFilterWhitelist;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
-import fiftyone.pipeline.core.exceptions.PipelineDataException;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaDataDefault;
 import fiftyone.pipeline.engines.flowelements.AspectEngineBase;
@@ -84,7 +84,7 @@ public class CloudRequestEngineDefault
         String resourceKey,
         String propertiesEndpoint,
         String evidenceKeysEndpoint,
-        int timeoutMillis) {
+        int timeoutMillis) throws Exception {
         this(
             logger,
             aspectDataFactory,
@@ -106,7 +106,7 @@ public class CloudRequestEngineDefault
         String propertiesEndpoint,
         String evidenceKeysEndpoint,
         int timeoutMillis,
-        String cloudRequestOrigin) {
+        String cloudRequestOrigin) throws Exception {
         this(
             logger,
             aspectDataFactory,
@@ -129,7 +129,7 @@ public class CloudRequestEngineDefault
         String propertiesEndpoint,
         String evidenceKeysEndpoint,
         int timeoutMillis,
-        String cloudRequestOrigin) {
+        String cloudRequestOrigin) throws Exception {
         super(logger, aspectDataFactory);
         try
         {
@@ -211,7 +211,7 @@ public class CloudRequestEngineDefault
 
         ((CloudRequestDataInternal)aspectData).setJsonResponse(response);
 
-        validateResponse(response, connection.getResponseCode());
+        validateResponse(response, connection);
     }
 
     /**
@@ -373,43 +373,20 @@ public class CloudRequestEngineDefault
         }
     }
 
-    private void getCloudProperties() {
-        int response;
+    private void getCloudProperties() throws CloudRequestException, AggregateException, IOException {
         String jsonResult;
 
         Map<String, String> headers = new HashMap<>();
         setCommonHeaders(headers);
 
-        try {
-            HttpURLConnection connection = httpClient.connect(new URL(propertiesEndpoint.trim()));
-            jsonResult = httpClient.getResponseString(connection, headers);
-            response = connection.getResponseCode();
-        }
-        catch (Exception ex) {
-            throw new RuntimeException("Failed to retrieve available properties " +
-                "from cloud service at " + propertiesEndpoint + ".", ex);
-        }
+        HttpURLConnection connection = httpClient.connect(new URL(propertiesEndpoint.trim()));
+        jsonResult = httpClient.getResponseString(connection, headers);
+        validateResponse(jsonResult, connection);
 
         JSONObject jsonObj = null;
         if (jsonResult.isEmpty() == false) {
             jsonObj = new JSONObject(jsonResult);
         }
-
-        if (response >= 400 ||
-            (jsonObj != null &&
-                jsonObj.has("errors") &&
-                jsonObj.getJSONArray("errors").length() > 0)) {
-            RuntimeException exception = new RuntimeException();
-            if (jsonObj != null && jsonObj.has("errors")) {
-                for (Object o : jsonObj.getJSONArray("errors")) {
-                    if(o instanceof String) {
-                        exception.addSuppressed(new Exception(o.toString()));
-                    }
-                }
-            }
-            throw exception;
-        }
-
 
         if (jsonObj != null) {
             AccessiblePropertyMetaData.LicencedProducts accessiblePropertyData =
@@ -423,20 +400,15 @@ public class CloudRequestEngineDefault
         }
     }
 
-    private void getCloudEvidenceKeys() {
+    private void getCloudEvidenceKeys() throws CloudRequestException, AggregateException, IOException {
         String jsonResult;
 
         Map<String, String> headers = new HashMap<>();
         setCommonHeaders(headers);
 
-        try {
-            HttpURLConnection connection = httpClient.connect(new URL(evidenceKeysEndpoint.trim()));
-            jsonResult = httpClient.getResponseString(connection, headers);
-        }
-        catch (Exception ex) {
-            throw new RuntimeException("Failed to retrieve evidence keys " +
-                "from the cloud service at " + evidenceKeysEndpoint + ".", ex);
-        }
+        HttpURLConnection connection = httpClient.connect(new URL(evidenceKeysEndpoint.trim()));
+        jsonResult = httpClient.getResponseString(connection, headers);
+        validateResponse(jsonResult, connection, false);
 
         if (jsonResult != null && jsonResult.isEmpty() == false) {
             JSONArray jsonArray = new JSONArray(jsonResult);
@@ -453,13 +425,29 @@ public class CloudRequestEngineDefault
      * Validate the JSON response from the cloud service.
      * @param jsonResult the JSON content that is returned from the cloud
      * @param code HTTP response code
-     * service
      */
-    private void validateResponse(String jsonResult, int code) {
+    private void validateResponse(String jsonResult, HttpURLConnection connection)
+        throws IOException, CloudRequestException, AggregateException {
+        validateResponse(jsonResult, connection, true);
+    }
+    
+    /**
+     * Validate the JSON response from the cloud service.
+     * @param jsonResult the JSON content that is returned from the cloud
+     * @param connection connection used when making the request
+     * @param checkForErrorMessages Set to false if the response will 
+     * never contain error message text.
+     */
+    private void validateResponse(String jsonResult, 
+        HttpURLConnection connection,
+        boolean checkForErrorMessages) 
+        throws IOException, CloudRequestException, AggregateException {
+
+        int code = connection.getResponseCode();
         boolean hasData = jsonResult != null && jsonResult.isEmpty() == false;
         List<String> messages = new ArrayList<>();
 
-        if (hasData) {
+        if (hasData && checkForErrorMessages) {
             JSONObject jObj = new JSONObject(jsonResult);
             boolean hasErrors = jObj.keySet().contains("errors");
             hasData = hasErrors ?
@@ -485,6 +473,23 @@ public class CloudRequestEngineDefault
                 this.endPoint);
             messages.add(message);
         }
+        // If there is no detailed error message, but we got a
+        // non-success status code, then add a message to the list
+        else if (messages.size() == 0 && code != 200)
+        {
+            String message = String.format(
+                MessageErrorCodeReturned,
+                this.endPoint,
+                code,
+                jsonResult);
+            messages.add(message);
+        }
+
+        Map<String, List<String>> headers = null;
+        if (messages.size() > 0){
+            headers = connection.getHeaderFields();
+        }
+        final Map<String, List<String>> finalHeaders = headers;
 
         // If there are any errors returned from the cloud service
         // then throw an exception
@@ -492,24 +497,14 @@ public class CloudRequestEngineDefault
             throw new AggregateException(
                 ExceptionCloudErrorsMultiple,
                 messages.stream()
-                    .map(m -> new PipelineDataException(m))
+                    .map(m -> new CloudRequestException(m, code, finalHeaders))
                     .collect(Collectors.toList()));
         }
         else if (messages.size() == 1) {
             String message = String.format(
                 ExceptionCloudError,
                 messages.get(0));
-            throw new PipelineDataException(message);
-        }
-
-        // If there were no errors returned but the response code was non
-        // success then throw an exception.
-        if (messages.size() == 0 && code != 200) {
-
-            throw new PipelineDataException("Received response code " +
-                code +
-                ". Content was: " +
-                jsonResult);
+            throw new CloudRequestException(message, code, finalHeaders);
         }
     }
 }
