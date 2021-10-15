@@ -47,6 +47,14 @@ public class Constants {
                 + "properties under '%s'. For more details on resource keys, "
                 + "see our explainer: "
                 + "https://51degrees.com/documentation/_info__resource_keys.html";
+        
+        public static final String ProcessCloudEngineNotImplemented = 
+                  "This method should be overridden in the class derived from "
+                + "CloudAspectEngineBase class. The implementation should use "
+                + "the 'json' parameter to populate the 'aspectData' accordingly. " 
+                + "This method will be called by the CloudAspectEngine.ProcessEngine() " 
+                + "method after it has successfully retrieved the JsonResponse from "
+                +  "the CloudRequestEngine.";
 
     }
 }
