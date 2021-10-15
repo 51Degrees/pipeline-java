@@ -23,6 +23,7 @@ variables:
 - name: targetBranch
   value: 'refs/heads/master'
 - group: CIAutomation
+- group: CertificateVariables
 
 # Publish to Internal Feed  
 stages:

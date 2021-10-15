@@ -51,11 +51,15 @@ stages:
       # (Required for GitTag task)
       persistCredentials: true
       clean: true
-        
-    - template: java/shared-code-signing-steps.yml@ciTemplates
-      parameters:
-        gpgPassPhrase: $(gpg_passphrase)
-        
+
+    - task: DownloadSecureFile@1
+      displayName: 'Download Code Signing Certificate'
+      name: CodeSigningCert
+      inputs:
+        secureFile: '51Degrees Private Code Signing Certificate.pfx'
+        retryCount: 5
+      continueOnError: true
+
     - task: Maven@2
       displayName: 'Maven version set'
       inputs:
@@ -69,7 +73,7 @@ stages:
       inputs:
         mavenPomFile: 'pom.xml'
         goals: 'clean install'
-        options: '-Pbuild -Dhttps.protocols=TLSv1.2 -Dbuildversion=$(GitVersionSemVer) -Dskippackagesign=false -Dgpg.passphrase=$(gpg_passphrase)'
+        options: '-Pbuild -Dhttps.protocols=TLSv1.2 -Dbuildversion=$(GitVersion.SemVer) -Dskippackagesign=false -Dkeystore="$(CodeSigningCert.secureFilePath)" -Dalias=$(CodeSigningCertAlias) -Dkeypass=$(CodeSigningCertPassword) -Dkeystorepass=$(CodeSigningCertPassword)'
         jdkVersionOption: $(jdkVersionDefault)
 
     - task: CopyFiles@2
