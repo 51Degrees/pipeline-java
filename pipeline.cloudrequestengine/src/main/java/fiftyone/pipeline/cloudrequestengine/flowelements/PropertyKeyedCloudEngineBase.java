@@ -47,48 +47,34 @@ public abstract class PropertyKeyedCloudEngineBase<
     }
 
     @Override
-    protected void processEngine(FlowData data, TData aspectData) {
-        CloudRequestData requestData = data.getFromElement(
-            getRequestEngine().getInstance());
-        String json = requestData == null ? null : requestData.getJsonResponse();
+    protected void processCloudEngine(FlowData data, TData aspectData, String json) {
+    	
+        // Extract data from json to the aspectData instance.
+        JSONObject map = new JSONObject(json);
+        // Access the data relating to this engine.
+        JSONObject propertyKeyed = map.getJSONObject(getElementDataKey());
+        // Access the 'Profiles' property
+        for (Object entry : propertyKeyed.getJSONArray("profiles")) {
+            // Iterate through the devices, parsing each one and
+            // adding it to the result.
 
-        if (json == null || json.isEmpty()) {
-            throw new PipelineConfigurationException(
-                "Json response from cloud request engine is null. " +
-                "This is probably because there is not a " +
-                "'CloudRequestEngine' before the '" +
-                this.getClass().getSimpleName() +
-                "' in the Pipeline. This engine will be unable " +
-                "to produce results until this is corrected.");
-        }
-        else {
-            // Extract data from json to the aspectData instance.
-            JSONObject map = new JSONObject(json);
-            // Access the data relating to this engine.
-            JSONObject propertyKeyed = map.getJSONObject(getElementDataKey());
-            // Access the 'Profiles' property
-            for (Object entry : propertyKeyed.getJSONArray("profiles")) {
-                // Iterate through the devices, parsing each one and
-                // adding it to the result.
+            JSONObject propertyValues = new JSONObject(entry.toString());
 
-                JSONObject propertyValues = new JSONObject(entry.toString());
-
-                TProfile profile = createProfileData(data);
-                // Get the meta-data for properties on device instances.
-                List<ElementPropertyMetaData> propertyMetaData = null;
-                for (AspectPropertyMetaData p : getProperties()) {
-                    if (p.getName().equalsIgnoreCase("profiles")) {
-                        propertyMetaData = p.getItemProperties();
-                    }
+            TProfile profile = createProfileData(data);
+            // Get the meta-data for properties on device instances.
+            List<ElementPropertyMetaData> propertyMetaData = null;
+            for (AspectPropertyMetaData p : getProperties()) {
+                if (p.getName().equalsIgnoreCase("profiles")) {
+                    propertyMetaData = p.getItemProperties();
                 }
-                Map<String, Object> profileData = createAPVMap(
-                    propertyValues.toMap(),
-                    propertyMetaData);
-
-                profile.populateFromMap(profileData);
-                //device.SetNoValueReasons(nullReasons);
-                aspectData.addProfile(profile);
             }
+            Map<String, Object> profileData = createAPVMap(
+                propertyValues.toMap(),
+                propertyMetaData);
+
+            profile.populateFromMap(profileData);
+            //device.SetNoValueReasons(nullReasons);
+            aspectData.addProfile(profile);
         }
     }
 

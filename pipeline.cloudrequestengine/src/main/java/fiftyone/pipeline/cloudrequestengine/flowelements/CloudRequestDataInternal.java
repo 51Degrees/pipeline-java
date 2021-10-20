@@ -31,9 +31,12 @@ import org.slf4j.Logger;
 
 public class CloudRequestDataInternal extends AspectDataBase {
     private static final String JSON_RESPONSE_KEY = "json-response";
+    private static final String PROCESS_STARTED_KEY = "process-started";
 
     public String getJsonResponse() {
-        return super.get(JSON_RESPONSE_KEY).toString();
+    	if(super.get(JSON_RESPONSE_KEY) != null)
+            return super.get(JSON_RESPONSE_KEY).toString();
+		return null;
     }
 
 
@@ -44,8 +47,23 @@ public class CloudRequestDataInternal extends AspectDataBase {
         super(logger, flowData, engine);
     }
 
-    void setJsonResponse(String value) {
+    public void setJsonResponse(String value) {
         super.put(JSON_RESPONSE_KEY, value);
+    }
+
+
+    /**
+     * Flag to confirm that the CloudRequestEngine has started processing.
+     * @return
+     */
+    public Boolean getProcessStarted() {
+    	if(super.get(PROCESS_STARTED_KEY) != null)
+    		return Boolean.valueOf(super.get(PROCESS_STARTED_KEY).toString());
+		return false;
+    }
+    
+    public void setProcessStarted(Boolean value) {
+        super.put(PROCESS_STARTED_KEY, value);
     }
 
 }

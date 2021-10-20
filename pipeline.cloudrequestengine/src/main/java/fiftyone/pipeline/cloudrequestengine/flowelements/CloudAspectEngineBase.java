@@ -23,11 +23,17 @@
 package fiftyone.pipeline.cloudrequestengine.flowelements;
 
 import static fiftyone.pipeline.cloudrequestengine.Constants.Messages.ExceptionFailedToLoadProperties;
+import static fiftyone.pipeline.cloudrequestengine.Constants.Messages.ProcessCloudEngineNotImplemented;
+
+import fiftyone.pipeline.cloudrequestengine.NotImplementedException;
+import fiftyone.pipeline.cloudrequestengine.data.CloudRequestData;
 import fiftyone.pipeline.core.data.AccessiblePropertyMetaData;
 import fiftyone.pipeline.core.data.ElementPropertyMetaData;
 import fiftyone.pipeline.core.data.ElementPropertyMetaDataDefault;
+import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
 import fiftyone.pipeline.core.data.types.JavaScript;
+import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.typed.TypedKey;
 import fiftyone.pipeline.core.typed.TypedKeyDefault;
@@ -60,9 +66,11 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
     protected class RequestEngineAccessor {
         private final List<Pipeline> pipelines;
         private volatile CloudRequestEngine cloudRequestEngine;
+        private FlowElement<?, ?> currentElement;
 
-        public RequestEngineAccessor(List<Pipeline> pipelines) {
+        public RequestEngineAccessor(List<Pipeline> pipelines, FlowElement<?, ?> currentElement) {
             this.pipelines = pipelines;
+            this.currentElement = currentElement;
         }
 
         /**
@@ -77,17 +85,17 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
                 synchronized(this) {
                     if(cloudRequestEngine == null){
                         if(pipelines.size() > 1) {
-                            throw new PipelineConfigurationException("'" + this.getClass().getName() +
+                            throw new PipelineConfigurationException("'" + currentElement.getClass().getName() +
                                     "' does not support being added to multiple pipelines");
                         } else if (pipelines.size() == 0) {
-                            throw new PipelineConfigurationException("'" + this.getClass().getName() +
+                            throw new PipelineConfigurationException("'" + currentElement.getClass().getName() +
                                     "' has not yet been added to a Pipeline.");
                         }
 
                         cloudRequestEngine = pipelines.get(0).getElement(CloudRequestEngine.class);
 
                         if (cloudRequestEngine == null) {
-                            throw new PipelineConfigurationException("'" + this.getClass().getName() +
+                            throw new PipelineConfigurationException("'" + currentElement.getClass().getName() +
                                     "' requires a 'CloudRequestEngine' before it in the Pipeline." +
                                     "This engine will be unable to produce results until this" +
                                     "is corrected.");
@@ -113,7 +121,7 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
         Logger logger,
         ElementDataFactory<TData> aspectDataFactory) {
         super(logger, aspectDataFactory);
-        this.setRequestEngine(new RequestEngineAccessor(this.getPipelines()));
+        this.setRequestEngine(new RequestEngineAccessor(this.getPipelines(), this));
     }
 
     @Override
@@ -315,4 +323,70 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
         return result;
     }
 
+    /**
+     * Retrieve the raw JSON response from the
+     * {@link CloudRequestEngine} in this pipeline, extract
+     * the data for this specific engine and populate the
+     * {@link TData} instance accordingly.
+     * @param data to get the raw JSON data from.
+     * @param aspectData instance to populate with values.
+     */
+	protected void processEngine(FlowData data, TData aspectData) {
+
+        CloudRequestData requestData;
+        
+        // Get requestData from CloudRequestEngine. If requestData does not
+        // exist in the element data TypedKeyMap then the CloudRequestEngine either 
+        // does not exist in the Pipeline or is not run before this engine.        
+        try {
+            requestData = data.getFromElement(
+                    getRequestEngine().getInstance());        	
+        } 
+        catch(Exception ex) {
+            throw new PipelineConfigurationException(
+                    "The " + this.getClass().getSimpleName() + " requires a 'CloudRequestEngine'"  +
+                    "before it in the Pipeline. This engine will be unable " +
+                    "to produce results until this is corrected", ex);
+        }
+
+        // Check the requestData ProcessStarted flag which informs whether
+        // the cloud request engine process method was called.
+        if (requestData.getProcessStarted() == false)
+        {
+            throw new PipelineConfigurationException(
+                "The " + this.getClass().getSimpleName() + " requires a 'CloudRequestEngine' " +
+                "before it in the Pipeline. This engine will be unable " +
+                "to produce results until this is corrected.");
+        }
+        
+        String json = requestData == null ? null : requestData.getJsonResponse();
+        
+        // If the JSON is empty or null then do not Process the CloudAspectEngine.
+        // Empty or null JSON indicates that an error has occurred in the 
+        // CloudRequestEngine. The error will have been reported by the 
+        // CloudRequestEngine so just log a warning that this 
+        // CloudAspectEngine did not process.
+        if (json != null && !json.isEmpty()) {
+        	 processCloudEngine(data, aspectData, json);
+        } else {
+            logger.info("The  " + this.getClass().getSimpleName() + "  did not process " +
+                    "as the JSON response from the CloudRequestEngine was null " +
+                    "or empty. Please refer to errors generated by the " +
+                    "CloudRequestEngine in the logs as this indicates an error " +
+                    "occurred there.");
+       }
+	}
+	
+    /**
+     * A virtual method to be implemented by the derived class which
+     * uses the JsonResponse from the CloudRequestEngine to populate the 
+     * {@link TData} instance accordingly.
+     * @param data to get the raw JSON data from.
+     * @param aspectData instance to populate with values.
+     * @param json The JSON response from the {@link CloudRequestEngine}"
+     */
+	protected void processCloudEngine(FlowData data, TData aspectData, String json) {
+		throw new NotImplementedException(ProcessCloudEngineNotImplemented);
+		
+	}	
 }

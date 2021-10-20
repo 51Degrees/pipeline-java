@@ -1222,9 +1222,13 @@ public class DataUpdateServiceTests {
         config.setMaxRandomisationSeconds(0);
         config.setDataUpdateUrl("https://test.com");
         config.setFileSystemWatcherEnabled(false);
+        
         AspectEngineDataFileDefault file = new AspectEngineDataFileDefault();
         file.setEngine(engine);
         file.setConfiguration(config);
+        // Set defaults as no engine is configured.
+        file.setIdentifier("default");
+        file.setTempDataDirPath("C:/test");
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.DAY_OF_MONTH, -1);
         file.setUpdateAvailableTime(calendar.getTime());

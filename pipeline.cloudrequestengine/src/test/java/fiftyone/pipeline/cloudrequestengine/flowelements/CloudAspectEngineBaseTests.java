@@ -2,10 +2,32 @@ package fiftyone.pipeline.cloudrequestengine.flowelements;
 
 import static fiftyone.pipeline.cloudrequestengine.Constants.Messages.ExceptionFailedToLoadProperties;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import fiftyone.pipeline.cloudrequestengine.data.CloudRequestData;
-import fiftyone.pipeline.core.data.*;
+import fiftyone.pipeline.core.data.AccessiblePropertyMetaData;
+import fiftyone.pipeline.core.data.ElementPropertyMetaData;
+import fiftyone.pipeline.core.data.EvidenceKeyFilter;
+import fiftyone.pipeline.core.data.EvidenceKeyFilterWhitelist;
+import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
+import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.flowelements.PipelineBuilder;
@@ -14,18 +36,9 @@ import fiftyone.pipeline.engines.data.AspectDataBase;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 import fiftyone.pipeline.engines.flowelements.AspectEngineBase;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class CloudAspectEngineBaseTests {
-    private class TestData extends AspectDataBase {
+    public class TestData extends AspectDataBase {
         public TestData(
             Logger logger,
             FlowData flowData,
@@ -62,7 +75,12 @@ public class CloudAspectEngineBaseTests {
         }
 
         @Override
-        protected void processEngine(FlowData data, TestData aspectData) {
+        protected void processCloudEngine(FlowData data, TestData aspectData, String json) {
+            if (json == null || json.isEmpty())  
+            {
+                fail("'json' value should not be null or empty if " +
+                        "this method is called");                
+            }        
         }
     }
 
@@ -73,7 +91,7 @@ public class CloudAspectEngineBaseTests {
             super(LoggerFactory.getLogger("TestRequestEngine"), new ElementDataFactory<CloudRequestData>() {
                 @Override
                 public CloudRequestData create(FlowData flowData, FlowElement<CloudRequestData, ?> flowElement) {
-                    return new CloudRequestData(null, flowData, (AspectEngine<CloudRequestData, ?>) flowElement);
+                    return new CloudRequestData(LoggerFactory.getLogger("TestRequestEngine"), flowData, (AspectEngine<CloudRequestData, ?>) flowElement);
                 }
             });
         }
@@ -274,7 +292,185 @@ public class CloudAspectEngineBaseTests {
         assertEquals(1, engine.getProperty("hardwarevariants").getEvidenceProperties().size());
     }
 
-    private void createPipeline() throws Exception {
+    /*
+     * Test that when processing the cloud aspect engine, the
+     * ProcessCloudEngine Method is called when the JSON response is
+     * populated.
+     */
+    @Test
+    public void Process_CloudResponse() {
+        // Setup properties.
+    	List<AccessiblePropertyMetaData.PropertyMetaData> properties = new ArrayList<>();;
+    	properties.add(new AccessiblePropertyMetaData.PropertyMetaData("ismobile", "Boolean", null, null, true, null));
+    	AccessiblePropertyMetaData.ProductMetaData devicePropertyData = new AccessiblePropertyMetaData.ProductMetaData();
+        devicePropertyData.properties = properties;
+        propertiesReturnedByRequestEngine.put("test", devicePropertyData);
+        
+        // Create mock TestInstance so we can see if the ProcessCloudEngine
+        // method is called.        
+        TestInstance mockTestInstance = Mockito.spy(new TestInstance());
+        
+        // Create mock TestInstance so we can see if the ProcessCloudEngine
+        // method is called.        
+        TestRequestEngine mockRequestEngine = Mockito.spy(new TestRequestEngine()); 
+        mockRequestEngine.publicProperties = propertiesReturnedByRequestEngine;
+        Answer<Object> responseStringAnswer = new Answer<Object>() {
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+            	CloudRequestData aspectData = (CloudRequestData)invocationOnMock.getArgument(1);
+            	aspectData.setJsonResponse("{ \"response\": true }");
+            	aspectData.setProcessStarted(true);
+				return null;
+            }
+        };
+        doAnswer(responseStringAnswer)
+        	.when(mockRequestEngine)
+        		.processEngine(any(FlowData.class), any(CloudRequestData.class));
+       
+        try {
+			pipeline = new PipelineBuilder(LoggerFactory.getILoggerFactory())
+			        .addFlowElement(mockRequestEngine)
+			        .addFlowElement(mockTestInstance)
+			        .build();
+			FlowData flowData = pipeline.createFlowData();
+			flowData.addEvidence("query.user-agent", "iPhone");
+			flowData.process();
+			
+		} catch (Exception e) {
+			fail("An exception has occurred here.");
+		}
+ 
+        // Verify the ProcessCloudEngine method was called
+        verify(mockTestInstance, times(1)) 
+        .processCloudEngine(any(FlowData.class), any(TestData.class), any(String.class));
+    }
+ 
+    /*
+     * Test that when processing the cloud aspect engine, the
+     * ProcessCloudMethod is not called when the JSON response is not
+     * populated.
+     */
+    @Test
+    public void Process_NoCloudResponse() {
+        // Setup properties.
+    	List<AccessiblePropertyMetaData.PropertyMetaData> properties = new ArrayList<>();;
+    	properties.add(new AccessiblePropertyMetaData.PropertyMetaData("ismobile", "Boolean", null, null, true, null));
+    	AccessiblePropertyMetaData.ProductMetaData devicePropertyData = new AccessiblePropertyMetaData.ProductMetaData();
+        devicePropertyData.properties = properties;
+        propertiesReturnedByRequestEngine.put("test", devicePropertyData);
+        
+        // Create mock TestInstance so we can see if the ProcessCloudEngine
+        // method is called.        
+        TestInstance mockTestInstance = Mockito.spy(new TestInstance());
+        
+        // Create mock TestInstance so we can see if the ProcessCloudEngine
+        // method is called.        
+        TestRequestEngine mockRequestEngine = Mockito.spy(new TestRequestEngine()); 
+        mockRequestEngine.publicProperties = propertiesReturnedByRequestEngine;
+        Answer<Object> responseStringAnswer = new Answer<Object>() {
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+            	CloudRequestData aspectData = (CloudRequestData)invocationOnMock.getArgument(1);
+            	aspectData.setProcessStarted(true);
+				return null;
+            }
+        };
+        doAnswer(responseStringAnswer)
+        	.when(mockRequestEngine)
+        		.processEngine(any(FlowData.class), any(CloudRequestData.class));
+       
+        try {
+			pipeline = new PipelineBuilder(LoggerFactory.getILoggerFactory())
+			        .addFlowElement(mockRequestEngine)
+			        .addFlowElement(mockTestInstance)
+			        .build();
+			FlowData flowData = pipeline.createFlowData();
+			flowData.addEvidence("query.user-agent", "iPhone");
+			flowData.process();
+			
+		} catch (Exception e) {
+			fail("An exception has occurred here.");
+		}
+ 
+        // Verify the ProcessCloudEngine method was called
+        verify(mockTestInstance, times(0)) 
+        .processCloudEngine(any(FlowData.class), any(TestData.class), any(String.class));
+    }
+    
+    /*
+     * Test that the expected exception is thrown when the
+     * CloudRequestEngine and a CloudAspectEngine have been added to the
+     * Pipeline in the wrong order.
+     */
+    @Test
+    public void CloudEngines_WrongOrder() {
+        // Setup properties.
+    	List<AccessiblePropertyMetaData.PropertyMetaData> properties = new ArrayList<>();;
+    	properties.add(new AccessiblePropertyMetaData.PropertyMetaData("ismobile", "Boolean", null, null, true, null));
+    	AccessiblePropertyMetaData.ProductMetaData devicePropertyData = new AccessiblePropertyMetaData.ProductMetaData();
+        devicePropertyData.properties = properties;
+        propertiesReturnedByRequestEngine.put("test", devicePropertyData);
+        
+        // Create mock TestInstance so we can see if the ProcessCloudEngine
+        // method is called.        
+        TestInstance mockTestInstance = Mockito.spy(new TestInstance());
+        
+        // Create mock TestInstance so we can see if the ProcessCloudEngine
+        // method is called.        
+        TestRequestEngine mockRequestEngine = Mockito.spy(new TestRequestEngine()); 
+        mockRequestEngine.publicProperties = propertiesReturnedByRequestEngine;
+        Answer<Object> responseStringAnswer = new Answer<Object>() {
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+            	CloudRequestData aspectData = (CloudRequestData)invocationOnMock.getArgument(1);
+            	aspectData.setJsonResponse("{ \"response\": true }");
+            	aspectData.setProcessStarted(true);
+				return null;
+            }
+        };
+        doAnswer(responseStringAnswer)
+        	.when(mockRequestEngine)
+        		.processEngine(any(FlowData.class), any(CloudRequestData.class));
+       
+        try {
+			pipeline = new PipelineBuilder(LoggerFactory.getILoggerFactory())
+			        .addFlowElement(mockTestInstance)
+			        .addFlowElement(mockRequestEngine)
+			        .build();
+			FlowData flowData = pipeline.createFlowData();
+			flowData.addEvidence("query.user-agent", "iPhone");
+			flowData.process();
+			fail("Expected exception was not thrown");
+			
+		} catch (Exception ex) {
+			Throwable[] exceptions= ex.getSuppressed();
+		    assertTrue(exceptions.length > 0);
+		    assertTrue(exceptions[0] instanceof PipelineConfigurationException);
+		    assertTrue(exceptions[0].getMessage().contains("requires a 'CloudRequestEngine'before"
+		    		+ " it in the Pipeline. This engine will be unable to produce"
+		    		+ " results until this is corrected"));		    
+		}
+ 
+    }
+
+    /**
+     * Test that the expected exception is thrown when the 
+     * CloudRequestEngine has not been added to the Pipeline but a
+     * CloudAspectEngine has.
+     */
+    public void CloudEngines_NoRequestEngine() {
+    	TestInstance engine = new TestInstance();
+		try {
+			pipeline = new PipelineBuilder(LoggerFactory.getILoggerFactory())
+			        .addFlowElement(engine)
+			        .build();
+			fail("Expected exception was not thrown");
+		} catch (Exception e) {
+			assertTrue(e instanceof PipelineConfigurationException);
+		}
+    }
+    
+	private void createPipeline() throws Exception {
         engine = new TestInstance();
         requestEngine = new TestRequestEngine();
         requestEngine.setPublicProperties(propertiesReturnedByRequestEngine);

@@ -160,6 +160,13 @@ public class CloudRequestEngineDefault
                 String.class,
                 new ArrayList<String>(),
                 true));
+            propertyMetaData.add(new AspectPropertyMetaDataDefault(
+                    "process-started",
+                    this,
+                    "",
+                    Boolean.class,
+                    new ArrayList<String>(),
+                    true));
         }
         catch (Exception ex) {
             logger.error("Error creating " + this.getClass().getName(), ex);
@@ -201,7 +208,8 @@ public class CloudRequestEngineDefault
             connection.setConnectTimeout(timeoutMillis);
             connection.setReadTimeout(timeoutMillis);
         }
-
+        ((CloudRequestDataInternal)aspectData).setProcessStarted(true);
+        
         Map<String, String> headers = new HashMap<>();
         setCommonHeaders(headers);
         headers.put("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
