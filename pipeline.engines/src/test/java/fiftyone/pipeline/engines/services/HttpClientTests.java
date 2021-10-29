@@ -52,7 +52,7 @@ public class HttpClientTests {
   @Test
   public void VerifyErrorHandling() {
     String result= "No response";
-    String expected = "{ \"status\":\"401\", \"errors\": [\"This resource key is not authorized for use with domain: ''. Please visit https://configure.51degrees.com to update your resource key.\"] }";
+    String expected = "{ \"status\":\"401\", \"errors\": [\"This Resource Key is not authorized for use with this domain: ''. See http://51degrees.com/documentation/_info__error_messages.html#Resource_key_not_authorized_on_domain for more information.\"] }";
 
     try{
       HttpURLConnection connection = client.connect(new URL(testUrl));
