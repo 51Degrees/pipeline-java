@@ -212,7 +212,7 @@ public class CloudRequestEngineDefault
         
         Map<String, String> headers = new HashMap<>();
         setCommonHeaders(headers);
-        headers.put("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+        headers.put("Content-Type", "application/x-www-form-urlencoded");
         headers.put("Content-Length", Integer.toString(content.length));
 
         String response = httpClient.postData(connection, headers, content);
