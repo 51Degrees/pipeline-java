@@ -56,7 +56,8 @@ public class CloudRequestEngineTestsBase {
     protected String accessiblePropertiesResponse =
             "{'Products': {'device': {'DataTier': 'tier','Properties': [{'Name': 'value','Type': 'String','Category': 'Device'}]}}}";
     protected int accessiblePropertiesResponseCode = 200;
-
+    protected String propertiesEndPoint = "";
+ 
     public CloudRequestEngineTestsBase() throws MalformedURLException {
         ILoggerFactory internalLogger = mock(ILoggerFactory.class);
         when(internalLogger.getLogger(anyString())).thenReturn(mock(Logger.class));
@@ -86,9 +87,10 @@ public class CloudRequestEngineTestsBase {
         doAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-                URL url = (URL)invocationOnMock.getArgument(0);
-                doReturn(url).when(connection).getURL();
+                URL url = (URL)invocationOnMock.getArgument(0);              
+                doReturn(url).when(connection).getURL();                
                 if (url.getPath().endsWith("properties")) {
+                	propertiesEndPoint = url.getQuery();
                     doReturn(accessiblePropertiesResponseCode).when(connection).getResponseCode();
                 }
                 else {

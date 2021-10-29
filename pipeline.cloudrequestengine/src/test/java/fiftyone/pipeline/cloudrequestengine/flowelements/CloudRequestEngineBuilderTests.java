@@ -22,6 +22,7 @@
 
 package fiftyone.pipeline.cloudrequestengine.flowelements;
 
+import fiftyone.pipeline.cloudrequestengine.CloudRequestException;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.engines.services.HttpClientDefault;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,6 +78,13 @@ public class CloudRequestEngineBuilderTests extends CloudRequestEngineTestsBase 
     	endPointField.setAccessible(true);
     	return (String)endPointField.get(builder);
     }
+ 
+    private String getPropertiesEndpointValue(
+    		CloudRequestEngineBuilder builder) throws Exception {
+    	Field propertiesEndPointField = builder.getClass().getDeclaredField("propertiesEndpoint");
+    	propertiesEndPointField.setAccessible(true);
+    	return (String)propertiesEndPointField.get(builder);
+    }
     
     @Test
     public void CloudEndPoint_Explicit_Setting() throws Exception {
@@ -88,6 +96,7 @@ public class CloudRequestEngineBuilderTests extends CloudRequestEngineTestsBase 
     		.setEndpoint(testEndpoint)
     		.build();
     	assertEquals(testEndpoint, getEndpointValue(builder));
+    	assertEquals(testEndpoint + "accessibleproperties", getPropertiesEndpointValue(builder));
     }
     
     @Test
@@ -99,6 +108,7 @@ public class CloudRequestEngineBuilderTests extends CloudRequestEngineTestsBase 
     	builder.setResourceKey(testResourceKey)
     		.build();
     	assertEquals(testEnvVarEndpoint, getEndpointValue(builder));
+    	assertEquals(testEnvVarEndpoint + "accessibleproperties", getPropertiesEndpointValue(builder));
     }
     
     @Test

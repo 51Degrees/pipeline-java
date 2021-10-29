@@ -386,8 +386,8 @@ public class CloudRequestEngineDefault
 
         Map<String, String> headers = new HashMap<>();
         setCommonHeaders(headers);
-
-        HttpURLConnection connection = httpClient.connect(new URL(propertiesEndpoint.trim()));
+        
+        HttpURLConnection connection = httpClient.connect(new URL(propertiesEndpoint.trim() + (resourceKey != null ? "?Resource=" + resourceKey : "")));
         jsonResult = httpClient.getResponseString(connection, headers);
         validateResponse(jsonResult, connection);
 

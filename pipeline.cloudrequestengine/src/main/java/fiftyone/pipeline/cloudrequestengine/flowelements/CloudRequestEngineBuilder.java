@@ -129,7 +129,7 @@ public class CloudRequestEngineBuilder extends
         }
         endPoint = uri;
         return setDataEndpoint(uri + (resourceKey != null ? resourceKey + "." : "") + "json")
-            .setPropertiesEndpoint(uri + "accessibleproperties" + (resourceKey != null ? "?Resource=" +resourceKey : ""))
+            .setPropertiesEndpoint(uri + "accessibleproperties")
             .setEvidenceKeysEndpoint(uri + "evidencekeys");
 
     }
