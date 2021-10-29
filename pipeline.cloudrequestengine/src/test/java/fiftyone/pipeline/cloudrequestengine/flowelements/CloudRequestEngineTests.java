@@ -45,6 +45,7 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
 import org.mockito.ArgumentCaptor;
 
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -56,6 +57,7 @@ import java.util.stream.Stream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
 public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
@@ -498,5 +500,28 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
             assertNotNull("Response headers not populated", ex.getResponseHeaders()); 
             assertTrue("Response headers not populated", ex.getResponseHeaders().size() > 0); 
         }
+    }
+    
+    /**
+     * Verify that resource key is set in propertiesEndPoint when
+     * CloudRequestEngine is build.
+     * @throws IOException 
+     * @throws Exception 
+     */
+    @Test
+    public void CloudPropertiesEndPoint_Set_Resource_Key() {
+        final String resourceKey = "resource_key";
+        
+		try {
+			configureMockedClient();
+			new CloudRequestEngineBuilder(loggerFactory, httpClient)
+			    .setResourceKey(resourceKey)
+			    .build();
+			assertTrue("Resource key is not set in properties endpoint.", 
+					propertiesEndPoint.contains(resourceKey));
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Unexpected exception was thrown");
+		}
     }
 }
