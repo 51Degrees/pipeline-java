@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -114,8 +115,9 @@ public interface ClientsidePropertyServiceCore {
         /**
          * The cache control values that will be set for the JavaScript.
          */
-        private final List<String> cacheControl = Collections.singletonList(
-            "max-age=0");
+        private final List<String> cacheControl = Arrays.asList(
+            "private",
+            "max-age=1800");
 
         /**
          * Create a new instance.
@@ -153,12 +155,23 @@ public interface ClientsidePropertyServiceCore {
                 if (filter.getClass().equals(EvidenceKeyFilterWhitelist.class)) {
                     EvidenceKeyFilterWhitelist whitelist = (EvidenceKeyFilterWhitelist) filter;
                     for (String key : whitelist.getWhitelist().keySet()) {
-                        if (key.startsWith(EVIDENCE_HTTPHEADER_PREFIX + EVIDENCE_SEPERATOR)) {
-                            headersAffectingJavaScript.add(key.substring(key.indexOf(EVIDENCE_SEPERATOR) + 1));
+                        if (key.startsWith(EVIDENCE_HTTPHEADER_PREFIX + EVIDENCE_SEPERATOR) &&
+                            hasControlChar(key) == false) {
+                            String header = key.substring(key.indexOf(EVIDENCE_SEPERATOR) + 1);
+                            if(headersAffectingJavaScript.contains(header) == false){
+                                headersAffectingJavaScript.add(header);
+                            }
                         }
                     }
                 }
             }
+        }
+
+        private boolean hasControlChar(String str) {
+            for (char chr : str.toCharArray()) {
+                if(chr <= 31) return true;
+            }
+            return false;
         }
 
         @Override
@@ -180,9 +193,7 @@ public interface ClientsidePropertyServiceCore {
             HttpServletResponse response,
             ContentTypes contentType) throws IOException {
             // Get the hash code.
-            FlowData flowData = flowDataProviderCore.getFlowData(request);
-            // TODO: Should this use a Guid version of the hash code to
-            // allow a larger key space or is int sufficient?
+            FlowData flowData = flowDataProviderCore.getFlowData(request);            
             int hash = flowData.generateKey(pipeline.getEvidenceKeyFilter()).hashCode();
 
             String ifNoneMatch = request.getHeader("If-None-Match");
