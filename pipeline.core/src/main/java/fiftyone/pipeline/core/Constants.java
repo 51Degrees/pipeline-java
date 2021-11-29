@@ -31,7 +31,6 @@ public class Constants {
     public static final String EVIDENCE_COOKIE_PREFIX = "cookie";
     public static final String EVIDENCE_SESSION_PREFIX = "session";
     public static final String EVIDENCE_QUERY_PREFIX = "query";
-    public static final String EVIDENCE_SESSION_KEY = "session";
     public static final String EVIDENCE_SERVER_PREFIX = "server";
 
     // Evidence Suffixes
@@ -48,4 +47,6 @@ public class Constants {
     public static final String EVIDENCE_WEB_CONTEXT_ROOT = EVIDENCE_SERVER_PREFIX + EVIDENCE_SEPERATOR + EVIDENCE_WEB_CONTEXT_ROOT_SUFFIX;
     
     public static final String EVIDENCE_PROTOCOL = EVIDENCE_HTTPHEADER_PREFIX + EVIDENCE_SEPERATOR + "protocol";
+
+    public static final String EVIDENCE_SESSION_KEY = EVIDENCE_SESSION_PREFIX + EVIDENCE_SEPERATOR + "session";    
 }

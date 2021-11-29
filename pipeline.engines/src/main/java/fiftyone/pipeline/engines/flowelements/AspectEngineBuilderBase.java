@@ -115,6 +115,34 @@ public abstract class AspectEngineBuilderBase<
     }
 
     /**
+     * Configure the properties that the engine will populate in the response.
+     * By default all properties will be populated.
+     * @param set The properties that we want the engine to populate
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
+    public TBuilder setProperties(List<String> properties) {
+        for (String property : properties) {
+            tryAddProperty(property);
+        }
+        return (TBuilder) this;
+    }
+
+    /**
+     * Configure the properties that the engine will populate in the response.
+     * By default all properties will be populated.
+     * @param set The properties that we want the engine to populate
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
+    public TBuilder setProperties(String properties) {
+        for (String property : properties.split(",")) {
+            tryAddProperty(property);
+        }
+        return (TBuilder) this;
+    }
+    
+    /**
      * Add a property to the list of properties that the engine will populate in
      * the response. By default all properties will be populated.
      * @param aspectProperty the property that we want the engine to populate
