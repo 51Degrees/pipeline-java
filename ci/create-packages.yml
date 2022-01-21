@@ -6,6 +6,12 @@ trigger:
 # Don't trigger for a pull request
 pr: none
 
+resources:
+  repositories:
+    - repository: ciTemplates # Id of the repository used to reference to in this script
+      type: git
+      name: common-ci # Name of the actual repository
+
 variables:
   - group: CertificateVariables
   - group: CIAutomation
@@ -14,12 +20,7 @@ variables:
     value: $(System.AccessToken)
   # Include shared variables
   - template: shared-variables.yml
-
-resources:
-  repositories:
-    - repository: ciTemplates # Id of the repository used to reference to in this script
-      type: git
-      name: common-ci # Name of the actual repository
+  - template: shared-variables.yml@ciTemplates
 
 stages:
 
