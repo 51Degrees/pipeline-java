@@ -102,6 +102,8 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
      * @param engine the engine which created the instance
      * @param missingPropertyService service used to determine the reason for
      *                               a property value being missing
+     * @param map the custom {@link Map} implementation to use as the underlying
+     *            storage
      */
     public AspectDataBase(
         Logger logger,
@@ -231,7 +233,7 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
                 // property service to find out why.
                 MissingPropertyResult missingReason = missingPropertyService
                     .getMissingPropertyReason(key, engines);
-                logger.warn("Property '" + key + "' missing from " +
+                logger.debug("Property '" + key + "' missing from " +
                     "aspect data '" + getClass().getName() + "'-'" +
                     hashCode() + "'. " + missingReason.getReason());
                 throw new PropertyMissingException(

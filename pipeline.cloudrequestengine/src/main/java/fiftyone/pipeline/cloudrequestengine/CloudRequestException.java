@@ -42,11 +42,13 @@ public class CloudRequestException extends PipelineDataException {
 
     /** 
      * Get the HTTP status code from the response.
+     * @return HTTP status code
      */
     public int getHttpStatusCode() { return httpStatusCode; }
 
     /** 
      * Get all HTTP headers that were present in the response.
+     * @return collection of HTTP response headers
      */
     public Map<String, List<String>> getResponseHeaders() { return responseHeaders; }
 

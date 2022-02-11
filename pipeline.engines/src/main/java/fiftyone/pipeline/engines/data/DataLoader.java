@@ -35,10 +35,11 @@ public interface DataLoader<T> {
      * @param filePath file to load from
      * @param type the type of object to load
      * @return new instance of T
-     * @throws IOException
-     * @throws IllegalAccessException
-     * @throws InvocationTargetException
-     * @throws InstantiationException
+     * @throws IOException if there was a problem reading or writing
+     * @throws IllegalAccessException if there was a problem accessing memory
+     * @throws InvocationTargetException if there was a reflection based
+     *                                   problem in the implementation
+     * @throws InstantiationException if an instance of T could not be created
      */
     T loadData(String filePath, Class<T> type) throws IOException, IllegalAccessException, InvocationTargetException, InstantiationException;
 
@@ -47,10 +48,11 @@ public interface DataLoader<T> {
      * @param data byte array to load from
      * @param type the type of object to load
      * @return new instance of T
-     * @throws IOException
-     * @throws IllegalAccessException
-     * @throws InvocationTargetException
-     * @throws InstantiationException
+     * @throws IOException if there was a problem reading or writing
+     * @throws IllegalAccessException if there was a problem accessing memory
+     * @throws InvocationTargetException if there was a reflection based
+     *                                   problem in the implementation
+     * @throws InstantiationException if an instance of T could not be created
      */
     T loadData(byte[] data, Class<T> type) throws IOException, IllegalAccessException, InvocationTargetException, InstantiationException;
 }

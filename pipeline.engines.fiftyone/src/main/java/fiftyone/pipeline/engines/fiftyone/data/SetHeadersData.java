@@ -3,6 +3,7 @@ package fiftyone.pipeline.engines.fiftyone.data;
 import java.util.HashMap;
 import java.util.Map;
 
+import fiftyone.pipeline.engines.fiftyone.flowelements.SetHeadersElement;
 import org.slf4j.Logger;
 
 import fiftyone.pipeline.core.data.ElementDataBase;
@@ -11,7 +12,7 @@ import fiftyone.pipeline.core.data.FlowData;
 //! [class]
 //! [constructor]
 /**
- * Data containing the result of {@link SetHeaderElement}.
+ * Data containing the result of {@link SetHeadersElement}.
  */
 public class SetHeadersData extends ElementDataBase {
 	public static final String RESPONSE_HEADER_PROPERTY_NAME =

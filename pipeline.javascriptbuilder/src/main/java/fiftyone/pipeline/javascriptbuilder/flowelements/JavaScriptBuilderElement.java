@@ -111,7 +111,7 @@ public class JavaScriptBuilderElement
      * @param protocol The protocol (HTTP or HTTPS) that the client JavaScript
      *                 will use when querying for updates. If null or blank
      *                 then the protocol from the request will be used
-     * @param contextRoot The <context-root> setting from the web.xml.
+     * @param contextRoot The &lt;context-root&gt; setting from the web.xml.
      *                 This is needed when creating the callback URL.
      */
     public JavaScriptBuilderElement(

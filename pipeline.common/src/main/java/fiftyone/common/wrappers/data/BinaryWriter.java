@@ -51,7 +51,7 @@ public class BinaryWriter implements AutoCloseable {
      * to the file specified.
      *
      * @param outputStream where the data file should be written
-     * @throws IOException
+     * @throws IOException if there was a problem writing to the output stream
      */
     public BinaryWriter(FileOutputStream outputStream) throws IOException {
         this();
@@ -67,7 +67,7 @@ public class BinaryWriter implements AutoCloseable {
      * Write a short to the output file.
      *
      * @param value short
-     * @throws IOException
+     * @throws IOException if there was a problem writing to the output stream
      */
     public void writeInt16(short value) throws IOException {
         buffer.clear();
@@ -79,7 +79,7 @@ public class BinaryWriter implements AutoCloseable {
      * Write an int to the output file.
      *
      * @param value int
-     * @throws IOException
+     * @throws IOException if there was a problem writing to the output stream
      */
     public void writeInt32(int value) throws IOException {
         buffer.clear();
@@ -91,7 +91,7 @@ public class BinaryWriter implements AutoCloseable {
      * Write a long to the output file.
      *
      * @param value long
-     * @throws IOException
+     * @throws IOException if there was a problem writing to the output stream
      */
     public void writeInt64(long value) throws IOException {
         buffer.clear();
@@ -103,7 +103,7 @@ public class BinaryWriter implements AutoCloseable {
      * Write a series of bytes to the output file.
      *
      * @param value bytes
-     * @throws IOException
+     * @throws IOException if there was a problem writing to the output stream
      */
     public void writeBytes(byte[] value) throws IOException {
         writeBytes(value, value.length);
@@ -134,7 +134,7 @@ public class BinaryWriter implements AutoCloseable {
      * Write a single byte to the output file.
      *
      * @param value byte
-     * @throws IOException
+     * @throws IOException if there was a problem writing to the output stream
      */
     public void writeByte(byte value) throws IOException {
         buffer.clear();

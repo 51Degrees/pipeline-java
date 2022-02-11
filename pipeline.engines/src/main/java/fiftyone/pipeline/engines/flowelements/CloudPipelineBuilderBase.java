@@ -138,7 +138,7 @@ public abstract class CloudPipelineBuilderBase<
      * resource key.
      * For more detail, see the 'Request Headers' section in the 
      * <a href="https://cloud.51degrees.com/api-docs/index.html">cloud documentation</a>.
-     * @param key the value to set the origin header to
+     * @param cloudRequestOrigin the value to set the origin header to
      * @return this builder
      */
     @SuppressWarnings("unchecked")

@@ -1,0 +1,72 @@
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ This Source Code Form is copyright of 51Degrees Mobile Experts Limited.
+  ~ Copyright 2017 51Degrees Mobile Experts Limited, 5 Charlotte Close,
+  ~ Caversham, Reading, Berkshire, United Kingdom RG4 7BY
+  ~
+  ~ This Source Code Form is the subject of the following patents and patent
+  ~ applications, owned by 51Degrees Mobile Experts Limited of 5 Charlotte
+  ~ Close, Caversham, Reading, Berkshire, United Kingdom RG4 7BY:
+  ~ European Patent No. 2871816;
+  ~ European Patent Application No. 17184134.9;
+  ~ United States Patent Nos. 9,332,086 and 9,350,823; and
+  ~ United States Patent Application No. 15/686,066.
+  ~
+  ~ This Source Code Form is subject to the terms of the Mozilla Public
+  ~ License, v. 2.0.
+  ~
+  ~ If a copy of the MPL was not distributed with this file, You can obtain
+  ~ one at http://mozilla.org/MPL/2.0/.
+  ~
+  ~ This Source Code Form is "Incompatible With Secondary Licenses", as
+  ~ defined by the Mozilla Public License, v. 2.0.
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.51degrees</groupId>
+        <artifactId>pipeline.web.packages</artifactId>
+        <version>4.3.10-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>pipeline.web</artifactId>
+    <name>51Degrees :: Pipeline :: Web</name>
+    <url>https:51degrees.com</url>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>pipeline.web.shared</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>pipeline.core</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+        </dependency>
+
+        <!-- JAXB RI, Jakarta XML Binding -->
+        <dependency>
+            <groupId>com.sun.xml.bind</groupId>
+            <artifactId>jaxb-impl</artifactId>
+        </dependency>
+    </dependencies>
+</project>

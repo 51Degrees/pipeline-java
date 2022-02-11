@@ -117,7 +117,7 @@ public class PipelineBuilder
                 this,
                 "pipeline");
         } catch (PipelineConfigurationException ex) {
-            logger.error("Problem with pipeline configuration, " +
+            logger.debug("Problem with pipeline configuration, " +
                 "failed to create pipeline.", ex);
             throw ex;
         }
@@ -324,7 +324,7 @@ public class PipelineBuilder
         catch (ClassCastException e){
             String message = "Failed to cast '" + result.getClass().getName() +
                 "' to 'FlowElement' for " + elementLocation;
-            logger.error(message);
+            logger.debug(message);
             throw new PipelineConfigurationException(message, e);
         }
     }

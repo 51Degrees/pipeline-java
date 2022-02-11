@@ -12,13 +12,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import fiftyone.common.testhelpers.TestLoggerFactory;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import fiftyone.pipeline.cloudrequestengine.data.CloudRequestData;
 import fiftyone.pipeline.core.data.AccessiblePropertyMetaData;
@@ -49,7 +50,7 @@ public class CloudAspectEngineBaseTests {
 
     private class TestInstance extends CloudAspectEngineBase<TestData> {
         public TestInstance() {
-            super(LoggerFactory.getLogger("TestInstance"), new ElementDataFactory<TestData>() {
+            super(loggerFactory.getLogger("TestInstance"), new ElementDataFactory<TestData>() {
                 @Override
                 public TestData create(FlowData flowData, FlowElement<TestData, ?> flowElement) {
                     return new TestData(null, flowData, (AspectEngine<TestData, ?>) flowElement);
@@ -88,10 +89,10 @@ public class CloudAspectEngineBaseTests {
         implements CloudRequestEngine {
 
         public TestRequestEngine() {
-            super(LoggerFactory.getLogger("TestRequestEngine"), new ElementDataFactory<CloudRequestData>() {
+            super(loggerFactory.getLogger("TestRequestEngine"), new ElementDataFactory<CloudRequestData>() {
                 @Override
                 public CloudRequestData create(FlowData flowData, FlowElement<CloudRequestData, ?> flowElement) {
-                    return new CloudRequestData(LoggerFactory.getLogger("TestRequestEngine"), flowData, (AspectEngine<CloudRequestData, ?>) flowElement);
+                    return new CloudRequestData(loggerFactory.getLogger("TestRequestEngine"), flowData, (AspectEngine<CloudRequestData, ?>) flowElement);
                 }
             });
         }
@@ -145,10 +146,22 @@ public class CloudAspectEngineBaseTests {
     private Pipeline pipeline;
 
     private Map<String, AccessiblePropertyMetaData.ProductMetaData> propertiesReturnedByRequestEngine;
+    private TestLoggerFactory loggerFactory;
+    private int maxWarnings;
+    private int maxErrors;
 
     @BeforeEach
     public void init() {
         propertiesReturnedByRequestEngine = new HashMap<>();
+        loggerFactory = new TestLoggerFactory(null);
+        maxWarnings = 0;
+        maxErrors = 0;
+    }
+
+    @AfterEach
+    public void cleanUp() {
+        loggerFactory.assertMaxWarnings(maxWarnings);
+        loggerFactory.assertMaxErrors(maxErrors);
     }
     
     private <T extends ElementPropertyMetaData> boolean propertiesContainName(
@@ -204,6 +217,7 @@ public class CloudAspectEngineBaseTests {
                 ex.getMessage()
             );
         }
+        maxErrors = 1;
     }
     
     /**
@@ -233,6 +247,8 @@ public class CloudAspectEngineBaseTests {
                 ex.getMessage()
             );
         }
+
+        maxErrors = 1;
     }
 
     /**
@@ -328,7 +344,7 @@ public class CloudAspectEngineBaseTests {
         		.processEngine(any(FlowData.class), any(CloudRequestData.class));
        
         try {
-			pipeline = new PipelineBuilder(LoggerFactory.getILoggerFactory())
+			pipeline = new PipelineBuilder(loggerFactory)
 			        .addFlowElement(mockRequestEngine)
 			        .addFlowElement(mockTestInstance)
 			        .build();
@@ -378,9 +394,9 @@ public class CloudAspectEngineBaseTests {
         doAnswer(responseStringAnswer)
         	.when(mockRequestEngine)
         		.processEngine(any(FlowData.class), any(CloudRequestData.class));
-       
+
         try {
-			pipeline = new PipelineBuilder(LoggerFactory.getILoggerFactory())
+			pipeline = new PipelineBuilder(loggerFactory)
 			        .addFlowElement(mockRequestEngine)
 			        .addFlowElement(mockTestInstance)
 			        .build();
@@ -393,8 +409,13 @@ public class CloudAspectEngineBaseTests {
 		}
  
         // Verify the ProcessCloudEngine method was called
-        verify(mockTestInstance, times(0)) 
-        .processCloudEngine(any(FlowData.class), any(TestData.class), any(String.class));
+        verify(mockTestInstance,times(0))
+            .processCloudEngine(
+                any(FlowData.class),
+                any(TestData.class),
+                any(String.class));
+
+        maxWarnings = 1;
     }
     
     /*
@@ -433,7 +454,7 @@ public class CloudAspectEngineBaseTests {
         		.processEngine(any(FlowData.class), any(CloudRequestData.class));
        
         try {
-			pipeline = new PipelineBuilder(LoggerFactory.getILoggerFactory())
+			pipeline = new PipelineBuilder(loggerFactory)
 			        .addFlowElement(mockTestInstance)
 			        .addFlowElement(mockRequestEngine)
 			        .build();
@@ -450,7 +471,7 @@ public class CloudAspectEngineBaseTests {
 		    		+ " it in the Pipeline. This engine will be unable to produce"
 		    		+ " results until this is corrected"));		    
 		}
- 
+        maxErrors = 1;
     }
 
     /**
@@ -461,7 +482,7 @@ public class CloudAspectEngineBaseTests {
     public void CloudEngines_NoRequestEngine() {
     	TestInstance engine = new TestInstance();
 		try {
-			pipeline = new PipelineBuilder(LoggerFactory.getILoggerFactory())
+			pipeline = new PipelineBuilder(loggerFactory)
 			        .addFlowElement(engine)
 			        .build();
 			fail("Expected exception was not thrown");
@@ -474,7 +495,7 @@ public class CloudAspectEngineBaseTests {
         engine = new TestInstance();
         requestEngine = new TestRequestEngine();
         requestEngine.setPublicProperties(propertiesReturnedByRequestEngine);
-        pipeline = new PipelineBuilder(LoggerFactory.getILoggerFactory())
+        pipeline = new PipelineBuilder(loggerFactory)
             .addFlowElement(requestEngine)
             .addFlowElement(engine)
             .build();

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ This Source Code Form is copyright of 51Degrees Mobile Experts Limited.
+  ~ Copyright 2017 51Degrees Mobile Experts Limited, 5 Charlotte Close,
+  ~ Caversham, Reading, Berkshire, United Kingdom RG4 7BY
+  ~
+  ~ This Source Code Form is the subject of the following patents and patent
+  ~ applications, owned by 51Degrees Mobile Experts Limited of 5 Charlotte
+  ~ Close, Caversham, Reading, Berkshire, United Kingdom RG4 7BY:
+  ~ European Patent No. 2871816;
+  ~ European Patent Application No. 17184134.9;
+  ~ United States Patent Nos. 9,332,086 and 9,350,823; and
+  ~ United States Patent Application No. 15/686,066.
+  ~
+  ~ This Source Code Form is subject to the terms of the Mozilla Public
+  ~ License, v. 2.0.
+  ~
+  ~ If a copy of the MPL was not distributed with this file, You can obtain
+  ~ one at http://mozilla.org/MPL/2.0/.
+  ~
+  ~ This Source Code Form is "Incompatible With Secondary Licenses", as
+  ~ defined by the Mozilla Public License, v. 2.0.
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>pipeline.developer-examples</artifactId>
+        <groupId>com.51degrees</groupId>
+        <version>4.3.10-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <packaging>war</packaging>
+
+    <artifactId>pipeline.developerexamples.clientsideelement.mvc</artifactId>
+    <name>51Degrees :: Pipeline :: Developer Examples :: Client-Side Element :: MVC</name>
+    <url>https:51degrees.com</url>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <version>${project.version}</version>
+            <artifactId>pipeline.developerexamples.clientsideelement</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <version>${project.version}</version>
+            <artifactId>pipeline.web.mvc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>pipeline.developerexamples.web.shared</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>jstl</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-jasper</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-jasper</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-jasper-el</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-jsp-api</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-war-plugin</artifactId>
+                    <version>${maven-war-plugin.version}</version>
+                    <configuration>
+                        <warSourceDirectory>src/main/webapp</warSourceDirectory>
+                        <warName>SimpleClientSideEngineExample</warName>
+                        <failOnMissingWebXml>false</failOnMissingWebXml>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <finalName>SimpleClientSideEngineExample</finalName>
+    </build>
+
+    <licenses>
+        <license>
+            <name>European Union Public License 1.2</name>
+            <url>https://opensource.org/licenses/EUPL-1.2</url>
+        </license>
+    </licenses>
+</project>

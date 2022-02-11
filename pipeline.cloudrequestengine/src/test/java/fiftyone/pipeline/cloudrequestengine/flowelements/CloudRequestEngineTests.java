@@ -23,41 +23,28 @@
 package fiftyone.pipeline.cloudrequestengine.flowelements;
 
 import fiftyone.common.testhelpers.TestLogger;
-import fiftyone.common.testhelpers.TestLoggerFactory;
 import fiftyone.pipeline.cloudrequestengine.CloudRequestException;
 import fiftyone.pipeline.cloudrequestengine.Constants;
-import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngine;
-import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngineBuilder;
-import fiftyone.pipeline.cloudrequestengine.flowelements.CloudRequestEngineDefault;
 import fiftyone.pipeline.core.data.AccessiblePropertyMetaData;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.flowelements.PipelineBuilder;
 import fiftyone.pipeline.engines.services.HttpClientDefault;
-
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.ArgumentMatcher;
-import org.mockito.ArgumentMatchers;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
@@ -96,19 +83,15 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
 
         verify(httpClient, times(1)) // we expected a single external POST request
             .postData(
-            argThat(new ArgumentMatcher<HttpURLConnection>() {
-                @Override
-                public boolean matches(HttpURLConnection c) {
-                    return c.getURL().equals(expectedUrl); // to this uri
-                }}),
-            ArgumentMatchers.<String, String>anyMap(),
-            argThat(new ArgumentMatcher<byte[]>() {
-                @Override
-                public boolean matches(byte[] bytes) {
-                    String string = new String(bytes);
-                    return string.contains("resource=" + resourceKey) && // content contains resource key
-                        string.contains("User-Agent=" + userAgent); // content contains user agent
-                }}));
+            argThat(c -> {
+                return c.getURL().equals(expectedUrl); // to this uri
+            }),
+            ArgumentMatchers.anyMap(),
+            argThat(bytes -> {
+                String string = new String(bytes);
+                return string.contains("resource=" + resourceKey) && // content contains resource key
+                    string.contains("User-Agent=" + userAgent); // content contains user agent
+            }));
     }
 
     /**
@@ -145,20 +128,16 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
 
         verify(httpClient, times(1)) // we expected a single external POST request
             .postData(
-                argThat(new ArgumentMatcher<HttpURLConnection>() {
-                    @Override
-                    public boolean matches(HttpURLConnection c) {
-                        return c.getURL().equals(expectedUrl); // to this uri
-                    }}),
-                ArgumentMatchers.<String, String>anyMap(),
-                argThat(new ArgumentMatcher<byte[]>() {
-                    @Override
-                    public boolean matches(byte[] bytes) {
-                        String string = new String(bytes);
-                        return string.contains("resource=" + resourceKey) && // content contains resource key
-                            string.contains("license=" + licenseKey) && // content contains license key
-                            string.contains("User-Agent=" + userAgent); // content contains user agent
-                    }}));
+                argThat(c -> {
+                    return c.getURL().equals(expectedUrl); // to this uri
+                }),
+                ArgumentMatchers.anyMap(),
+                argThat(bytes -> {
+                    String string = new String(bytes);
+                    return string.contains("resource=" + resourceKey) && // content contains resource key
+                        string.contains("license=" + licenseKey) && // content contains license key
+                        string.contains("User-Agent=" + userAgent); // content contains user agent
+                }));
     }
 
 
@@ -282,12 +261,12 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
             exception = ex;
         }
 
-        assertNotNull("Expected exception to occur", exception);
+        assertNotNull(exception, "Expected exception to occur");
         assertTrue(exception instanceof CloudRequestException);
         CloudRequestException cloudEx = (CloudRequestException)exception;
         if (includeMessage) {
-            assertTrue("Exception message did not contain the expected text.",
-                cloudEx.getMessage().contains(errorMessage));
+            assertTrue(cloudEx.getMessage().contains(errorMessage),
+                    "Exception message did not contain the expected text.");
         }
     }
 
@@ -384,7 +363,7 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
 
         Map<String, Object> result = engine.getSelectedEvidence(evidence, type);
 
-        assertTrue(expectedValue.equals(result));
+        assertEquals(expectedValue, result);
     }
 
     @SuppressWarnings("serial")
@@ -462,19 +441,15 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
 
         verify(httpClient, times(1)) // we expected a single external POST request
             .postData(
-            argThat(new ArgumentMatcher<HttpURLConnection>() {
-                @Override
-                public boolean matches(HttpURLConnection c) {
-                    return c.getURL().equals(expectedUrl); // to this uri
-                }}),
+            argThat(c -> {
+                return c.getURL().equals(expectedUrl); // to this uri
+            }),
             argumentsCaptured.capture(),
-            argThat(new ArgumentMatcher<byte[]>() {
-                @Override
-                public boolean matches(byte[] bytes) {
-                    String string = new String(bytes);
-                    return string.contains("resource=" + resourceKey) && // content contains resource key
-                        string.contains("User-Agent=" + userAgent); // content contains user agent
-                }}));
+            argThat(bytes -> {
+                String string = new String(bytes);
+                return string.contains("resource=" + resourceKey) && // content contains resource key
+                    string.contains("User-Agent=" + userAgent); // content contains user agent
+            }));
         
         // Verify that the origin header has the expected value.
         Map<String, String> headers = argumentsCaptured.getValue();
@@ -494,19 +469,17 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
             new CloudRequestEngineBuilder(loggerFactory, new HttpClientDefault())
                 .setResourceKey(resourceKey)
                 .build();
-            assertTrue("Expected exception was not thrown", false);
+            fail("Expected exception was not thrown");
         } catch(CloudRequestException ex) {
-            assertTrue("Status code should not be 0", ex.getHttpStatusCode() > 0); 
-            assertNotNull("Response headers not populated", ex.getResponseHeaders()); 
-            assertTrue("Response headers not populated", ex.getResponseHeaders().size() > 0); 
+            assertTrue(ex.getHttpStatusCode() > 0, "Status code should not be 0");
+            assertNotNull(ex.getResponseHeaders(),"Response headers not populated");
+            assertTrue(ex.getResponseHeaders().size() > 0, "Response headers not populated");
         }
     }
     
     /**
      * Verify that resource key is set in propertiesEndPoint when
      * CloudRequestEngine is build.
-     * @throws IOException 
-     * @throws Exception 
      */
     @Test
     public void CloudPropertiesEndPoint_Set_Resource_Key() {
@@ -517,8 +490,8 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
 			new CloudRequestEngineBuilder(loggerFactory, httpClient)
 			    .setResourceKey(resourceKey)
 			    .build();
-			assertTrue("Resource key is not set in properties endpoint.", 
-					propertiesEndPoint.contains(resourceKey));
+			assertTrue(propertiesEndPoint.contains(resourceKey),
+                    "Resource key is not set in properties endpoint.");
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Unexpected exception was thrown");

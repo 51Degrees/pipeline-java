@@ -287,6 +287,9 @@ public abstract class DataFileConfigurationBuilderBase<
      * Called to indicate that configuration of this file is complete
      * and the user can continue to configure the engine that the
      * data file will be used by.
+     * @param filename path to the data file to build from
+     * @param createTempCopy true if a temporary copy should be created to
+     *                       stream from
      * @return the new {@link DataFileConfiguration} instance
      */
     public TConfig build(String filename, boolean createTempCopy) {
@@ -303,6 +306,7 @@ public abstract class DataFileConfigurationBuilderBase<
      * Called to indicate that configuration of this file is complete
      * and the user can continue to configure the engine that the
      * data file will be used by.
+     * @param data byte array containing the data file contents in memory
      * @return the new {@link DataFileConfiguration} instance
      */
     public TConfig build(byte[] data) {

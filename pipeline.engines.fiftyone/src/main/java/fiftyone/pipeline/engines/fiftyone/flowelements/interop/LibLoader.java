@@ -105,6 +105,7 @@ public class LibLoader {
     /**
      * Get the file name for the compiled native library.
      *
+     * @param engineClass the class of the target engine to get the name for
      * @return String full file name
      */
     public static String getLibName(Class<?> engineClass) {
@@ -121,10 +122,10 @@ public class LibLoader {
      * If the package does not contain a native library for the target
      * environment an exception is thrown.
      *
+     * @param engineClass the class of the target engine to load
      * @throws UnsupportedOperationException if the package does not contain
      *                                       a native library for the environment
-     * @throws IOException                   thrown if there is a problem
-     * copying the resource
+     * @throws IOException thrown if there is a problem copying the resource
      */
     public static void load(Class<?> engineClass)
         throws IOException, UnsupportedOperationException {

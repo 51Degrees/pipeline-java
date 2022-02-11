@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>pipeline</artifactId>
+        <groupId>com.51degrees</groupId>
+        <version>4.3.10-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>pipeline.web.packages</artifactId>
+    <packaging>pom</packaging>
+    <name>51Degrees :: Pipeline :: Web :: Packages</name>
+
+    <modules>
+        <module>pipeline.web.shared</module>
+        <module>pipeline.web</module>
+        <module>pipeline.web.mvc</module>
+    </modules>
+
+    <properties>
+        <javax.servlet-api.version>4.0.1</javax.servlet-api.version>
+        <javax.activation.version>1.2.0</javax.activation.version>
+        <jakarta.xml.bind-api.version>3.0.1</jakarta.xml.bind-api.version>
+        <jaxb-runtime.version>3.0.2</jaxb-runtime.version>
+        <jaxb-impl.version>3.0.2</jaxb-impl.version>
+        <spring-webmvc.version>4.3.2.RELEASE</spring-webmvc.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+
+            <dependency>
+                <groupId>javax</groupId>
+                <artifactId>javaee-api</artifactId>
+                <version>${javaee-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-webmvc</artifactId>
+                <version>${spring-webmvc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.xml.bind</groupId>
+                <artifactId>jakarta.xml.bind-api</artifactId>
+                <version>${jakarta.xml.bind-api.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.sun.xml.bind</groupId>
+                <artifactId>jaxb-impl</artifactId>
+                <version>${jaxb-impl.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+</project>

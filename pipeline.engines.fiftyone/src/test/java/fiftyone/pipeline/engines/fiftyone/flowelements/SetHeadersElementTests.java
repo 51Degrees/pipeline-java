@@ -1,35 +1,7 @@
 package fiftyone.pipeline.engines.fiftyone.flowelements;
 
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.ILoggerFactory;
-import org.slf4j.Logger;
-
 import fiftyone.common.testhelpers.TestLoggerFactory;
-import fiftyone.pipeline.core.data.ElementData;
-import fiftyone.pipeline.core.data.ElementDataBase;
-import fiftyone.pipeline.core.data.ElementPropertyMetaData;
-import fiftyone.pipeline.core.data.ElementPropertyMetaDataDefault;
-import fiftyone.pipeline.core.data.EvidenceKeyFilter;
-import fiftyone.pipeline.core.data.EvidenceKeyFilterWhitelist;
-import fiftyone.pipeline.core.data.FlowData;
+import fiftyone.pipeline.core.data.*;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
 import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.core.flowelements.FlowElementBase;
@@ -39,6 +11,24 @@ import fiftyone.pipeline.engines.data.AspectPropertyValue;
 import fiftyone.pipeline.engines.data.AspectPropertyValueDefault;
 import fiftyone.pipeline.engines.fiftyone.data.SetHeadersData;
 import fiftyone.pipeline.exceptions.AggregateException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.ILoggerFactory;
+import org.slf4j.Logger;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests for SetHeadersElement

@@ -104,7 +104,7 @@ public class XmlBuilder {
     }
 
     /**
-     * Write an XML element which starts a block i.e `<key>`.
+     * Write an XML element which starts a block i.e `&lt;key&gt;`.
      * @param key name of the element
      */
     public void writeStartElement(String key) {
@@ -112,7 +112,7 @@ public class XmlBuilder {
     }
 
     /**
-     * Write an XML element which ends a block i.e. `</key>`.
+     * Write an XML element which ends a block i.e. `&lt;/key&gt;`.
      * @param key name of the element
      */
     public void writeEndElement(String key) {
@@ -124,7 +124,7 @@ public class XmlBuilder {
 
     /**
      * Write an XML element which starts a block with an attribute defined
-     * i.e. `<key attribute="value">`.
+     * i.e. `&lt;key attribute="value"&gt;`.
      * @param key name of the element
      * @param attribute the attribute and value
      */
@@ -138,7 +138,7 @@ public class XmlBuilder {
 
     /**
      * Write an XML element which starts a block with the attributes defined
-     * i.e. `<key attribute1="value1" attribute2="value2">`.
+     * i.e. `&lt;key attribute1="value1" attribute2="value2"&gt;`.
      * @param key name of the element
      * @param attributes the attributes and their values
      */

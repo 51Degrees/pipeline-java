@@ -89,6 +89,7 @@ public abstract class PipelineBuilderBase<T extends PipelineBuilderBase> {
     /**
      * Build the {@link Pipeline} using the {@link FlowElement}s added.
      * @return new {@link Pipeline} instance
+     * @throws Exception if a pipeline could not be constructed
      */
     public Pipeline build() throws Exception {
         onPreBuild();

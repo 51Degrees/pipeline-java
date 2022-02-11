@@ -77,8 +77,10 @@ public class JsonBuilderElement
             ElementDataFactory<JsonBuilderData> elementDataFactory) {
         super(logger, elementDataFactory);
         // Set the evidence key filter for the flow data to use.
-        evidenceKeyFilter = new EvidenceKeyFilterWhitelist(new ArrayList<String>(){},
-                String.CASE_INSENSITIVE_ORDER);
+        List<String> whiteList = new ArrayList<>();
+        evidenceKeyFilter = new EvidenceKeyFilterWhitelist(
+            whiteList,
+            String.CASE_INSENSITIVE_ORDER);
 
         properties = Collections.singletonList(
             (ElementPropertyMetaData)new ElementPropertyMetaDataDefault(

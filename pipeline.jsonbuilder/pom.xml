@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.51degrees</groupId>
         <artifactId>pipeline</artifactId>
-        <version>4.3.4-SNAPSHOT</version>
+        <version>4.3.10-SNAPSHOT</version>
     </parent>
     <artifactId>pipeline.jsonbuilder</artifactId>
     <packaging>jar</packaging>
@@ -13,39 +13,12 @@
     <url>https:51degrees.com</url>
 
     <dependencies>
-
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${junit.jupiter.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j-api.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j-simple.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>${mockito-core.version}</version>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>pipeline.engines</artifactId>
+            <artifactId>pipeline.engines.fiftyone</artifactId>
             <version>${project.version}</version>
         </dependency>
-        
+
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>pipeline.common</artifactId>
@@ -60,23 +33,14 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>pipeline.engines.fiftyone</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>${org.json.version}</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
         </dependency>
     </dependencies>
-
-    <licenses>
-        <license>
-            <name>European Union Public License 1.2</name>
-            <url>https://opensource.org/licenses/EUPL-1.2</url>
-        </license>
-    </licenses>
 </project>

@@ -31,7 +31,10 @@ import org.slf4j.Logger;
 
 public class CloudRequestData extends CloudRequestDataInternal {
 
-    public CloudRequestData(Logger logger, FlowData flowData, AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine) {
+    public CloudRequestData(
+        Logger logger,
+        FlowData flowData,
+        AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine) {
         super(logger, flowData, engine);
     }
 }

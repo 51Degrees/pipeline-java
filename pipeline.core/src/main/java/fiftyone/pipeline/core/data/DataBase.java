@@ -97,8 +97,8 @@ public abstract class DataBase implements Data {
      * value will be case to the requested type.
      * @param key to get the value of
      * @param type the class which the value must be cast to
-     * @param parameterisedTypes any perameterised types. For example,
-     *                           {@link List<String>} would use {@link List} as
+     * @param parameterisedTypes any parameterised types. For example,
+     *                           "List&lt;String&gt;" would use {@link List} as
      *                           the type, and {@link String} as the only
      *                           parameterised type
      *

@@ -61,6 +61,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @param <K> key for the cache items
  * @param <V> value for the cache items
  */
+@SuppressWarnings("unused")
 public abstract class LruCacheBase<K, V> implements Cache<K,V>, Closeable {
 
     /**
@@ -195,16 +196,18 @@ public abstract class LruCacheBase<K, V> implements Cache<K,V>, Closeable {
         this.hashMap.clear();
         misses.set(0);
         requests.set(0);
-        for (int i = 0; i < linkedLists.length; i++) {
-            linkedLists[i].clear();
+        for (CacheLinkedList linkedList : linkedLists) {
+            linkedList.clear();
         }
     }
 
+/*
     @SuppressWarnings("deprecation")
     @Override
     public void finalize() {
         close(false);
     }
+*/
 
     @Override
     public void close() {
@@ -221,6 +224,7 @@ public abstract class LruCacheBase<K, V> implements Cache<K,V>, Closeable {
                         list.clear();
                     }
                 }
+                closed = true;
             }
         }
     }

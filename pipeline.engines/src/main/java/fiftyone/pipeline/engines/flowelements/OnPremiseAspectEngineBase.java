@@ -57,7 +57,7 @@ public abstract class OnPremiseAspectEngineBase<
     /**
      * Construct a new instance of the {@link OnPremiseAspectEngine}.
      * @param logger logger instance to use for logging
-     * @param aspectDataFactory the factory to use when creating a {@link TData}
+     * @param aspectDataFactory the factory to use when creating a TData
      *                          instance
      * @param tempDataDirPath the directory where a temporary data file copy
      *                        will be stored if one is created

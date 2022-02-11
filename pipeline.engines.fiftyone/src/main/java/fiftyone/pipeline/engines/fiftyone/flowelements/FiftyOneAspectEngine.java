@@ -22,8 +22,6 @@
 
 package fiftyone.pipeline.engines.fiftyone.flowelements;
 
-import java.io.IOException;
-
 import fiftyone.pipeline.engines.data.AspectData;
 import fiftyone.pipeline.engines.fiftyone.data.*;
 import fiftyone.pipeline.engines.flowelements.OnPremiseAspectEngine;
@@ -50,7 +48,7 @@ public interface FiftyOneAspectEngine<
      * Get the profile with the unique profile id from the data set.
      * @param profileId unique profile id
      * @return the profile with the id, or null if not found
-     * @throws Exception 
+     * @throws Exception if an exception was thrown internally
      */
     ProfileMetaData getProfile(int profileId) throws Exception;
 
@@ -65,7 +63,7 @@ public interface FiftyOneAspectEngine<
      * Get the component with the specified name from the data set.
      * @param name the name of the component
      * @return the component, or null if not found
-     * @throws Exception 
+     * @throws Exception if an exception was thrown internally
      */
     ComponentMetaData getComponent(String name) throws Exception;
 
@@ -82,8 +80,7 @@ public interface FiftyOneAspectEngine<
      * @param propertyName the name of the property which the value belongs to
      * @param valueName the name of the value
      * @return the value or, null if not found
-     * @throws IOException 
-     * @throws Exception 
+     * @throws Exception if an exception was thrown internally
      */
-    ValueMetaData getValue(String propertyName, String valueName) throws IOException, Exception;
+    ValueMetaData getValue(String propertyName, String valueName) throws Exception;
 }

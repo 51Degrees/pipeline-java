@@ -8,11 +8,12 @@
 This repository contains all the projects required to build the Java implementation of the 51Degrees Pipeline API.
 Individual engines (For example, device detection) may be in separate repositories.
 
-Reference documentation for the Java implementation can be found in the GitHub pages site associated with this repository.
+Reference documentation for the Java implementation can be found on the
+[Java API documentation](https://51degrees.com/pipeline-java/index.html) page.
 
 ## Pre-requisites
 
-Java 7 JDK or later and Maven 2.
+Java 8 JDK or later and Maven 2.
 
 ## Contents
 

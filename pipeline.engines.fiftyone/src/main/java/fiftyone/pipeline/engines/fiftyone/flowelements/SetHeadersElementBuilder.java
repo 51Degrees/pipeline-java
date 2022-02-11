@@ -11,7 +11,7 @@ import fiftyone.pipeline.engines.fiftyone.data.SetHeadersData;
 //! [class]
 //! [constructor]
 /**
- * Builder for {@link SetHeaderElement}
+ * Builder for {@link SetHeadersElement}
  */
 @ElementBuilder
 public class SetHeadersElementBuilder {
@@ -19,7 +19,7 @@ public class SetHeadersElementBuilder {
 	
 	/**
 	 * Constructor
-	 * @param LoggerFactory The logger factory to use.
+	 * @param loggerFactory The logger factory to use.
 	 */
 	public SetHeadersElementBuilder(ILoggerFactory loggerFactory) {
 		this.loggerFactory = loggerFactory;
@@ -27,8 +27,8 @@ public class SetHeadersElementBuilder {
 //! [constructor]
 
 	/**
-	 * Builder the {@link SetHeaderElement}
-	 * @return {@link SetHeader Element}
+	 * Builder the {@link SetHeadersElement}
+	 * @return {@link SetHeadersElement}
 	 */
 	public SetHeadersElement build() {
 		return new SetHeadersElement(

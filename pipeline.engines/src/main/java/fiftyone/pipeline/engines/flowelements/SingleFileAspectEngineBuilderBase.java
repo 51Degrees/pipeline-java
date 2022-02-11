@@ -87,6 +87,7 @@ public abstract class SingleFileAspectEngineBuilderBase<
      *                           loading all data into memory, this is required
      *                           for automatic data updates to occur
      * @return new {@link AspectEngine} instance
+     * @throws Exception if the engine could not be created
      */
     public TEngine build(
         @BuildArg("dataFile")String dataFile,
@@ -105,6 +106,7 @@ public abstract class SingleFileAspectEngineBuilderBase<
      * @param data a byte[] containing an in-memory representation of a data
      *             file
      * @return new {@link AspectEngine} instance
+     * @throws Exception if the engine could not be created
      */
     public TEngine build(byte[] data) throws Exception {
         DataFileConfiguration config = dataFileBuilder.build(data);
@@ -116,6 +118,7 @@ public abstract class SingleFileAspectEngineBuilderBase<
      * Build an engine using the configured options.
      * Also registers the data file with the data update service.
      * @return new {@link AspectEngine} instance
+     * @throws Exception if the engine could not be created
      */
     protected TEngine build() throws Exception {
         if (dataFileConfigs.size() != 1) {

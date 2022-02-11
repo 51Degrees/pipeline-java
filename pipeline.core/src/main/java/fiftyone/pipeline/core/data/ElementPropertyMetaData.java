@@ -82,6 +82,7 @@ public interface ElementPropertyMetaData {
      * hardware devices, ItemProperties will contain a list of the
      * meta-data for properties available on each hardware device
      * element within that list.
+     * @return list of sub properties
      */
     List<ElementPropertyMetaData> getItemProperties();
 
