@@ -27,7 +27,7 @@ import java.io.IOException;
 /**
  * Extension of general cache contract to provide for getting a value with a
  * particular value loaded. Primarily used to allow the value loader to be an
- * already instantiated value of the type {@link <V>} to avoid construction
+ * already instantiated value of the type V to avoid construction
  * costs of that value. (In other words the loader has the signature
  * "extends V implements IValueLoader").
  */

@@ -5,7 +5,7 @@
 
     <groupId>com.51degrees</groupId>
     <artifactId>pipeline</artifactId>
-    <version>4.3.4-SNAPSHOT</version>
+    <version>4.3.10-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>51Degrees :: Pipeline</name>
@@ -23,41 +23,139 @@
         </developer>
     </developers>
 
+    <modules>
+        <module>pipeline.common</module>
+        <module>pipeline.core</module>
+        <module>pipeline.engines</module>
+        <module>pipeline.caching</module>
+        <module>pipeline.cloudrequestengine</module>
+        <module>pipeline.engines.fiftyone</module>
+        <module>pipeline.javascriptbuilder</module>
+        <module>pipeline.jsonbuilder</module>
+        <module>pipeline.developer-examples</module>
+        <module>pipeline.web.packages</module>
+    </modules>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
-        <exec-maven-plugin.version>1.5.0</exec-maven-plugin.version>
-        <junit.version>4.12</junit.version>
-        <junit.jupiter.version>5.6.2</junit.jupiter.version>
-        <slf4j-api.version>1.7.25</slf4j-api.version>
-        <slf4j-simple.version>1.7.21</slf4j-simple.version>
-        <mockito-core.version>2.22.0</mockito-core.version>
-        <org.json.version>20180813</org.json.version>
+
+        <junit.version>4.13.2</junit.version>
+        <junit.jupiter.version>5.8.2</junit.jupiter.version>
+        <slf4j-api.version>1.7.33</slf4j-api.version>
+        <logback-classic.version>1.2.10</logback-classic.version>
+        <mockito-core.version>4.3.1</mockito-core.version>
+        <org.json.version>20211205</org.json.version>
+        <reflections8.version>0.11.7</reflections8.version>
+
+        <jakarta.xml.bind-api.version>3.0.1</jakarta.xml.bind-api.version>
+
+        <mustache-compiler.version>0.8.18</mustache-compiler.version>
+        <graal-js-scriptengine.version>22.0.0.2</graal-js-scriptengine.version>
+        <graal-js.version>22.0.0.2</graal-js.version>
+
+        <maven-compiler-plugin.version>3.9.0</maven-compiler-plugin.version>
+        <exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
+        <maven-jar-plugin.version>3.2.2</maven-jar-plugin.version>
+        <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
+        <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
+        <maven-javadoc-plugin.version>3.3.1</maven-javadoc-plugin.version>
+        <maven-jarsigner-plugin.version>3.0.0</maven-jarsigner-plugin.version>
+        <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
+        <maven-project-info-reports-plugin.version>2.6</maven-project-info-reports-plugin.version>
+        <maven-site-plugin.version>3.7</maven-site-plugin.version>
+
         <snapshot-repository.id>ossrh</snapshot-repository.id>
         <publishrepository.id>ossrh</publishrepository.id>
         <publishrepository.url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</publishrepository.url>
         <fetchrepository.id>central</fetchrepository.id>
         <fetchrepository.url>https://repo1.maven.org/maven2</fetchrepository.url>
+
         <skippackagesign>true</skippackagesign>
-        <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
+
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- compile dependencies -->
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.json</groupId>
+                <artifactId>json</artifactId>
+                <version>${org.json.version}</version>
+            </dependency>
+
+            <!-- test dependencies -->
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${junit.jupiter.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito-core.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- runtime dependencies -->
+
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback-classic.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
+        <!-- Examples and tests need an implementation of SLF4J at runtime -->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
         </dependency>
+
     </dependencies>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven-compiler-plugin.version}</version>
+                    <configuration>
+                        <source>${maven.compiler.source}</source>
+                        <target>${maven.compiler.target}</target>
+                        <showWarnings>true</showWarnings>
+                        <compilerArgs>
+                            <arg>-Xlint:all,-try,-options</arg>
+                            <arg>-Werror</arg>
+                        </compilerArgs>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.2.0</version>
+                <version>${maven-jar-plugin.version}</version>
                 <configuration>
                     <archive>
                         <manifest>
@@ -69,12 +167,33 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.0</version>
+                <version>${maven-surefire-plugin.version}</version>
+                <configuration>
+                    <systemPropertyVariables>
+                        <!-- this tells all tests run via surefire to pick their logback config up from the root -->
+                        <!-- fwiw does not affect those run via main() which need to find their config by other means -->
+                        <!--suppress UnresolvedMavenProperty -->
+                        <logback.configurationFile>${maven.multiModuleProjectDirectory}/logback.xml</logback.configurationFile>
+                        <!-- this sets the scope of file search (inter alia in Utils.getFilePath) to the project directory-->
+                        <!--suppress UnresolvedMavenProperty -->
+                        <project.root>${maven.multiModuleProjectDirectory}</project.root>
+                        <!-- for JavaScriptBuilderTests -->
+                        <polyglot.engine.WarnInterpreterOnly>false</polyglot.engine.WarnInterpreterOnly>
+                    </systemPropertyVariables>
+                    <properties>
+                        <property>
+                            <!-- customised test runner output - frames start and stop of the test so
+                            you can tell more easily where a log output may have come from -->
+                            <name>listener</name>
+                            <value>fiftyone.common.testhelpers.MavenRunListener</value>
+                        </property>
+                    </properties>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>${maven-source-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -87,9 +206,26 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>${maven-javadoc-plugin.version}</version>
                 <configuration>
-                    <doclint>none</doclint>
+                    <doclint>all</doclint>
+                    <quiet>true</quiet>
+                    <tags>
+                        <!-- Parse DoxyGen tags cleanly. -->
+                        <tag>
+                            <name>example</name>
+                            <placement>t</placement>
+                            <head>Example</head>
+                        </tag>
+                        <tag>
+                            <name>include</name>
+                            <placement>t</placement>
+                        </tag>
+                        <tag>
+                            <name>include{doc}</name>
+                            <placement>t</placement>
+                        </tag>
+                    </tags>
                 </configuration>
                 <executions>
                     <execution>
@@ -103,7 +239,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jarsigner-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>${maven-jarsigner-plugin.version}</version>
                 <executions>
                 <execution>
                     <id>sign</id>
@@ -123,7 +259,7 @@
            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
-                <version>1.6</version>
+                <version>${maven-gpg-plugin.version}</version>
                 <configuration>
                     <skip>${skippackagesign}</skip>
                     <gpgArguments>
@@ -144,31 +280,27 @@
         </plugins>
     </build>
 
-    <modules>
-        <module>pipeline.common</module>
-        <module>pipeline.core</module>
-        <module>pipeline.engines</module>
-        <module>pipeline.caching</module>
-        <module>pipeline.cloudrequestengine</module>
-        <module>pipeline.engines.fiftyone</module>
-        <module>web/pipeline.web.shared</module>
-        <module>web/pipeline.web</module>
-        <module>web/pipeline.web.mvc</module>
-        <module>examples/pipeline.developer-examples.flowelement</module>
-        <module>examples/pipeline.developer-examples.onpremise-engine</module>
-        <module>examples/pipeline.developer-examples.cloud-engine</module>
-        <module>examples/pipeline.developer-examples.clientside-element</module>
-        <module>examples/pipeline.developer-examples.clientside-element-mvc</module>
-        <module>pipeline.javascriptbuilder</module>
-        <module>pipeline.jsonbuilder</module>
-    </modules>
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>${maven-project-info-reports-plugin.version}</version>
+            </plugin>
+        </plugins>
+    </reporting>
 
     <distributionManagement>
         <repository>
             <id>${publishrepository.id}</id>
             <url>${publishrepository.url}</url>
         </repository>
+        <site>
+            <id>local</id>
+            <url>file:///${maven.multiModuleProjectDirectory}/site/</url>
+        </site>
     </distributionManagement>
+
     <repositories>
         <repository>
             <id>${fetchrepository.id}</id>

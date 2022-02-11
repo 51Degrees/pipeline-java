@@ -606,7 +606,7 @@ public class DataUpdateServiceDefault implements DataUpdateService {
                             break;
                         case HttpURLConnection.HTTP_NOT_MODIFIED:
                             result.status = AutoUpdateStatus.AUTO_UPDATE_NOT_NEEDED;
-                            logger.info("No data update available from '" +
+                            logger.debug("No data update available from '" +
                                 dataFile.getFormattedUrl() + "' for " +
                                 getIdForLogging(dataFile));
                             break;

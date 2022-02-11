@@ -75,14 +75,12 @@ public class ElementOptions {
     public Map<String, Object> buildParameters;
 
     /**
-     * If this property is populated, the flow element is a
-     * {@link fiftyone.pipeline.core.flowelements.ParallelElements} instance.
-     * {@link #builderName} and {@link #buildParameters} should be ignored.
-     * Each options instance within subElements contains the configuration for
-     * an element to be added to a {@link fiftyone.pipeline.core.flowelements.ParallelElements}
-     * instance. A {@link fiftyone.pipeline.core.flowelements.ParallelElements}
-     * always executes all it's children in parallel so the ordering of this
-     * elements is irrelevant.
+     * If this property is populated, the flow element is a ParallelElements
+     * instance. {@link #builderName} and {@link #buildParameters} should be
+     * ignored. Each options instance within subElements contains the
+     * configuration for an element to be added to a ParallelElements instance.
+     * A ParallelElements always executes all it's children in parallel so the
+     * ordering of this elements is irrelevant.
      */
     @XmlElementWrapper(name = "SubElements")
     @XmlElement(name = "Element")

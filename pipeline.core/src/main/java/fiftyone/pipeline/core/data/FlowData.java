@@ -167,6 +167,7 @@ public interface FlowData extends AutoCloseable {
      * Get the specified property as the specified type.
      * @param <T> the type to return the property value as
      * @param key the name of the property to get
+     * @param type the type to return the property value as
      * @return the property value
      */
     <T> T getAs(String key, Class<T> type);
@@ -227,8 +228,9 @@ public interface FlowData extends AutoCloseable {
      * Get or add the specified element data to the internal map.
      * @param <T> the type of the data being stored
      * @param elementDataKey the name of the element to store the data under
-     * @param dataFactory the {@link FlowElement.DataFactory} to use to create a
-     *                    new data to store if one does not already exist
+     * @param dataFactory the {@link fiftyone.pipeline.core.flowelements.FlowElement.DataFactory}
+     *                    to use to create a new data to store if one does not
+     *                    already exist
      * @return existing data matching the key, or newly added data
      */
     <T extends ElementData> T getOrAdd(
@@ -239,8 +241,9 @@ public interface FlowData extends AutoCloseable {
      * Get or add the specified element data to the internal map.
      * @param <T> the type of the data being stored
      * @param key the typed key of the element to store the data under
-     * @param dataFactory the {@link FlowElement.DataFactory} to use to create a
-     *                    new data to store if one does not already exist
+     * @param dataFactory the {@link fiftyone.pipeline.core.flowelements.FlowElement.DataFactory}
+     *                    to use to create a new data to store if one does not
+     *                    already exist
      * @return existing data matching the key, or newly added data
      */
     <T extends ElementData> T getOrAdd(

@@ -117,7 +117,7 @@ public abstract class AspectEngineBuilderBase<
     /**
      * Configure the properties that the engine will populate in the response.
      * By default all properties will be populated.
-     * @param set The properties that we want the engine to populate
+     * @param properties The properties that we want the engine to populate
      * @return this builder
      */
     @SuppressWarnings("unchecked")
@@ -131,7 +131,7 @@ public abstract class AspectEngineBuilderBase<
     /**
      * Configure the properties that the engine will populate in the response.
      * By default all properties will be populated.
-     * @param set The properties that we want the engine to populate
+     * @param properties The properties that we want the engine to populate
      * @return this builder
      */
     @SuppressWarnings("unchecked")
@@ -206,6 +206,7 @@ public abstract class AspectEngineBuilderBase<
      * the engine instance.
      * @param properties the properties list to create the engine with
      * @return an {@link AspectEngine}
+     * @throws Exception if the engine could not be created
      */
     protected abstract TEngine newEngine(List<String> properties) throws Exception;
 
@@ -214,6 +215,7 @@ public abstract class AspectEngineBuilderBase<
      * this method when building an engine to ensure it is configured correctly
      * all down the class hierarchy.
      * @return an {@link AspectEngine}
+     * @throws Exception if the engine could not be created
      */
     protected TEngine buildEngine() throws Exception {
         preCreateEngine();

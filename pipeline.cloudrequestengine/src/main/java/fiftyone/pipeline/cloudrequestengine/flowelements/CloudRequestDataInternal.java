@@ -54,7 +54,7 @@ public class CloudRequestDataInternal extends AspectDataBase {
 
     /**
      * Flag to confirm that the CloudRequestEngine has started processing.
-     * @return
+     * @return true if the engine has started processing
      */
     public Boolean getProcessStarted() {
     	if(super.get(PROCESS_STARTED_KEY) != null)

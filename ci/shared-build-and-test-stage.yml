@@ -67,7 +67,7 @@ stages:
       inputs:
         mavenPomFile: 'pom.xml'
         goals: 'clean test'
-        options: '-Dhttps.protocols=TLSv1.2 -DfailIfNoTests=false -DXmx2048m'
+        options: '-Dhttps.protocols=TLSv1.2 -DfailIfNoTests=false -DXmx2048m --no-transfer-progress'
         jdkVersionOption: $(jdkVersion)
         testRunTitle: '${{ parameters.imageName }}-$(jdkVersion)'
         

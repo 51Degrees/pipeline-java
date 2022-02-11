@@ -47,7 +47,7 @@ public abstract class FiftyOneOnPremiseAspectEngineBase<
     /**
      * Construct a new instance of the {@link FiftyOneOnPremiseAspectEngineBase}.
      * @param logger logger instance to use for logging
-     * @param aspectDataFactory the factory to use when creating a {@link TData}
+     * @param aspectDataFactory the factory to use when creating a TData
      *                          instance
      * @param tempDataFilePath the file where a temporary data file copy
      *                        will be stored if one is created
@@ -63,7 +63,12 @@ public abstract class FiftyOneOnPremiseAspectEngineBase<
     @Override
     public TypedKey<TData> getTypedDataKey() {
         if (typedKey == null) {
-            typedKey = new TypedKeyDefault<>(getElementDataKey(), Types.findSubClassParameterType(this, FiftyOneOnPremiseAspectEngineBase.class, 0));
+            typedKey = new TypedKeyDefault<>(
+                getElementDataKey(),
+                Types.findSubClassParameterType(
+                    this,
+                    FiftyOneOnPremiseAspectEngineBase.class,
+                    0));
         }
         return typedKey;
     }
@@ -103,7 +108,7 @@ public abstract class FiftyOneOnPremiseAspectEngineBase<
 
     @Override
     public ValueMetaData getValue(String propertyName, String valueName) throws Exception {
-        try(CloseableIterable<ValueMetaData> values = getValues()){
+        try (CloseableIterable<ValueMetaData> values = getValues()) {
           for (ValueMetaData value : values) {
             if (value.getProperty().getName().equalsIgnoreCase(propertyName) &&
                 value.getName().equalsIgnoreCase(valueName)) {

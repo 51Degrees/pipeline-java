@@ -118,19 +118,20 @@ public interface FlowElement<
     /**
      * Get the factory used to create the element data instances that are
      * populated by this flow element.
-     * @return the factory for {@link TData}
+     * @return the factory for TData
      */
     DataFactory<TData> getDataFactory();
 
     /**
      * Data factory interface which needs an implementation specific to a
      * {@link FlowElement} implementation in order to construct element data
-     * when calling the {@link FlowData#getOrAdd(String, DataFactory)} method.
+     * when calling the {@link FlowData#getOrAdd(String, FlowElement.DataFactory)}
+     * method.
      * @param <T> the type of data built by the factory
      */
     interface DataFactory<T extends ElementData> {
         /**
-         * Create a new instance of class {@link T}.
+         * Create a new instance of class T.
          * @param flowData the {@link FlowData} to link the new instance to
          * @return a new data instance
          */

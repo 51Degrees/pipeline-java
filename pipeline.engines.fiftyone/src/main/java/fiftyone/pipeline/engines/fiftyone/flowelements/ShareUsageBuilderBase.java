@@ -310,7 +310,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
 
     /**
      * Create the {@link ShareUsageElement}.
-     * @return the newly created {@link <T>}
+     * @return the newly created target instance
      * @throws IOException if there was an exception creating the element
      */
     public abstract T build() throws IOException;

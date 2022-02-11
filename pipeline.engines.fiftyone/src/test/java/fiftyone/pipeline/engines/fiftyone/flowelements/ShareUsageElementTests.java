@@ -24,10 +24,7 @@ package fiftyone.pipeline.engines.fiftyone.flowelements;
 
 import fiftyone.common.testhelpers.TestLogger;
 import fiftyone.common.testhelpers.TestLoggerFactory;
-import fiftyone.pipeline.core.data.ElementData;
-import fiftyone.pipeline.core.data.ElementPropertyMetaData;
 import fiftyone.pipeline.core.data.FlowData;
-import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.engines.services.HttpClient;
 import fiftyone.pipeline.engines.testhelpers.data.MockFlowData;
@@ -35,7 +32,6 @@ import fiftyone.pipeline.engines.trackers.Tracker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
@@ -49,6 +45,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.zip.GZIPInputStream;
@@ -56,7 +53,7 @@ import java.util.zip.GZIPInputStream;
 import static fiftyone.pipeline.core.Constants.*;
 import static fiftyone.pipeline.engines.Constants.DEFAULT_SESSION_COOKIE_NAME;
 import static fiftyone.pipeline.engines.Constants.FIFTYONE_COOKIE_PREFIX;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @SuppressWarnings({"rawtypes", "unused"})
@@ -93,19 +90,16 @@ public class ShareUsageElementTests {
         // in the _xmlContent list and return an 'OK' status code.
         when(httpClient.postData(
             any(HttpURLConnection.class),
-            ArgumentMatchers.<String, String>anyMap(),
+            ArgumentMatchers.anyMap(),
             any(byte[].class)))
-            .then(new Answer<byte[]>() {
-                @Override
-                public byte[] answer(InvocationOnMock invocationOnMock) throws Throwable {
-                    storeRequestXml((byte[])invocationOnMock.getArgument(2));
-                    return null;
-                }
+            .then((Answer<byte[]>) invocationOnMock -> {
+                storeRequestXml(invocationOnMock.getArgument(2));
+                return null;
             });
 
         // Configure the pipeline to return an empty list of flow elements
         pipeline = mock(Pipeline.class);
-        when(pipeline.getFlowElements()).thenReturn(Collections.<FlowElement>emptyList());
+        when(pipeline.getFlowElements()).thenReturn(Collections.emptyList());
 
         // Configure the tracker to always allow sharing.
         tracker = mock(Tracker.class);
@@ -147,9 +141,9 @@ public class ShareUsageElementTests {
             1,
             1,
             1,
-            new ArrayList<String>(),
-            new ArrayList<String>(),
-            new ArrayList<Entry<String, String>>());
+                new ArrayList<>(),
+                new ArrayList<>(),
+                new ArrayList<>());
 
         Map<String, Object> evidenceData = new HashMap<>();
         evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");
@@ -164,29 +158,27 @@ public class ShareUsageElementTests {
         shareUsageElement.process(data);
         // Wait for the consumer task to finish.
         assertNotNull(shareUsageElement.getSendDataFuture());
-        while (shareUsageElement.getSendDataFuture().isDone() == false) {
-
-        }
+        shareUsageElement.getSendDataFuture().get();
 
         // Assert
         // Check that one and only one HTTP message was sent
         verify(httpClient, times(1)).postData(
             any(HttpURLConnection.class),
-            ArgumentMatchers.<String, String>anyMap(),
+            ArgumentMatchers.anyMap(),
             any(byte[].class));
         assertEquals(1, xmlContent.size());
 
         // Validate that the XML is well formed by passing it through a reader
         DocumentBuilder builder = docBuilderFactory.newDocumentBuilder();
         Document doc = builder.parse(new ByteArrayInputStream(
-            xmlContent.get(0).getBytes("UTF-8")));
+            xmlContent.get(0).getBytes(StandardCharsets.UTF_8)));
 
         // Check that the expected values are populated.
-        assertTrue("XML did not contain the client IP. XML was : '" + xmlContent.get(0) + "'", xmlContent.get(0).contains("<ClientIP>1.2.3.4</ClientIP>"));
-        assertTrue("XML did not contain the x-forwarded-for header. XML was : '" + xmlContent.get(0) + "'", xmlContent.get(0).contains("<header Name=\"x-forwarded-for\"><![CDATA[5.6.7.8]]></header>"));
-        assertTrue("XML did not contain the forwarded-for header. XML was : '" + xmlContent.get(0) + "'", xmlContent.get(0).contains("<header Name=\"forwarded-for\"><![CDATA[2001::]]></header>"));
-        assertTrue("XML did not contain the 51D_Profile cookie. XML was : '" + xmlContent.get(0) + "'", xmlContent.get(0).contains("<cookie Name=\"" + FIFTYONE_COOKIE_PREFIX + "Profile\"><![CDATA[123456]]></cookie>"));
-        assertFalse("XML contained the RemoveMe cookie. XML was : '" + xmlContent.get(0) + "'", xmlContent.get(0).contains("<cookie Name=\"RemoveMe\">"));
+        assertTrue(xmlContent.get(0).contains("<ClientIP>1.2.3.4</ClientIP>"), "XML did not contain the client IP. XML was : '" + xmlContent.get(0) + "'");
+        assertTrue(xmlContent.get(0).contains("<header Name=\"x-forwarded-for\"><![CDATA[5.6.7.8]]></header>"), "XML did not contain the x-forwarded-for header. XML was : '" + xmlContent.get(0) + "'");
+        assertTrue(xmlContent.get(0).contains("<header Name=\"forwarded-for\"><![CDATA[2001::]]></header>"), "XML did not contain the forwarded-for header. XML was : '" + xmlContent.get(0) + "'");
+        assertTrue(xmlContent.get(0).contains("<cookie Name=\"" + FIFTYONE_COOKIE_PREFIX + "Profile\"><![CDATA[123456]]></cookie>"), "XML did not contain the 51D_Profile cookie. XML was : '" + xmlContent.get(0) + "'");
+        assertFalse(xmlContent.get(0).contains("<cookie Name=\"RemoveMe\">"), "XML contained the RemoveMe cookie. XML was : '" + xmlContent.get(0) + "'");
     }
 
     @Test
@@ -196,9 +188,9 @@ public class ShareUsageElementTests {
             1,
             2,
             1,
-            new ArrayList<String>(),
-            new ArrayList<String>(),
-            new ArrayList<Entry<String, String>>());
+                new ArrayList<>(),
+                new ArrayList<>(),
+                new ArrayList<>());
 
         Map<String, Object> evidenceData = new HashMap<>();
         evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");
@@ -211,7 +203,7 @@ public class ShareUsageElementTests {
         // Check that no HTTP messages were sent.
         verify(httpClient, never()).postData(
             any(HttpURLConnection.class),
-            ArgumentMatchers.<String, String>anyMap(),
+            ArgumentMatchers.anyMap(),
             any(byte[].class));
     }
 
@@ -222,9 +214,9 @@ public class ShareUsageElementTests {
             1,
             2,
             1,
-            new ArrayList<String>(),
-            new ArrayList<String>(),
-            new ArrayList<Entry<String, String>>());
+                new ArrayList<>(),
+                new ArrayList<>(),
+                new ArrayList<>());
 
         Map<String, Object> evidenceData = new HashMap<>();
         evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");
@@ -236,22 +228,20 @@ public class ShareUsageElementTests {
 
         // Wait for the consumer task to finish.
         assertNotNull(shareUsageElement.getSendDataFuture());
-        while (shareUsageElement.getSendDataFuture().isDone() == false) {
-
-        }
+        shareUsageElement.getSendDataFuture().get();
 
         // Assert
         // Check that one and only one HTTP message was sent.
         verify(httpClient, times(1)).postData(
             any(HttpURLConnection.class),
-            ArgumentMatchers.<String, String>anyMap(),
+            ArgumentMatchers.anyMap(),
             any(byte[].class));
         assertEquals(1, xmlContent.size());
 
         // Validate that the XML is well formed by passing it through a reader
         DocumentBuilder builder = docBuilderFactory.newDocumentBuilder();
         Document doc = builder.parse(new ByteArrayInputStream(
-            xmlContent.get(0).getBytes("UTF-8")));
+            xmlContent.get(0).getBytes(StandardCharsets.UTF_8)));
 
         // Make sure there are 2 'Device' nodes
         int count = 0;
@@ -273,8 +263,8 @@ public class ShareUsageElementTests {
             1,
             1,
             new ArrayList<>(Arrays.asList("x-forwarded-for", "forwarded-for")),
-            new ArrayList<String>(),
-            new ArrayList<Entry<String, String>>());
+                new ArrayList<>(),
+                new ArrayList<>());
 
         String useragent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0 Mozilla/5.0 (Macintosh; Intel Mac OS X x.y; rv:42.0) Gecko/20100101 Firefox/42.0.";
         Map<String, Object> evidenceData = new HashMap<>();
@@ -288,35 +278,33 @@ public class ShareUsageElementTests {
         shareUsageElement.process(data);
         // Wait for the consumer task to finish.
         assertNotNull(shareUsageElement.getSendDataFuture());
-        while (shareUsageElement.getSendDataFuture().isDone() == false) {
-
-        }
+        shareUsageElement.getSendDataFuture().get();
 
         // Assert
         // Check that one and only one HTTP message was sent.
         verify(httpClient, times(1)).postData(
             any(HttpURLConnection.class),
-            ArgumentMatchers.<String, String>anyMap(),
+            ArgumentMatchers.anyMap(),
             any(byte[].class));
         assertEquals(1, xmlContent.size());
 
         // Validate that the XML is well formed by passing it through a reader
         DocumentBuilder builder = docBuilderFactory.newDocumentBuilder();
         Document doc = builder.parse(new ByteArrayInputStream(
-            xmlContent.get(0).getBytes("UTF-8")));
+            xmlContent.get(0).getBytes(StandardCharsets.UTF_8)));
         // Check that the expected values are populated.
         assertTrue(
-            "XML did not contain the client IP. XML was : '" + xmlContent.get(0) + "'",
-            xmlContent.get(0).contains("<ClientIP>1.2.3.4</ClientIP>"));
+                xmlContent.get(0).contains("<ClientIP>1.2.3.4</ClientIP>"),
+                "XML did not contain the client IP. XML was : '" + xmlContent.get(0) + "'");
         assertTrue(
-            "XML did not contain User-Agent header. XML was : '" + xmlContent.get(0) + "'",
-            xmlContent.get(0).contains("<header Name=\"user-agent\"><![CDATA[" + useragent + "]]></header>"));
+                xmlContent.get(0).contains("<header Name=\"user-agent\"><![CDATA[" + useragent + "]]></header>"),
+                "XML did not contain User-Agent header. XML was : '" + xmlContent.get(0) + "'");
         assertFalse(
-            "XML contained the x-forwarded-for header. XML was : '" + xmlContent.get(0) + "'",
-            xmlContent.get(0).contains("<header Name=\"x-forwarded-for\">"));
+                xmlContent.get(0).contains("<header Name=\"x-forwarded-for\">"),
+                "XML contained the x-forwarded-for header. XML was : '" + xmlContent.get(0) + "'");
         assertFalse(
-            "XML contained the forwarded-for header. XML was : '" + xmlContent.get(0) + "'",
-            xmlContent.get(0).contains("<header Name=\"forwarded-for\">"));
+                xmlContent.get(0).contains("<header Name=\"forwarded-for\">"),
+                "XML contained the forwarded-for header. XML was : '" + xmlContent.get(0) + "'");
     }
 
     @Test
@@ -326,9 +314,9 @@ public class ShareUsageElementTests {
             0.001,
             100,
             1,
-            new ArrayList<String>(),
-            new ArrayList<String>(),
-            new ArrayList<Entry<String, String>>());
+                new ArrayList<>(),
+                new ArrayList<>(),
+                new ArrayList<>());
 
         Map<String, Object> evidenceData = new HashMap<>();
         evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");
@@ -343,25 +331,23 @@ public class ShareUsageElementTests {
         }
         // Wait for the consumer task to finish.
         assertNotNull(shareUsageElement.getSendDataFuture());
-        while (shareUsageElement.getSendDataFuture().isDone() == false) {
-
-        }
+        shareUsageElement.getSendDataFuture().get();
 
         // Assert
         // On average, the number of required events should be around
         // 100,000. However, as it's chance based it can vary
         // significantly. We only want to catch any gross errors so just
         // make sure the value is of the expected order of magnitude.
-        assertTrue("Expected the number of required events to be at least " +
-                "10,000, but was actually '" + requiredEvents + "'",
-            requiredEvents > 10000);
-        assertTrue("Expected the number of required events to be less than " +
-                "1,000,000, but was actually '" + requiredEvents + "'",
-            requiredEvents < 1000000);
+        assertTrue(requiredEvents > 10000,
+                "Expected the number of required events to be at least " +
+                        "10,000, but was actually '" + requiredEvents + "'");
+        assertTrue(requiredEvents < 1000000,
+                "Expected the number of required events to be less than " +
+                        "1,000,000, but was actually '" + requiredEvents + "'");
         // Check that one and only one HTTP message was sent.
         verify(httpClient, times(1)).postData(
             any(HttpURLConnection.class),
-            ArgumentMatchers.<String, String>anyMap(),
+            ArgumentMatchers.anyMap(),
             any(byte[].class));
         assertEquals(1, xmlContent.size());
     }
@@ -373,9 +359,9 @@ public class ShareUsageElementTests {
             1,
             2,
             1,
-            new ArrayList<String>(),
-            new ArrayList<String>(),
-            new ArrayList<Entry<String, String>>());
+                new ArrayList<>(),
+                new ArrayList<>(),
+                new ArrayList<>());
 
         Map<String, Object> evidenceData = new HashMap<>();
         evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");
@@ -388,7 +374,7 @@ public class ShareUsageElementTests {
         assertNull(shareUsageElement.getSendDataFuture());
         verify(httpClient, never()).postData(
             any(HttpURLConnection.class),
-            ArgumentMatchers.<String, String>anyMap(),
+            ArgumentMatchers.anyMap(),
             any(byte[].class));
 
         // Dispose of the element.
@@ -398,7 +384,7 @@ public class ShareUsageElementTests {
         // Check that no HTTP messages were sent.
         verify(httpClient, never()).postData(
             any(HttpURLConnection.class),
-            ArgumentMatchers.<String, String>anyMap(),
+            ArgumentMatchers.anyMap(),
             any(byte[].class));
     }
 
@@ -407,23 +393,20 @@ public class ShareUsageElementTests {
         // Arrange
         when(httpClient.postData(
             any(HttpURLConnection.class),
-            ArgumentMatchers.<String, String>anyMap(),
+            ArgumentMatchers.anyMap(),
             any(byte[].class)))
-            .then(new Answer<byte[]>() {
-                @Override
-                public byte[] answer(InvocationOnMock invocationOnMock) throws Throwable {
-                    HttpURLConnection connection = invocationOnMock.getArgument(0);
-                    when(connection.getResponseCode()).thenReturn(500);
-                    return null;
-                }
+            .then((Answer<byte[]>) invocationOnMock -> {
+                HttpURLConnection connection = invocationOnMock.getArgument(0);
+                when(connection.getResponseCode()).thenReturn(500);
+                return null;
             });
         createShareUsage(
             1,
             1,
             1,
-            new ArrayList<String>(),
-            new ArrayList<String>(),
-            new ArrayList<Entry<String, String>>());
+                new ArrayList<>(),
+                new ArrayList<>(),
+                new ArrayList<>());
 
         Map<String, Object> evidenceData = new HashMap<>();
         evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");
@@ -433,15 +416,13 @@ public class ShareUsageElementTests {
         shareUsageElement.process(data);
         // Wait for the consumer task to finish.
         assertNotNull(shareUsageElement.getSendDataFuture());
-        while (shareUsageElement.getSendDataFuture().isDone() == false) {
-
-        }
+        shareUsageElement.getSendDataFuture().get();
 
         // Assert
         // Check that no HTTP messages were sent.
         verify(httpClient, times(1)).postData(
             any(HttpURLConnection.class),
-            ArgumentMatchers.<String, String>anyMap(),
+            ArgumentMatchers.anyMap(),
             any(byte[].class));
         assertTrue(shareUsageElement.isCanceled());
     }
@@ -451,24 +432,21 @@ public class ShareUsageElementTests {
         // Arrange
         when(httpClient.postData(
             any(HttpURLConnection.class),
-            ArgumentMatchers.<String, String>anyMap(),
+            ArgumentMatchers.anyMap(),
             any(byte[].class)))
-            .then(new Answer<byte[]>() {
-                @Override
-                public byte[] answer(InvocationOnMock invocationOnMock) throws Throwable {
-                    HttpURLConnection connection = invocationOnMock.getArgument(0);
-                    when(connection.getResponseCode()).thenReturn(200);
-                    return null;
-                }
+            .then((Answer<byte[]>) invocationOnMock -> {
+                HttpURLConnection connection = invocationOnMock.getArgument(0);
+                when(connection.getResponseCode()).thenReturn(200);
+                return null;
             });
         createShareUsage(
             1,
             1,
             1,
-            new ArrayList<String>(),
-            new ArrayList<String>(),
+                new ArrayList<>(),
+                new ArrayList<>(),
             Arrays.asList(
-                (Map.Entry<String, String>) new AbstractMap.SimpleEntry<String, String>("header.User-Agent", "Azure Traffic Manager Endpoint Monitor")
+                    new AbstractMap.SimpleEntry<>("header.User-Agent", "Azure Traffic Manager Endpoint Monitor")
             ));
 
         Map<String, Object> evidenceData = new HashMap<>();
@@ -485,7 +463,7 @@ public class ShareUsageElementTests {
         // Check that no HTTP messages were sent.
         verify(httpClient, never()).postData(
             any(HttpURLConnection.class),
-            ArgumentMatchers.<String, String>anyMap(),
+            ArgumentMatchers.anyMap(),
             any(byte[].class));
     }
 
@@ -507,7 +485,7 @@ public class ShareUsageElementTests {
                 .build();
 
             assertTrue(logger.warningsLogged.size() > 0);
-            assertTrue(logger.errorsLogged.size() == 0);
+            assertEquals(0, logger.errorsLogged.size());
         }
 
     }
@@ -529,8 +507,8 @@ public class ShareUsageElementTests {
                 .setIgnoreFlowDataEvidenceFilter(config)
                 .build();
 
-            assertTrue(logger.warningsLogged.size() == 0);
-            assertTrue(logger.errorsLogged.size() == 0);
+            assertEquals(0, logger.warningsLogged.size());
+            assertEquals(0, logger.errorsLogged.size());
         }
     }
 
@@ -541,7 +519,8 @@ public class ShareUsageElementTests {
     @Test
     public void ShareUsageElement_BadSchema() throws Exception {
         // Arrange
-        createShareUsage(1, 1, 1, new ArrayList<String>(), new ArrayList<String>(), new ArrayList<Entry<String, String>>());
+        createShareUsage(1, 1, 1, new ArrayList<>(),
+                new ArrayList<>(), new ArrayList<>());
 
         Map<String, Object> evidenceData = new HashMap<>();
 
@@ -557,9 +536,7 @@ public class ShareUsageElementTests {
         shareUsageElement.process(data);
         // Wait for the consumer task to finish.
         assertNotNull(shareUsageElement.getSendDataFuture());
-        while (shareUsageElement.getSendDataFuture().isDone() == false) {
-            Thread.sleep(10000);
-        }
+        shareUsageElement.getSendDataFuture().get();
 
         // Assert
         // Check that one and only one HTTP message was sent.
@@ -569,7 +546,7 @@ public class ShareUsageElementTests {
         // Validate that the XML is well formed by passing it through a reader
         DocumentBuilder builder = docBuilderFactory.newDocumentBuilder();
         Document doc = builder.parse(new ByteArrayInputStream(
-            xmlContent.get(0).getBytes("UTF-8")));
+            xmlContent.get(0).getBytes(StandardCharsets.UTF_8)));
 
         // Check that the expected values are populated.
         assertTrue(xmlContent.get(0).contains("iPhone\\x0018"));
@@ -580,7 +557,6 @@ public class ShareUsageElementTests {
     /**
      * Test that the ShareUsageElement generates a session id if one is not
      * contained in the evidence and adds it to the results.
-     * @throws Exception 
      */
     @Test
     public void ShareUsageElement_SessionIdAndSequence_None() throws Exception {
@@ -589,9 +565,9 @@ public class ShareUsageElementTests {
             1,
             1,
             1,
-            new ArrayList<String>(),
-            new ArrayList<String>(),
-            new ArrayList<Entry<String, String>>());
+                new ArrayList<>(),
+                new ArrayList<>(),
+                new ArrayList<>());
 
         Map<String, Object> evidenceData = new HashMap<>();
         evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");
@@ -603,35 +579,31 @@ public class ShareUsageElementTests {
         shareUsageElement.process(data);
         // Wait for the consumer task to finish.
         assertNotNull(shareUsageElement.getSendDataFuture());
-        while (shareUsageElement.getSendDataFuture().isDone() == false) {
-
-        }
-
+        shareUsageElement.getSendDataFuture().get();
         // Assert
         // Check that one and only one HTTP message was sent
         verify(httpClient, times(1)).postData(
             any(HttpURLConnection.class),
-            ArgumentMatchers.<String, String>anyMap(),
+            ArgumentMatchers.anyMap(),
             any(byte[].class));
         assertEquals(1, xmlContent.size());
 
         // Validate that the XML is well formed by passing it through a reader
         DocumentBuilder builder = docBuilderFactory.newDocumentBuilder();
         Document doc = builder.parse(new ByteArrayInputStream(
-            xmlContent.get(0).getBytes("UTF-8")));
+            xmlContent.get(0).getBytes(StandardCharsets.UTF_8)));
 
         // Check that the expected values are populated.
         assertTrue(data.getEvidence().asKeyMap().containsKey(fiftyone.pipeline.engines.fiftyone.flowelements.Constants.EVIDENCE_SESSIONID));
         assertTrue(data.getEvidence().asKeyMap().containsKey(fiftyone.pipeline.engines.fiftyone.flowelements.Constants.EVIDENCE_SEQUENCE));
-        assertTrue("XML did not contain the SessionId. XML was : '" + xmlContent.get(0) + "'", xmlContent.get(0).contains("<SessionId>"));
-        assertTrue("XML did not contain the correct Sequence. XML was : '" + xmlContent.get(0) + "'", xmlContent.get(0).contains("<Sequence>1</Sequence>"));
+        assertTrue(xmlContent.get(0).contains("<SessionId>"), "XML did not contain the SessionId. XML was : '" + xmlContent.get(0) + "'");
+        assertTrue(xmlContent.get(0).contains("<Sequence>1</Sequence>"), "XML did not contain the correct Sequence. XML was : '" + xmlContent.get(0) + "'");
     }
     
     /**
      * Test that if a session id and sequence exists in the evidence the 
      * ShareUsageElement persists the session id and increments the 
      * sequence.
-     * @throws Exception 
      */
     @Test
     public void ShareUsageElement_SessionIdAndSequence_Existing() throws Exception {
@@ -640,9 +612,9 @@ public class ShareUsageElementTests {
             1,
             1,
             1,
-            new ArrayList<String>(),
-            new ArrayList<String>(),
-            new ArrayList<Entry<String, String>>());
+                new ArrayList<>(),
+                new ArrayList<>(),
+                new ArrayList<>());
 
         Map<String, Object> evidenceData = new HashMap<>();
         evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");
@@ -656,28 +628,26 @@ public class ShareUsageElementTests {
         shareUsageElement.process(data);
         // Wait for the consumer task to finish.
         assertNotNull(shareUsageElement.getSendDataFuture());
-        while (shareUsageElement.getSendDataFuture().isDone() == false) {
-
-        }
+        shareUsageElement.getSendDataFuture().get();
 
         // Assert
         // Check that one and only one HTTP message was sent
         verify(httpClient, times(1)).postData(
             any(HttpURLConnection.class),
-            ArgumentMatchers.<String, String>anyMap(),
+            ArgumentMatchers.anyMap(),
             any(byte[].class));
         assertEquals(1, xmlContent.size());
 
         // Validate that the XML is well formed by passing it through a reader
         DocumentBuilder builder = docBuilderFactory.newDocumentBuilder();
         Document doc = builder.parse(new ByteArrayInputStream(
-            xmlContent.get(0).getBytes("UTF-8")));
+            xmlContent.get(0).getBytes(StandardCharsets.UTF_8)));
 
         // Check that the expected values are populated.
         assertTrue(data.getEvidence().asKeyMap().containsKey(fiftyone.pipeline.engines.fiftyone.flowelements.Constants.EVIDENCE_SESSIONID));
         assertTrue(data.getEvidence().asKeyMap().containsKey(fiftyone.pipeline.engines.fiftyone.flowelements.Constants.EVIDENCE_SEQUENCE));
-        assertTrue("XML did not contain the SessionId. XML was : '" + xmlContent.get(0) + "'", xmlContent.get(0).contains("<SessionId>abcdefg-hijklmn-opqrst-uvwxyz</SessionId>"));
-        assertTrue("XML did not contain the correct Sequence. XML was : '" + xmlContent.get(0) + "'", xmlContent.get(0).contains("<Sequence>3</Sequence>"));
+        assertTrue(xmlContent.get(0).contains("<SessionId>abcdefg-hijklmn-opqrst-uvwxyz</SessionId>"), "XML did not contain the SessionId. XML was : '" + xmlContent.get(0) + "'");
+        assertTrue(xmlContent.get(0).contains("<Sequence>3</Sequence>"), "XML did not contain the correct Sequence. XML was : '" + xmlContent.get(0) + "'");
     }
 
     private void storeRequestXml(byte[] request) throws IOException {

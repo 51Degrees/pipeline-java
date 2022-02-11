@@ -64,7 +64,7 @@ public abstract class AspectEngineBase<
     /**
      * Construct a new instance of the {@link AspectEngine}.
      * @param logger logger instance to use for logging
-     * @param aspectDataFactory the factory to use when creating a {@link TData}
+     * @param aspectDataFactory the factory to use when creating a TData
      *                          instance
      */
     public AspectEngineBase(

@@ -41,7 +41,10 @@ public final class TestLoggerFactory implements ILoggerFactory {
 
     @Override
     public Logger getLogger(String name) {
-        TestLogger logger = new TestLogger(name, internalLoggerFactory.getLogger(name));
+        TestLogger logger = new TestLogger(
+            name,
+            internalLoggerFactory == null ?
+                null : internalLoggerFactory.getLogger(name));
         loggers.add(logger);
         return logger;
     }

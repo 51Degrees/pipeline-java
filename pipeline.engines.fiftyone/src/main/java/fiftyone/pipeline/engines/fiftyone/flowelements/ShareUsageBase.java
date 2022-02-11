@@ -864,8 +864,8 @@ public abstract class ShareUsageBase
     }
 
     /**
-     * Set Engine Version No.
-     * @param enginesVersion
+     * Set Engine Version Number.
+     * @param enginesVersion version number string of the engine
      */
     public void setEnginesVersion(String enginesVersion) {
         this.enginesVersion = enginesVersion;

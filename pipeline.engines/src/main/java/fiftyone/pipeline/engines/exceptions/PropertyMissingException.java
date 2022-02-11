@@ -49,6 +49,7 @@ public class PropertyMissingException extends RuntimeException {
      * Constructs a new exception containing the property name, error, and
      * reason the property was not found.
      *
+     * @param reason the reason for the missing property
      * @param propertyName of the missing property
      * @param message      why the property was not found
      */
@@ -65,6 +66,7 @@ public class PropertyMissingException extends RuntimeException {
      * Constructs a new exception containing the property name, error, and
      * reason the property was not found.
      *
+     * @param reason the reason for the missing property
      * @param propertyName of the missing property
      * @param message      why the property was not found
      * @param cause        of the exception
@@ -90,7 +92,7 @@ public class PropertyMissingException extends RuntimeException {
 
     /**
      * Get missing property reason.
-     * @return property name
+     * @return reason for the missing property
      */
     public MissingPropertyReason getReason() {
         return reason;
@@ -98,7 +100,7 @@ public class PropertyMissingException extends RuntimeException {
 
     /**
      * Set missing property reason.
-     * @param reason
+     * @param reason the reason for the missing property
      */
     public void setReason(MissingPropertyReason reason) {
         this.reason = reason;

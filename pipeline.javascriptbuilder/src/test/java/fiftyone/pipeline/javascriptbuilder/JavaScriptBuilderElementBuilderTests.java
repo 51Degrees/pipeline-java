@@ -27,8 +27,7 @@ public class JavaScriptBuilderElementBuilderTests {
      */
     @ParameterizedTest()
     @ValueSource(strings = {"22j2n2", "%2j2n2", "+asaaa", "\\asd23"})
-    public void JavaScriptBuilderElement_Builder_SetObjectName_InvalidName(
-        String objName) {
+    public void JavaScriptBuilderElement_Builder_SetObjectName_InvalidName(String objName) {
         assertThrows(
             PipelineConfigurationException.class,
             () -> {

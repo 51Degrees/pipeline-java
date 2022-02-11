@@ -1,12 +1,10 @@
 package fiftyone.pipeline.cloudrequestengine.flowelements;
 
-import fiftyone.pipeline.cloudrequestengine.data.CloudRequestData;
 import fiftyone.pipeline.core.data.ElementPropertyMetaData;
 import fiftyone.pipeline.core.data.EvidenceKeyFilter;
 import fiftyone.pipeline.core.data.EvidenceKeyFilterWhitelist;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
-import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.core.typed.TypedKey;
 import fiftyone.pipeline.core.typed.TypedKeyDefault;
 import fiftyone.pipeline.engines.data.AspectData;
@@ -21,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A specialised type of {@link CloudAspectEngineBase<TData>} that has the
+ * A specialised type of {@link CloudAspectEngineBase} that has the
  * functionality to support returning a list of matching {@link AspectData}
  * profiles rather than a single item.
  * @param <TData> the type of {@link AspectData} returned by this engine

@@ -36,7 +36,7 @@ import fiftyone.pipeline.engines.configuration.CacheConfiguration;
  * The key will always be a {@link FlowData} instance as defined
  * by {@link DataKeyedCacheBase}.
  * The meta-data can be any type and is specified using the generic type
- * parameter {@link <T>}.
+ * parameter T.
  *
  * As an example, a tracker could create a key using the source IP address from
  * the {@link FlowData} evidence and use the associated meta-data to store a

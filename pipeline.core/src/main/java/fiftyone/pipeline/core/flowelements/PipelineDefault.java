@@ -149,7 +149,7 @@ class PipelineDefault implements PipelineInternal {
         this.elementAvailableProperties =
             getElementAvailableProperties(flowElements);
 
-        logger.info("Pipeline '" + hashCode() + "' created.");
+        logger.debug("Pipeline '" + hashCode() + "' created.");
 
     }
 
@@ -358,8 +358,7 @@ class PipelineDefault implements PipelineInternal {
                         }
                         if (exceptions.size() > 0) {
                             throw new Exception(
-                                "One or more exceptions occurred while closing " +
-                                    "the pipeline",
+                                "One or more exceptions occurred while closing the pipeline",
                                 exceptions.get(0));
                         }
                     }
@@ -370,13 +369,18 @@ class PipelineDefault implements PipelineInternal {
 
     @Override
     public void close() throws Exception {
-        logger.info("Pipeline '" + hashCode() + "' closed.");
+        logger.debug("Pipeline '" + hashCode() + "' closed.");
         close(true);
     }
 
-    @SuppressWarnings("deprecation")
+/*   @SuppressWarnings("deprecation")
     @Override
     protected void finalize() throws Throwable {
+        if (isClosed) {
+            logger.info("Pipeline '{}' finalizing, but already closed", hashCode());
+            super.finalize();
+            return;
+        }
         try {
             logger.warn(
                 "Pipeline '" + hashCode() + "' finalised. It is recommended " +
@@ -388,7 +392,7 @@ class PipelineDefault implements PipelineInternal {
             super.finalize();
         }
     }
-
+*/
     @Override
     public void process(FlowData data) {
         logger.debug("Pipeline '" + hashCode() + "' started processing.");
@@ -446,13 +450,13 @@ class PipelineDefault implements PipelineInternal {
                     propertyName + "'. Flow elements that populate this " +
                     "property are: '" +
                     Arrays.toString(properties.toArray()) + "'";
-                logger.error(message);
+                logger.debug(message);
                 throw new PipelineDataException(message);
             }
             if (properties.size() == 0) {
                 String message = "Could not find property '" + propertyName +
                     "'.";
-                logger.error(message);
+                logger.debug(message);
                 throw new PipelineDataException(message);
             }
             result = properties.get(0);

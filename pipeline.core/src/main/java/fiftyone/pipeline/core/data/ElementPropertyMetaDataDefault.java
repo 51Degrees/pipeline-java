@@ -73,7 +73,6 @@ public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {
      * @param element the element which the property belongs to
      * @param category the category which the property belongs to
      * @param type the type of value returned by the property
-     * @param dataTiersWherePresent data tiers which contain this property
      * @param available true if the property is available
      * @param itemProperties list of sub-properties contained within the
      *                       property
