@@ -61,7 +61,7 @@ import java.io.File;
  * For details of what each setting does, see the reference documentation 
  * for the [share usage builder](http://51degrees.com/pipeline-java/4.3/classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1flowelements_1_1_share_usage_builder_base.html) 
  * 
- * This example is available in full on [GitHub](https://github.com/51Degrees/pipeline-java/blob/master/examples/pipeline.developer-examples.usage-sharing/src/main/java/pipeline/developerexamples/usagesharing/Main.java).
+ * This example is available in full on [GitHub](https://github.com/51Degrees/pipeline-java/blob/master/pipeline.developer-examples/pipeline.developer-examples.usage-sharing/src/main/java/pipeline/developerexamples/usagesharing/Main.java).
  * 
  * Expected output:
  * ```
