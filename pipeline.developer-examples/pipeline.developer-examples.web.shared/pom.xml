@@ -5,7 +5,7 @@
     <parent>
         <artifactId>pipeline.developer-examples</artifactId>
         <groupId>com.51degrees</groupId>
-        <version>4.3.10-SNAPSHOT</version>
+        <version>4.3.11-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 

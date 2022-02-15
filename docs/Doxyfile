@@ -825,10 +825,10 @@ INPUT                  = ../pipeline.caching/src/main \
                          ../pipeline.engines/src/main \
                          ../pipeline.engines.fiftyone/src/main \
                          ../README.md \
-                         ../web/pipeline.web/src/main \
-                         ../web/pipeline.web.mvc/src/main \
-                         ../web/pipeline.web.shared/src/main \
-                         ../examples/pipeline.developer-examples.usage-sharing/src/main
+                         ../pipeline.web.packages/pipeline.web/src/main \
+                         ../pipeline.web.packages/pipeline.web.mvc/src/main \
+                         ../pipeline.web.packages/pipeline.web.shared/src/main \
+                         ../pipeline.developer-examples/pipeline.developer-examples.usage-sharing/src/main
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -901,7 +901,7 @@ EXCLUDE_SYMBOLS        =
 # that contain example code fragments that are included (see the \include
 # command).
 
-EXAMPLE_PATH           = ../examples \
+EXAMPLE_PATH           = ../pipeline.developer-examples \
                          ../../../src/snippets
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
