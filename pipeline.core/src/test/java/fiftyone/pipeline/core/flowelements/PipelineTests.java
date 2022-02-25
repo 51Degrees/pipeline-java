@@ -25,14 +25,18 @@ package fiftyone.pipeline.core.flowelements;
 import fiftyone.pipeline.core.data.*;
 import fiftyone.pipeline.core.data.factories.FlowDataFactory;
 import fiftyone.pipeline.core.exceptions.PipelineDataException;
+import fiftyone.pipeline.core.services.PipelineService;
 import fiftyone.pipeline.core.testclasses.data.TestElementData;
 import fiftyone.pipeline.exceptions.AggregateException;
+import fiftyone.pipeline.core.testclasses.services.TestCloseableService;
+import fiftyone.pipeline.core.testclasses.services.TestAutoCloseableService;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -129,19 +133,62 @@ public class PipelineTests {
         // Arrange
         FlowElement element1 = getMockFlowElement();
         FlowElement element2 = getMockFlowElement();
+        
+        //  Services
+        PipelineService service1 = mock(TestCloseableService.class);
+        PipelineService service2 = mock(TestAutoCloseableService.class);
 
         // Create the pipeline
-        PipelineInternal pipeline = createPipeline(
+        try(PipelineInternal pipeline = createPipeline(
             true,
             false,
-            new FlowElement[]{element1, element2});
-
-        // Act
-        pipeline.close();
+            new FlowElement[]{element1, element2})) {
+        
+        	// Add services
+        	pipeline.addService(service1);
+        	pipeline.addService(service2);
+        }
 
         // Assert
         verify(element1, times(1)).close();
         verify(element2, times(1)).close();
+        verify((TestCloseableService)service1, times(1)).close();
+        verify((TestAutoCloseableService)service2, times(1)).close();
+    }
+    
+    @Test
+    public void Pipeline_AddService() throws Exception {
+    	try (Pipeline pipeline = createPipeline(false, false, new FlowElement[] {})) {
+    		// Test 1 service
+    		PipelineService service1 = new PipelineService() {};
+    		pipeline.addService(service1);
+    		List<PipelineService> services = pipeline.getServices();
+    		assertEquals(1, services.size());
+    		assertTrue(services.contains(service1));
+    	
+    		// Test 2 service
+    		PipelineService service2 = new PipelineService() {};
+    		pipeline.addService(service2);
+    		assertEquals(2, services.size());
+    		assertTrue(services.contains(service1));
+    		assertTrue(services.contains(service2));
+    	}
+    }
+    
+    @Test
+    public void Pipline_AddServices() throws Exception {
+    	try (Pipeline pipeline = createPipeline(false, false, new FlowElement[] {})) {
+    		List<PipelineService> testServices = new ArrayList<>();
+    		testServices.add(new PipelineService() {});
+    		testServices.add(new PipelineService() {});
+    		pipeline.addServices(testServices);
+    		
+    		List<PipelineService> services = pipeline.getServices();
+    		assertEquals(2, services.size());
+    		testServices.forEach((s) -> {
+    			assertTrue(services.contains(s));
+    		});
+    	}
     }
 
     @Test

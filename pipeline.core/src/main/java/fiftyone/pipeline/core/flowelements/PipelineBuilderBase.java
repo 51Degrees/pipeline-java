@@ -22,8 +22,11 @@
 
 package fiftyone.pipeline.core.flowelements;
 
+import fiftyone.pipeline.core.configuration.PipelineOptions;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.factories.FlowDataFactory;
+import fiftyone.pipeline.core.services.PipelineService;
+
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +61,11 @@ public abstract class PipelineBuilderBase<T extends PipelineBuilderBase> {
      */
     protected final List<FlowElement> flowElements = new ArrayList<>();
 
+    /**
+     * List of services to be managed by the Pipeline.
+     */
+    protected final List<PipelineService> services = new ArrayList<>();
+    
     protected boolean autoCloseElements = false;
 
     protected boolean suppressProcessExceptions = false;
@@ -93,12 +101,14 @@ public abstract class PipelineBuilderBase<T extends PipelineBuilderBase> {
      */
     public Pipeline build() throws Exception {
         onPreBuild();
-        return new PipelineDefault(
+        Pipeline pipeline = new PipelineDefault(
             loggerFactory.getLogger(Pipeline.class.getName()),
             flowElements,
             getFlowDataFactory(),
             autoCloseElements,
             suppressProcessExceptions);
+        addServicesToPipeline(pipeline);
+        return pipeline;
     }
 
     /**
@@ -135,6 +145,33 @@ public abstract class PipelineBuilderBase<T extends PipelineBuilderBase> {
             Arrays.asList(elements));
         flowElements.add(parallelElements);
         return (T) this;
+    }
+    
+    /**
+     * Add a service to the builder which will be needed by any of the
+     * elements being added to the pipeline. This should be used when
+     * calling {@link PipelineBuilderFromConfiguration#buildFromConfiguration(PipelineOptions)}.
+     *
+     * See {@link PipelineService} for more details.
+     * @param service the service instance to add
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
+	public T addService(PipelineService service) {
+        services.add(service);
+        return (T) this;
+    }
+    
+    /**
+     * Add all known services to a Pipeline to be managed.
+     * @param pipeline pipeline to add service to
+     */
+    protected void addServicesToPipeline(Pipeline pipeline) {
+    	if (!pipeline.addServices(services)) {
+    		for (PipelineService service : services) {
+    			pipeline.addService(service);
+    		}
+    	}
     }
 
     /**

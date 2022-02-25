@@ -58,7 +58,6 @@ public class PipelineBuilder
     implements PipelineBuilderFromConfiguration {
 
     private final Map<Class<?>, Class<?>> primitiveTypes = getPrimitiveTypeMap();
-    private final List<PipelineService> services = new ArrayList<>();
     private Set<Class<?>> elementBuilders;
 
     /**
@@ -393,20 +392,6 @@ public class PipelineBuilder
             }
         }
         return true;
-    }
-
-    /**
-     * Add a service to the builder which will be needed by any of the
-     * elements being added to the pipeline. This should be used when
-     * calling {@link #buildFromConfiguration(PipelineOptions)}.
-     *
-     * See {@link PipelineService} for more details.
-     * @param service the service instance to add
-     * @return this builder
-     */
-    public PipelineBuilder addService(PipelineService service) {
-        services.add(service);
-        return this;
     }
 
     /**

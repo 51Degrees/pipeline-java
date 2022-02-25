@@ -52,6 +52,7 @@ public class FutureFactoryDefault implements FutureFactory {
 
     @Override
     public void close() throws IOException {
-        executor.shutdownNow();
+    	// Shutdown gracefully.
+        executor.shutdown();
     }
 }

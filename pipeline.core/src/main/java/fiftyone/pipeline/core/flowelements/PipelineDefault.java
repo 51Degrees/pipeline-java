@@ -25,9 +25,11 @@ package fiftyone.pipeline.core.flowelements;
 import fiftyone.pipeline.core.data.*;
 import fiftyone.pipeline.core.data.factories.FlowDataFactory;
 import fiftyone.pipeline.core.exceptions.PipelineDataException;
+import fiftyone.pipeline.core.services.PipelineService;
 import fiftyone.pipeline.exceptions.AggregateException;
 import org.slf4j.Logger;
 
+import java.io.Closeable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -92,6 +94,11 @@ class PipelineDefault implements PipelineInternal {
      * The {@link FlowElement}s that make up this Pipeline.
      */
     private final List<FlowElement> flowElements;
+    
+    /**
+     * The services that are used by this Pipeline.
+     */
+    private final List<PipelineService> services;
 
     /**
      * A filter that will only include the evidence keys that can be used by at
@@ -137,6 +144,7 @@ class PipelineDefault implements PipelineInternal {
         this.logger = logger;
         this.flowDataFactory = flowDataFactory;
         this.flowElements = flowElements;
+        this.services = new ArrayList<>();
         this.autoDisposeElements = autoDisposeElements;
         this.suppressProcessExceptions = suppressProcessExceptions;
 
@@ -152,6 +160,21 @@ class PipelineDefault implements PipelineInternal {
         logger.debug("Pipeline '" + hashCode() + "' created.");
 
     }
+    
+    @Override
+    public void addService(PipelineService service) {
+    	this.services.add(service);
+    }
+    
+    @Override
+    public boolean addServices(Collection<PipelineService> services) {
+    	return this.services.addAll(services);
+    }
+    
+    @Override
+	public List<PipelineService> getServices() {
+		return Collections.unmodifiableList(services);
+	}
 
     @Override
     public FlowData createFlowData() throws RuntimeException {
@@ -348,6 +371,7 @@ class PipelineDefault implements PipelineInternal {
                 if (isClosed == false) {
                     isClosed = true;
                     if (closing && autoDisposeElements) {
+                    	// Dispose all elements
                         List<Exception> exceptions = new ArrayList<>();
                         for (FlowElement element : flowElements) {
                             try {
@@ -356,6 +380,24 @@ class PipelineDefault implements PipelineInternal {
                                 exceptions.add(e);
                             }
                         }
+                        
+                        // Dispose the services after all elements have been
+                        // disposed.
+                        for (PipelineService service : services) {
+                        	if (service instanceof Closeable) {
+                        		((Closeable)service).close();
+                        	}
+                        	else if (service instanceof AutoCloseable){
+                        		try {
+                        			((AutoCloseable)service).close();
+                        		}
+                        		catch (Exception e) {
+                        			exceptions.add(e);
+                        		}
+                        	}
+                        }
+                        
+                        // Throw an exception if an exception occurred
                         if (exceptions.size() > 0) {
                             throw new Exception(
                                 "One or more exceptions occurred while closing the pipeline",
