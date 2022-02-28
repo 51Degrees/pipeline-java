@@ -5,7 +5,7 @@
 
     <groupId>com.51degrees</groupId>
     <artifactId>pipeline</artifactId>
-    <version>4.3.13-SNAPSHOT</version>
+    <version>4.3.14-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>51Degrees :: Pipeline</name>
