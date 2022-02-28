@@ -25,7 +25,9 @@ package fiftyone.pipeline.core.flowelements;
 import fiftyone.pipeline.core.data.ElementPropertyMetaData;
 import fiftyone.pipeline.core.data.EvidenceKeyFilter;
 import fiftyone.pipeline.core.data.FlowData;
+import fiftyone.pipeline.core.services.PipelineService;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -67,6 +69,30 @@ public interface Pipeline extends AutoCloseable {
      * @return true if the Pipeline has been closed
      */
     boolean isClosed();
+    
+    /**
+     * Add a service to be used by this Pipeline. If the service supports 
+     * Closeable or AutoCloseable, it will be closed automatically when the
+     * pipeline is closed.
+     * @param service
+     */
+    void addService(PipelineService service);
+    
+    /**
+     * Add a collection of services. If the services support Closeable or
+     * AutoCloseable, they will be closed automatically when the pipeline is
+     * closed.
+     * @param services to be added
+     * @return true if successfully added
+     */
+    boolean addServices(Collection<PipelineService> services);
+    
+    /**
+     * Returns the an unmodified list of services that this Pipeline is
+     * monitoring
+     * @return immutable list of pipeline services
+     */
+    List<PipelineService> getServices();
 
     /**
      * Get the specified element from the pipeline. If the pipeline contains

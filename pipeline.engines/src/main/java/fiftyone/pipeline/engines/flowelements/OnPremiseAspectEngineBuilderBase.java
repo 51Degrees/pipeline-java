@@ -128,11 +128,11 @@ public abstract class OnPremiseAspectEngineBuilderBase<
                 if (dataUpdateService == null) {
                     throw new RuntimeException(
                         "Auto update enabled by data update service does not exist. " +
-                            "This can be corrected by passing an IDataUpdateService " +
+                            "This can be corrected by passing an DataUpdateService " +
                             "instance to the engine builder constructor. " +
-                            "If building from configuration, an IServiceProvider " +
-                            "instance able to resolve an IDataUpdateService " +
-                            "must be passed to the pipeline builder.");
+                            "If building from configuration, this can be corrected " +
+                            "by adding an DataUpdateService instance to the " +
+                            "the pipeline builder via addService() method.");
                 }
                 dataUpdateService.registerDataFile(dataFile);
             }

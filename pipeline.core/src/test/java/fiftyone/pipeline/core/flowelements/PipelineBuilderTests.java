@@ -41,9 +41,12 @@ import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import java.util.List;
 
 @RunWith(BuilderClassPathTestRunner.class)
 @SuppressWarnings("rawtypes")
@@ -282,11 +285,16 @@ public class PipelineBuilderTests {
         TestService service = new TestService();
 
         builder.addService(service);
-        Pipeline pipeline = builder.buildFromConfiguration(opts);
-
-        assertEquals(
+        try(Pipeline pipeline = builder.buildFromConfiguration(opts)) {
+        	assertEquals(
             service,
             pipeline.getElement(ElementRequiringService.class).getService());
+        	
+        	// Make sure service is added and managed by pipeline
+        	List<PipelineService> services = pipeline.getServices();
+        	assertEquals(1, services.size());
+        	assertTrue(services.contains(service));
+        }
     }
 
     @Test(expected = PipelineConfigurationException.class)

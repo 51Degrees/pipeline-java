@@ -28,13 +28,20 @@
     <parent>
         <artifactId>pipeline.developer-examples</artifactId>
         <groupId>com.51degrees</groupId>
-        <version>4.3.11-SNAPSHOT</version>
+        <version>4.3.12-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>pipeline.developerexamples.cloudengine</artifactId>
     <name>51Degrees :: Pipeline :: Developer Examples :: Cloud Engine</name>
     <url>https:51degrees.com</url>
+	<description>This example is no longer available in Maven</description>
+	<distributionManagement>
+		<relocation>
+			<groupId>com.51degrees.no_longer_in_maven</groupId>
+			<message>This example is no longer available in Maven</message>
+		</relocation>
+	</distributionManagement>
 
     <dependencies>
         <dependency>

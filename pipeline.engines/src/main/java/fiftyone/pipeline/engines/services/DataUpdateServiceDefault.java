@@ -94,7 +94,10 @@ public class DataUpdateServiceDefault implements DataUpdateService {
      * @param httpClient the HTTP client used to download new data files
      * @param fileWrapperFactory the factory to create the file wrappers used to
      *                           access files
-     * @param futureFactory the future factory used to create update threads
+     * @param futureFactory the future factory used to create update threads.
+     * NOTE: This factory will be closed when the Data Update Service gets
+     * closed so it is recommended to not share this factory, as scheduled tasks
+     * from other objects might be shutdown unexpectedly.
      */
     public DataUpdateServiceDefault(
         Logger logger,

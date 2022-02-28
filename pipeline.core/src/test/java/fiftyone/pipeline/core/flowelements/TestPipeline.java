@@ -26,7 +26,9 @@ import fiftyone.pipeline.core.data.ElementPropertyMetaData;
 import fiftyone.pipeline.core.data.EvidenceKeyFilter;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.exceptions.PipelineDataException;
+import fiftyone.pipeline.core.services.PipelineService;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -57,6 +59,21 @@ public class TestPipeline {
         public boolean isClosed() {
             return pipeline.isClosed();
         }
+        
+        @Override
+        public void addService(PipelineService service) {
+        	 pipeline.addService(service);
+        }
+        
+        @Override
+        public boolean addServices(Collection<PipelineService> services) {
+        	return pipeline.addServices(services);
+        }
+        
+        @Override
+		public List<PipelineService> getServices() {
+        	return pipeline.getServices();
+		}
 
         @Override
         @SuppressWarnings("rawtypes")
