@@ -47,7 +47,7 @@ public class JavaScriptBuilderElementBuilder {
     protected String protocol = "";
     protected String contextRoot = "";
     protected String objName = "";
-    private boolean enableCookies = false;
+    private boolean enableCookies = true;
 
     /**
      * Construct a new instance.

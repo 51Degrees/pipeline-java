@@ -31,7 +31,7 @@ public class Constants {
      * The maximum length of a piece of evidence's value which can be added to
      * the usage data being sent.
      */
-    public static final int SHARE_USAGE_MAX_EVIDENCE_LENGTH = 10000;
+    public static final int SHARE_USAGE_MAX_EVIDENCE_LENGTH = 512;
 
     /**
      * Session id evidence suffix. This is prefixed by the query constant.
@@ -69,14 +69,24 @@ public class Constants {
      * The default timeout in milliseconds to use when adding usage data to the
      * queue.
      */
-    static final int SHARE_USAGE_DEFAULT_ADD_TIMEOUT = 5;
+    static final int SHARE_USAGE_DEFAULT_ADD_TIMEOUT = 0;
 
     /**
      * The default timeout in milliseconds to use when taking usage data from
      * the queue.
      */
-    static final int SHARE_USAGE_DEFAULT_TAKE_TIMEOUT = 100;
+    static final int SHARE_USAGE_DEFAULT_TAKE_TIMEOUT = 0;
 
+    /**
+     * The default timeout in milliseconds to use when making an HTTP connection
+     * to share usage data
+     */
+    static final int SHARE_USAGE_DEFAULT_HTTP_POST_TIMEOUT = 5000;
+
+    /**
+     * Default lost data count for share usage before it wraps
+     */
+    static final int LOST_DATA_RESET_DEFAULT = 5000000;
     /**
      * The default URL to send usage data to.
      */

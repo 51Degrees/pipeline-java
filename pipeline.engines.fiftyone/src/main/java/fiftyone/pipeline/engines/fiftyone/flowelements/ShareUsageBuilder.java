@@ -25,6 +25,8 @@ package fiftyone.pipeline.engines.fiftyone.flowelements;
 import fiftyone.pipeline.annotations.ElementBuilder;
 import fiftyone.pipeline.engines.services.HttpClient;
 import java.io.IOException;
+import java.util.Objects;
+
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 
@@ -40,12 +42,36 @@ public class ShareUsageBuilder extends ShareUsageBuilderBase<ShareUsageElement> 
      * Constructor
      * @param loggerFactory the {@link ILoggerFactory} to use when creating
      *                      loggers for a {@link ShareUsageElement}
-     * @param httpClient the {@link HttpClient} that {@link ShareUsageElement}
-     *                   should use for sending data
      */
     public ShareUsageBuilder(
-        ILoggerFactory loggerFactory,
-        HttpClient httpClient) {
+            ILoggerFactory loggerFactory) {
+        super(loggerFactory);
+        httpClient = null;
+    }
+    /**
+     * Constructor
+     * @param loggerFactory the {@link ILoggerFactory} to use when creating
+     *                      loggers for a {@link ShareUsageElement}
+     * @param logger the {@link Logger} to use for {@link ShareUsageElement}
+     */
+    public ShareUsageBuilder(
+            ILoggerFactory loggerFactory, Logger logger) {
+        super(loggerFactory, logger);
+        httpClient = null;
+    }
+
+    /**
+     * Constructor
+     * @param loggerFactory the {@link ILoggerFactory} to use when creating
+     *                      loggers for a {@link ShareUsageElement}
+     * @param httpClient the {@link HttpClient} that {@link ShareUsageElement}
+     *                   should use for sending data
+     * @deprecated use other constructor without httpClient
+     */
+    @Deprecated
+    public ShareUsageBuilder(
+            ILoggerFactory loggerFactory,
+            HttpClient httpClient) {
         super(loggerFactory);
         this.httpClient = httpClient;
     }
@@ -57,7 +83,9 @@ public class ShareUsageBuilder extends ShareUsageBuilderBase<ShareUsageElement> 
      * @param logger the {@link Logger} to use for {@link ShareUsageElement}
      * @param httpClient the {@link HttpClient} that {@link ShareUsageElement}
      *                   should use for sending data
+     * @deprecated use other constructor without HttpClient
      */
+    @Deprecated
     public ShareUsageBuilder(
         ILoggerFactory loggerFactory,
         Logger logger,
@@ -68,9 +96,8 @@ public class ShareUsageBuilder extends ShareUsageBuilderBase<ShareUsageElement> 
 
     @Override
     public ShareUsageElement build() throws IOException {
-        return new ShareUsageElement(
+        ShareUsageElement sue = new ShareUsageElement(
             loggerFactory.getLogger(ShareUsageElement.class.getName()),
-            httpClient,
             sharePercentage,
             minimumEntriesPerMessage,
             getMaximumQueueSize(),
@@ -82,6 +109,11 @@ public class ShareUsageBuilder extends ShareUsageBuilderBase<ShareUsageElement> 
             blockedHttpHeaders,
             includedQueryStringParameters,
             ignoreDataEvidenceFilter,
-            sessionCookieName);
+            sessionCookieName,
+            null);
+        if (Objects.nonNull(this.httpClient)) {
+            sue.httpClient = httpClient;
+        }
+        return sue;
     }
 }

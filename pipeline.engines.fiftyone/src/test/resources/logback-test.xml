@@ -1,0 +1,38 @@
+<!--
+config for fiftyone.pipeline.engines.fiftyone test
+-->
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="fiftyone.common.testhelpers.LogbackHelper$WarnEvaluator" />
+            <onMatch>DENY</onMatch>
+            <onMismatch>ACCEPT</onMismatch>
+        </filter>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %cyan(%marker) %msg%n</pattern>
+        </encoder>
+    </appender>
+    <appender name="warn" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="fiftyone.common.testhelpers.LogbackHelper$WarnEvaluator" />
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %blue(INTENTIONAL-%-5level) %logger{36} - %cyan(%marker) %msg%n</pattern>
+        </encoder>
+    </appender>
+
+<!--
+    <logger name="fiftyone.pipeline.engines.fiftyone.flowelements.ShareUsageElement" level="DEBUG"/>
+-->
+
+    <root level="info">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="warn" />
+    </root>
+
+    <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook">
+        <delay>100</delay>
+    </shutdownHook>
+</configuration>
