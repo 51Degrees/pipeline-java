@@ -95,8 +95,7 @@ public class FiftyOnePipelineBuilder extends PipelineBuilder {
             if (containsShareUsage == false) {
                 try {
                     addFlowElement(new ShareUsageBuilder(
-                        loggerFactory,
-                        new HttpClientDefault()).build());
+                        loggerFactory).build());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

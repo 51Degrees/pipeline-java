@@ -34,6 +34,7 @@
         <module>pipeline.jsonbuilder</module>
         <module>pipeline.developer-examples</module>
         <module>pipeline.web.packages</module>
+        <module>pipeline.aggregate</module>
     </modules>
 
     <properties>
@@ -208,10 +209,10 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>${maven-javadoc-plugin.version}</version>
                 <configuration>
-                    <doclint>all</doclint>
+                    <doclint>none</doclint>
                     <quiet>true</quiet>
-                    <tags>
-                        <!-- Parse DoxyGen tags cleanly. -->
+<!--                    <tags>
+                        &lt;!&ndash; Parse DoxyGen tags cleanly. &ndash;&gt;
                         <tag>
                             <name>example</name>
                             <placement>t</placement>
@@ -225,7 +226,7 @@
                             <name>include{doc}</name>
                             <placement>t</placement>
                         </tag>
-                    </tags>
+                    </tags>-->
                 </configuration>
                 <executions>
                     <execution>

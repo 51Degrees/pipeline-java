@@ -77,7 +77,7 @@ public class ShareUsageOverheadTests {
             .build();
 
         ShareUsageElement shareUsage =
-            new ShareUsageBuilder(loggerFactory, httpClient)
+            new ShareUsageBuilder(loggerFactory)
             .build();
 
         pipeline = new PipelineBuilder(loggerFactory)

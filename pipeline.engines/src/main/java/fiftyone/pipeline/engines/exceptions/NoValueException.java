@@ -28,7 +28,7 @@ import fiftyone.pipeline.engines.data.AspectPropertyValue;
  * Exception that can be thrown when an {@link AspectPropertyValue} does not
  * have a value.
  */
-public class NoValueException extends Exception {
+public class NoValueException extends RuntimeException {
 
     /**
      * Serializable class version number, which is used during deserialization

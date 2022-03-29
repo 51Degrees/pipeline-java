@@ -46,6 +46,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -75,6 +76,8 @@ public class CloudRequestEngineDefault
     private Map<String, AccessiblePropertyMetaData.ProductMetaData> publicProperties;
 
     private EvidenceKeyFilter evidenceKeyFilter;
+
+    public static Supplier<String> resourceKeySupplier;
 
     public CloudRequestEngineDefault(
         Logger logger,
@@ -135,6 +138,10 @@ public class CloudRequestEngineDefault
         {
             this.endPoint = endPoint;
             this.resourceKey = resourceKey;
+            if (Objects.isNull(resourceKey) || resourceKey.startsWith("!!")) {
+                this.resourceKey = Objects.nonNull(resourceKeySupplier) ?
+                        resourceKeySupplier.get() : null;
+            }
             this.licenseKey = licenseKey;
             this.propertiesEndpoint = propertiesEndpoint;
             this.evidenceKeysEndpoint = evidenceKeysEndpoint;
@@ -432,7 +439,7 @@ public class CloudRequestEngineDefault
     /**
      * Validate the JSON response from the cloud service.
      * @param jsonResult the JSON content that is returned from the cloud
-     * @param code HTTP response code
+     * @param connection a HttpURLConnection
      */
     private void validateResponse(String jsonResult, HttpURLConnection connection)
         throws IOException, CloudRequestException, AggregateException {

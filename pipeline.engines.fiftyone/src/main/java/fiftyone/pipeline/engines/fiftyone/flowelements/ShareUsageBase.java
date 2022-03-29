@@ -33,6 +33,8 @@ import fiftyone.pipeline.engines.fiftyone.exceptions.HttpException;
 import fiftyone.pipeline.engines.fiftyone.trackers.ShareUsageTracker;
 import fiftyone.pipeline.engines.trackers.Tracker;
 import org.slf4j.Logger;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -43,7 +45,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR;
-import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.SHARE_USAGE_MAX_EVIDENCE_LENGTH;
+import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.LOST_DATA_RESET_DEFAULT;
+
 
 /**
  * Abstract base class for ShareUsage elements. Contains common functionality
@@ -56,8 +59,8 @@ public abstract class ShareUsageBase
      * IP Addresses of local host device.
      */
     private static final InetAddress[] localHosts;
-    private static final SimpleDateFormat DATE_FMT =
-        new SimpleDateFormat("yyyy-MM-dd\'T\'HH:mm:ss");
+    protected static final SimpleDateFormat DATE_FMT =
+        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
     static {
         InetAddress[] localHosts1;
@@ -72,10 +75,12 @@ public abstract class ShareUsageBase
         localHosts = localHosts1;
     }
 
+    static final Marker threadMarker = MarkerFactory.getMarker("Sending");
+
     /**
      * Executor service used to start data sending threads.
      */
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    protected final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     /**
      * Queue used to store entries in memory prior to them being sent to
@@ -91,28 +96,28 @@ public abstract class ShareUsageBase
     /**
      * The minimum number of request entries per message sent to 51Degrees.
      */
-    protected int minEntriesPerMessage = 50;
+    protected final int minEntriesPerMessage;
 
     /**
      * The URL to send data to.
      */
-    protected String shareUsageUrl = "";
+    protected final String shareUsageUrl;
 
     /**
      * Evidence key filter including the session id.
      */
-    private EvidenceKeyFilter evidenceKeyFilter;
+    private final EvidenceKeyFilter evidenceKeyFilter;
 
     /**
      * Evidence key filter excluding the session id
      */
-    private EvidenceKeyFilter evidenceKeyFilterExclSession;
+    private final EvidenceKeyFilter evidenceKeyFilterExclSession;
 
     /**
      * The filter used to determine if an item of evidence should be ignored or
      * not.
      */
-    private List<Map.Entry<String, String>> ignoreDataEvidenceFilter;
+    private final List<Map.Entry<String, String>> ignoreDataEvidenceFilter;
 
     /**
      * The host address of the current machine.
@@ -125,20 +130,20 @@ public abstract class ShareUsageBase
     private List<ElementPropertyMetaData> properties;
 
     /**
-     * Future for the thread currently attempting to send usage data, or null
-     * if no data is currently being sent.
+     * Future for the last thread attempting to send data (null if none yet),
+     * thread may or may not have finished
      */
     private volatile Future<?> sendDataFuture = null;
 
     /**
-     * Lock used for thread-safe access to internal items.
+     * Lock used to start a new thread for sending data
      */
     private final Object lock = new Object();
 
     /**
      * Timeout to use when adding to the queue.
      */
-    private int addTimeout;
+    private final int addTimeout;
 
     /**
      * Random number generator used when sharing only a percentage of data i.e.
@@ -158,7 +163,7 @@ public abstract class ShareUsageBase
      * evidence from a request matches that in the tracker but this interval has
      * elapsed then the tracker will track it as new evidence.
      */
-    private long interval;
+    private final long interval;
 
     /**
      * The approximate proportion of requests to be shared.
@@ -176,23 +181,23 @@ public abstract class ShareUsageBase
      * Version of the OS the pipeline is being run on, as reported by
      * System.getProperty("os.name").
      */
-    private String osVersion = "";
+    protected final String osVersion;
 
     /**
      * The Java version the pipeline is being run on, as reported by
      * System.getProperty("java.version")
      */
-    private String languageVersion = "";
+    protected final String languageVersion;
 
     /**
      * The version of the pipeline package.
      */
-    private String coreVersion = "";
+    protected final String coreVersion;
 
     /**
      * The version of this engine package.
      */
-    private String enginesVersion = "";
+    private String enginesVersion;
 
     /**
      * True if usage sharing has been canceled.
@@ -200,10 +205,14 @@ public abstract class ShareUsageBase
     private boolean canceled = false;
 
     /**
-     * Set to true if the evidence within a flow data contains invalid XML
-     * characters such as control characters.
+     * Keep a count of data lost
      */
-    private boolean flagBadSchema;
+    protected long lostData;
+
+    /**
+     * lostData is rest when it exceeds this value
+     */
+    protected long lostDataReset = LOST_DATA_RESET_DEFAULT;
 
     /**
      * Constructor
@@ -438,7 +447,7 @@ public abstract class ShareUsageBase
      * @return list of flow elements
      */
     @SuppressWarnings("rawtypes")
-    private List<String> getFlowElements() {
+    protected List<String> getFlowElements() {
         if (flowElements == null) {
             Pipeline pipeline;
             if (getPipelines().size() == 1) {
@@ -472,7 +481,7 @@ public abstract class ShareUsageBase
      * Get the IP address of the machine that this code is running on.
      * @return machine IP
      */
-    private String getHostAddress() {
+    protected String getHostAddress() {
         if (hostAddress == null) {
             String address = null;
             try (final DatagramSocket socket = new DatagramSocket()) {
@@ -499,9 +508,11 @@ public abstract class ShareUsageBase
     }
 
     @Override
-    protected void processInternal(FlowData flowData) throws Exception {
+    protected void processInternal(FlowData flowData){
         boolean ignoreData = false;
         Map<String, Object> evidence = flowData.getEvidence().asKeyMap();
+
+        logger.debug("processInternal()");
 
         if (ignoreDataEvidenceFilter != null) {
             for (Map.Entry<String, String> entry : ignoreDataEvidenceFilter) {
@@ -542,6 +553,7 @@ public abstract class ShareUsageBase
      * Cancel the sending of usage data.
      */
     protected void cancel() {
+        logger.warn("UsageData sending has been cancelled");
         canceled = true;
     }
 
@@ -557,8 +569,7 @@ public abstract class ShareUsageBase
 
     /**
      * Get the future for the thread currently attempting to send usage data.
-     * @return future for data being sent, or null if no data is currently being
-     * sent
+     * @return future for data being sent, or null if no future has yet been created
      */
     Future<?> getSendDataFuture() {
         return sendDataFuture;
@@ -572,10 +583,15 @@ public abstract class ShareUsageBase
     @Override
     protected void managedResourcesCleanup() {
         trySendData();
-        if (isRunning()) {
-            sendDataFuture.cancel(false);
+        try {
+            executor.shutdown();
+            if (!executor.awaitTermination(Constants.SHARE_USAGE_DEFAULT_HTTP_POST_TIMEOUT, TimeUnit.MILLISECONDS)){
+                logger.warn("Could not send final data on close down");
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            logger.warn("Interrupted while awaiting close down");
         }
-        executor.shutdown();
     }
 
     @Override
@@ -604,6 +620,7 @@ public abstract class ShareUsageBase
      * @param data the {@link FlowData} instance that provides the evidence
      */
     private void processData(FlowData data) {
+        logger.debug("processData()");
         if (random.nextDouble() <= sharePercentage) {
             // Check if the tracker will allow sharing of this data
             if (tracker.track(data)) {
@@ -611,32 +628,26 @@ public abstract class ShareUsageBase
                 // it to the collection.
                 try {
                     if (evidenceCollection.offer(
-                        getDataFromEvidence(data.getEvidence()),
-                        addTimeout,
-                        TimeUnit.MILLISECONDS) == true) {
+                            getDataFromEvidence(data.getEvidence()),
+                            addTimeout,
+                            TimeUnit.MILLISECONDS)) {
+                        logger.debug("Queued {} entries", evidenceCollection.size());
                         // If the collection has enough entries then start
                         // taking data from it to be sent.
                         if (evidenceCollection.size() >= minEntriesPerMessage) {
                             trySendData();
                         }
                     } else {
-                        cancel();
-                        logger.error("Share usage was canceled after " +
-                            "failing to add data to the collection. This " +
-                            "may mean that the max collection size is too " +
-                            "low for the amount of traffic / min devices to " +
-                            "send, or that the 'send' thread has stopped " +
-                            "taking data from the collection.");
-
+                        if (++lostData >= lostDataReset) {
+                            logger.warn("Could not queue data for Share Usage. This could mean that" +
+                                    " the queue is too small, that the proportion of data shared is" +
+                                    " too high - or that the sending process has encountered" +
+                                    " problems sending.");
+                            lostData = 0;
+                        }
                     }
                 } catch (InterruptedException e) {
-                    cancel();
-                    logger.error("Share usage was canceled after " +
-                        "failing to add data to the collection. This " +
-                        "may mean that the max collection size is too " +
-                        "low for the amount of traffic / min devices to " +
-                        "send, or that the 'send' thread has stopped " +
-                        "taking data from the collection.");
+                    logger.warn("interrupted Exception while enqueueing ShareUsage data.");
                 }
             }
         }
@@ -647,214 +658,75 @@ public abstract class ShareUsageBase
      * In order to avoid problems with the evidence data being disposed before
      * it is sent, the data placed into a new object rather than being a
      * reference to the existing evidence instance.
-     * @param evidence an {@link Evidence} instance that contains the data to be
-     *                 extracted
-     * @return a {@link ShareUsageData} instance populated with data from the
-     * evidence
+     *
+     * @param evidence an {@link Evidence} instance that contains the data to be extracted
+     * @return a {@link ShareUsageData} instance populated with data from the evidence
      */
     private ShareUsageData getDataFromEvidence(Evidence evidence) {
-        ShareUsageData data = new ShareUsageData();
+        ShareUsageData shareUsageData = new ShareUsageData();
 
-        Map<String, Object> evidenceMap = evidence.asKeyMap();
-        for (Map.Entry<String, Object> entry : evidenceMap.entrySet()) {
+        for (Map.Entry<String, Object> entry : evidence.asKeyMap().entrySet()) {
             // Check if we can send this piece of evidence
-            boolean addToData = evidenceKeyFilterExclSession.include(entry.getKey());
+            if (evidenceKeyFilterExclSession.include(entry.getKey()) == false) {
+                continue;
+            }
 
             switch (entry.getKey()) {
                 case fiftyone.pipeline.core.Constants.EVIDENCE_CLIENTIP_KEY:
                     // The client IP is dealt with separately for backwards
                     // compatibility purposes.
-                    data.clientIP = entry.getValue().toString();
+                    shareUsageData.clientIP = entry.getValue().toString();
                     break;
                 case Constants.EVIDENCE_SESSIONID:
                     // The SessionID is dealt with separately.
-                    data.sessionId = entry.getValue().toString();
+                    shareUsageData.sessionId = entry.getValue().toString();
                     break;
                 case Constants.EVIDENCE_SEQUENCE:
                     // The Sequence is dealt with separately.
                     int sequence;
                     try {
                         sequence = Integer.parseInt(entry.getValue().toString(), 10);
-                        data.sequence = sequence;
+                        shareUsageData.sequence = sequence;
                     } catch (NumberFormatException e) {
-                        logger.error("The value '" + entry.getValue().toString() +
-                            "' could not be parsed to an integer.");
+                        logger.error("The value '{}' could not be parsed to an integer.", entry.getValue());
                     }
                     break;
                 default:
-                    if (addToData) {
-                        tryAddToData(entry.getKey(), entry.getValue(), data);
-                    }
+                    shareUsageData.tryAddToData(entry.getKey(), entry.getValue());
             }
         }
-        return data;
+        return shareUsageData;
     }
 
-    void tryAddToData(String key, Object value, ShareUsageData data) {
-        // Get the category and field names from the evidence key.
-        String category = "";
-        String field = key;
-
-        int firstSeperator = key.indexOf(EVIDENCE_SEPERATOR);
-        if (firstSeperator > 0) {
-            category = key.substring(0, firstSeperator);
-            field = key.substring(firstSeperator + 1);
-        }
-
-        // Get the evidence value.
-        String evidenceValue = value.toString();
-        // If the value is longer than the permitted length
-        // then truncate it.
-        if (evidenceValue.length() > SHARE_USAGE_MAX_EVIDENCE_LENGTH) {
-            evidenceValue = "[TRUNCATED BY USAGE SHARING] " +
-                evidenceValue.substring(0, SHARE_USAGE_MAX_EVIDENCE_LENGTH);
-        }
-
-        // Add the evidence to the dictionary.
-        Map<String, String> categoryDict;
-        if (data.evidenceData.containsKey(category)) {
-            categoryDict = data.evidenceData.get(category);
-        } else {
-            categoryDict = new HashMap<>();
-            data.evidenceData.put(category, categoryDict);
-        }
-        categoryDict.put(field, evidenceValue);
-    }
 
     /**
      * Attempt to send the data to the remote service. This only happens if
      * there is not a task already running.
-     * If any error occurs while sending the data, then usage sharing is
-     * stopped.
      */
     protected void trySendData() {
-        if (isCanceled() == false &&
-            isRunning() == false) {
+        logger.debug("trySendData");
+        if (isCanceled() == false && isRunning() == false) {
             synchronized (lock) {
                 if (isRunning() == false) {
+                    logger.debug(threadMarker,"starting runnable");
                     sendDataFuture = executor.submit(
-                        new Runnable() {
-                            @Override
-                            public void run() {
+                            () -> {
+                                logger.debug(threadMarker,"runnable is running");
                                 try {
-                                    buildAndSendXml();
+                                    sendUsageData();
+                                    logger.debug(threadMarker, "Done sending");
                                 } catch (Exception e) {
-                                    cancel();
-                                    logger.error(
-                                        "Share usage was canceled due to an error.",
-                                        e);
-
+                                    logger.error("Share usage encountered an error.", e);
                                 }
                             }
-                        }
                     );
                 }
             }
         }
     }
 
-    protected abstract void buildAndSendXml() throws HttpException;
+    protected abstract void sendUsageData() throws HttpException;
 
-    /**
-     * Virtual method to be overridden in extending usage share elements.
-     * Write the specified data using the specified writer.
-     * @param builder the {@link XmlBuilder} to use
-     * @param data the data to write
-     */
-    protected void buildData(XmlBuilder builder, ShareUsageData data) {
-        builder.writeStartElement("Device");
-
-        buildDeviceData(builder, data);
-
-        builder.writeEndElement("Device");
-    }
-
-    /**
-     * Write the specified device data using the specified writer.
-     * @param builder the {@link XmlBuilder} to use
-     * @param data the data to write
-     */
-    protected void buildDeviceData(XmlBuilder builder, ShareUsageData data) {
-        flagBadSchema = false;
-        // The SessionID used to track a series of requests
-        builder.writeElement("SessionId", data.sessionId);
-        // The sequence number of the request in a series of requests.
-        builder.writeElement("Sequence", String.valueOf(data.sequence));
-        // The UTC date/time this entry was written
-        builder.writeElement("DateSent", DATE_FMT.format(new Date()));
-        // The version number of the Pipeline API
-        builder.writeElement("Version", coreVersion);
-        // Write Pipeline information
-        writePipelineInfo(builder);
-        builder.writeElement("Language", "java");
-        // The software language version
-        builder.writeElement("LanguageVersion", languageVersion);
-        // The client IP of the request
-        builder.writeElement("ClientIP", data.clientIP);
-        // The IP of this server
-        builder.writeElement("ServerIP", getHostAddress());
-        // The OS name and version
-        builder.writeElement("Platform", osVersion);
-
-        // Write all other evidence data that has been included.
-        for (Map.Entry<String, Map<String, String>> category : data.evidenceData.entrySet()) {
-            for (Map.Entry<String, String> entry : category.getValue().entrySet()) {
-                if (category.getKey().length() > 0) {
-                    builder.writeStartElement(category.getKey(), new AbstractMap.SimpleEntry<>("Name", encodeInvalidXMLChars(entry.getKey())));
-                    builder.writeCData(encodeInvalidXMLChars(entry.getValue()));
-                    builder.writeEndElement(category.getKey());
-                } else {
-                    builder.writeElement(
-                        encodeInvalidXMLChars(entry.getKey()),
-                        encodeInvalidXMLChars(entry.getValue()));
-                }
-            }
-        }
-        if (flagBadSchema) {
-            builder.writeElement("BadSchema", "true");
-        }
-    }
-
-    /**
-     * Encodes any unusual characters into their hex representation.
-     * @param text the text to encode
-     * @return encoded text
-     */
-    public String encodeInvalidXMLChars(String text) {
-        // Validate characters in string. If not valid check chars
-        // individually and build new string with encoded chars. Set
-        // flagBadSchema to add "bad schema" element into usage data.
-        if (XmlBuilder.verifyXmlChars(text)) {
-            return text;
-        }
-        else {
-            flagBadSchema = true;
-            StringBuilder tmp = new StringBuilder();
-            for (char c : text.toCharArray()) {
-                if (XmlBuilder.isValidChar(c)) {
-                    tmp.append(c);
-                }
-                else {
-                    tmp.append(XmlBuilder.escapeUnicode(c));
-                }
-            }
-            return tmp.toString();
-        }
-    }
-
-    /**
-     * Method to write details about the pipeline.
-     * @param builder {@link XmlBuilder} to use
-     */
-    protected void writePipelineInfo(XmlBuilder builder) {
-        // The product name
-        builder.writeElement("Product", "Pipeline");
-        // The flow elements in the current pipeline
-        for (String element : getFlowElements()) {
-            builder.writeElement("FlowElement", element);
-        }
-    }
-    
     /**
      * Get engine Version No.
      * @return engine version no
@@ -875,11 +747,31 @@ public abstract class ShareUsageBase
      * Inner class that is used to store details of data in memory
      * prior to it being sent to 51Degrees.
      */
-    protected class ShareUsageData {
+    protected static class ShareUsageData {
         public String sessionId;
         public int sequence;
         public String clientIP;
-        public final Map<String, Map<String, String>> evidenceData =
-            new HashMap<>();
+        public final Map<String, Map<String, String>> evidenceData = new HashMap<>();
+
+        void tryAddToData(String key, Object value) {
+            // Get the category and field names from the evidence key.
+            String category = "";
+            String field = key;
+
+            int firstSeparator = key.indexOf(EVIDENCE_SEPERATOR);
+            if (firstSeparator > 0) {
+                category = key.substring(0, firstSeparator);
+                field = key.substring(firstSeparator + 1);
+            }
+
+            // Add the evidence to the dictionary.
+            Map<String, String> categoryDict = evidenceData.get(category);
+            if (Objects.isNull(categoryDict)) {
+                categoryDict = new HashMap<>();
+                evidenceData.put(category, categoryDict);
+            }
+            categoryDict.put(field, value.toString());
+        }
+
     }
 }

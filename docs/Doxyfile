@@ -824,6 +824,8 @@ INPUT                  = ../pipeline.caching/src/main \
                          ../pipeline.core/src/main \
                          ../pipeline.engines/src/main \
                          ../pipeline.engines.fiftyone/src/main \
+                         ../pipeline.javascriptbuilder/src/main \
+                         ../pipeline.jsonbuilder/src/main \
                          ../README.md \
                          ../pipeline.web.packages/pipeline.web/src/main \
                          ../pipeline.web.packages/pipeline.web.mvc/src/main \
