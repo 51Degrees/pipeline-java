@@ -28,7 +28,7 @@
     <parent>
         <groupId>com.51degrees</groupId>
         <artifactId>pipeline.web.packages</artifactId>
-        <version>4.3.14-SNAPSHOT</version>
+        <version>4.4.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>pipeline.web.shared</artifactId>
