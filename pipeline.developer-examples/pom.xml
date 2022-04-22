@@ -27,7 +27,7 @@
 
         <tomcat.version>8.5.73</tomcat.version>
         <javax.servlet-api.version>4.0.1</javax.servlet-api.version>
-        <spring-webmvc.version>4.3.30.RELEASE</spring-webmvc.version>
+        <spring-webmvc.version>5.2.21.RELEASE</spring-webmvc.version>
         <jstl.version>1.2</jstl.version>
         <jakarta.xml.bind-api.version>3.0.1</jakarta.xml.bind-api.version>
         <jaxb-runtime.version>3.0.2</jaxb-runtime.version>
