@@ -334,7 +334,9 @@ public class ShareUsageElement extends ShareUsageBase {
         connector = new DataUploaderHttp(shareUsageUrl, headers, httpSendTimeout);
 
         xmlOutputFactory = XMLOutputFactory.newInstance();
-        xmlOutputFactory.setProperty("escapeCharacters", true);
+        if (xmlOutputFactory.isPropertySupported("escapeCharacters")) {
+            xmlOutputFactory.setProperty("escapeCharacters", true);
+        }
     }
 
     /**
