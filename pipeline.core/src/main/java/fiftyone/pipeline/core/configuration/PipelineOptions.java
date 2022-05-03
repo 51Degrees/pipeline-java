@@ -27,6 +27,7 @@ import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.flowelements.PipelineBuilder;
 
+import fiftyone.pipeline.util.FiftyOneLookup;
 import jakarta.xml.bind.annotation.XmlElement;
 import jakarta.xml.bind.annotation.XmlElementWrapper;
 import jakarta.xml.bind.annotation.XmlRootElement;
@@ -63,4 +64,50 @@ public class PipelineOptions {
     @XmlJavaTypeAdapter(MapAdapter.class)
     public Map<String, Object> pipelineBuilderParameters = new HashMap<>();
 
+    /**
+     * Retrieve the value for the build option specified
+     * @param builderName a builder name
+     * @param buildParameter a builder parameter
+     * @return the value for that option or null if not present
+     */
+    public String find(String builderName, String buildParameter){
+        for (ElementOptions opts: elements) {
+            if (opts.builderName.equals(builderName)) {
+                return (String) opts.buildParameters.get(buildParameter);
+            }
+        }
+        return null;
+    }
+    /**
+     * Retrieve the value for the build option specified
+     * @param builderName a builder name
+     * @param buildParameter a builder parameter
+     * @return the value for that option, with Lookup Options
+     * substituted or null if not present
+     */
+    public String findAndSubstitute(String builderName, String buildParameter){
+        for (ElementOptions opts: elements) {
+            if (opts.builderName.equals(builderName)) {
+                return FiftyOneLookup.getSubstitutor().
+                        replace(opts.buildParameters.get(buildParameter));
+            }
+        }
+        return null;
+    }
+    /**
+     * Replace the value for the build option specified
+     * @param builderName a builder name
+     * @param buildParameter a builder parameter
+     * @param value the new value
+     * @return true if the option was found and replaced, false otherwise
+     */
+    public boolean replace(String builderName, String buildParameter, String value){
+        for (ElementOptions opts: elements) {
+            if (opts.builderName.equals(builderName)) {
+                opts.buildParameters.put(buildParameter, value);
+                return true;
+            }
+        }
+        return false;
+    }
 }

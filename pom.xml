@@ -5,7 +5,7 @@
 
     <groupId>com.51degrees</groupId>
     <artifactId>pipeline</artifactId>
-    <version>4.4.2-SNAPSHOT</version>
+    <version>4.4.4-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>51Degrees :: Pipeline</name>
@@ -49,8 +49,11 @@
         <mockito-core.version>4.3.1</mockito-core.version>
         <org.json.version>20211205</org.json.version>
         <reflections8.version>0.11.7</reflections8.version>
+        <commons-text.version>1.9</commons-text.version>
 
         <jakarta.xml.bind-api.version>3.0.1</jakarta.xml.bind-api.version>
+        <jaxb-runtime.version>3.0.2</jaxb-runtime.version>
+        <jaxb-impl.version>3.0.2</jaxb-impl.version>
 
         <mustache-compiler.version>0.8.18</mustache-compiler.version>
         <graal-js-scriptengine.version>22.0.0.2</graal-js-scriptengine.version>
@@ -112,6 +115,19 @@
                 <scope>test</scope>
             </dependency>
 
+            <dependency>
+                <groupId>jakarta.xml.bind</groupId>
+                <artifactId>jakarta.xml.bind-api</artifactId>
+                <version>${jakarta.xml.bind-api.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.sun.xml.bind</groupId>
+                <artifactId>jaxb-impl</artifactId>
+                <version>${jaxb-impl.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+
             <!-- runtime dependencies -->
 
             <dependency>
@@ -122,15 +138,6 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <dependencies>
-        <!-- Examples and tests need an implementation of SLF4J at runtime -->
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-        </dependency>
-
-    </dependencies>
 
     <build>
         <pluginManagement>
@@ -296,6 +303,11 @@
             <id>${publishrepository.id}</id>
             <url>${publishrepository.url}</url>
         </repository>
+        <snapshotRepository>
+            <id>${snapshotrepository.id}</id>
+            <name>Internal Snapshots</name>
+            <url>${snapshotrepository.url}</url>
+        </snapshotRepository>
         <site>
             <id>local</id>
             <url>file:///${maven.multiModuleProjectDirectory}/site/</url>

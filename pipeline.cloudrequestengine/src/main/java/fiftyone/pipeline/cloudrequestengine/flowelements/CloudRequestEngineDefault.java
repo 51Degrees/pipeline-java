@@ -77,8 +77,6 @@ public class CloudRequestEngineDefault
 
     private EvidenceKeyFilter evidenceKeyFilter;
 
-    public static Supplier<String> resourceKeySupplier;
-
     public CloudRequestEngineDefault(
         Logger logger,
         ElementDataFactory<CloudRequestData> aspectDataFactory,
@@ -138,10 +136,6 @@ public class CloudRequestEngineDefault
         {
             this.endPoint = endPoint;
             this.resourceKey = resourceKey;
-            if (Objects.isNull(resourceKey) || resourceKey.startsWith("!!")) {
-                this.resourceKey = Objects.nonNull(resourceKeySupplier) ?
-                        resourceKeySupplier.get() : null;
-            }
             this.licenseKey = licenseKey;
             this.propertiesEndpoint = propertiesEndpoint;
             this.evidenceKeysEndpoint = evidenceKeysEndpoint;

@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8" ?>
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ~ This Source Code Form is copyright of 51Degrees Mobile Experts Limited.
   ~ Copyright 2017 51Degrees Mobile Experts Limited, 5 Charlotte Close,
@@ -21,31 +22,14 @@
   ~ defined by the Mozilla Public License, v. 2.0.
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>com.51degrees</groupId>
-        <artifactId>pipeline.web.packages</artifactId>
-        <version>4.4.4-SNAPSHOT</version>
-    </parent>
-
-    <artifactId>pipeline.web.shared</artifactId>
-
-    <name>51Degrees :: Pipeline :: Web :: Shared</name>
-    <url>https:51degrees.com</url>
-
-    <dependencies>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>pipeline.javascriptbuilder</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>${javax.servlet-api.version}</version>
-        </dependency>
-    </dependencies>
-</project>
+<PipelineOptions>
+    <Elements>
+        <Element>
+            <BuildParameters>
+                <Delimiter>${TestDelimiter:-,}</Delimiter>
+                <MaxLength>${TestMaxLength:-80}</MaxLength>
+            </BuildParameters>
+            <BuilderName>ListSplitterElement</BuilderName>
+        </Element>
+    </Elements>
+</PipelineOptions>

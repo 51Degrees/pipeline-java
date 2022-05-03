@@ -29,6 +29,8 @@ import fiftyone.pipeline.core.configuration.ElementOptions;
 import fiftyone.pipeline.core.configuration.PipelineOptions;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.core.services.PipelineService;
+import fiftyone.pipeline.util.FiftyOneLookup;
+import org.apache.commons.text.StringSubstitutor;
 import org.reflections8.Reflections;
 import org.reflections8.util.ConfigurationBuilder;
 import org.slf4j.ILoggerFactory;
@@ -287,6 +289,10 @@ public class PipelineBuilder
             }
             if (paramType.equals(String.class)) {
                 paramValue = caseInsensitiveParameters.get(paramAnnotation.value());
+                // replace properties with values
+                if (paramValue instanceof String) {
+                    paramValue = evaluate((String) paramValue);
+                }
             } else {
                 paramValue = parseToType(
                     paramType,
@@ -596,8 +602,14 @@ public class PipelineBuilder
                             }
                         } else {
                             // Not an array, so just call the method.
+                            Object paramValue = parameter.getValue();
+                            // replace properties with values
+                            if (paramValue instanceof String) {
+                                paramValue = evaluate((String) paramValue);
+                            }
+
                             tryParseAndCallMethod(
-                                parameter.getValue(),
+                                paramValue,
                                 method,
                                 builderType,
                                 builderInstance,
@@ -877,5 +889,13 @@ public class PipelineBuilder
                     "'parse' method.");
         }
         return parsedValue;
+    }
+
+    /**
+     * Evaluate strings for substitution of system properties etc.
+     */
+    public static String evaluate(String value) {
+        StringSubstitutor substitutor = FiftyOneLookup.getSubstitutor();
+        return substitutor.replace(value);
     }
 }
