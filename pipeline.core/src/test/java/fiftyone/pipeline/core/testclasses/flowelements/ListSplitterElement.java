@@ -65,6 +65,14 @@ public class ListSplitterElement
         evidenceKeyFilter = new EvidenceKeyFilterWhitelist(evidenceKeys);
     }
 
+    public String getDelimiter() {
+        return delimiter;
+    }
+
+    public int getMaxLength() {
+        return maxLength;
+    }
+
     @Override
     public String getElementDataKey() {
         return "listSplitter";
