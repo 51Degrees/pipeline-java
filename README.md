@@ -13,7 +13,9 @@ Reference documentation for the Java implementation can be found on the
 
 ## Pre-requisites
 
-Java 8 JDK or later and Maven 2.
+The [tested versions](https://51degrees.com/documentation/_info__tested_versions.html) page shows 
+the JDK versions that we currently test against. The software may run fine against other versions, 
+but additional caution should be applied.
 
 ## Contents
 
@@ -36,13 +38,20 @@ Most packages contain tests which use junit and mockito. These tests can be run 
 
 ## Examples
 
-Examples are located in the `examples/` folder.
+There are several examples available in the `pipeline.developer-examples` folder that demonstrate 
+how to make use of the Pipeline API in isolation. These are described in the table below.
+If you want examples that demonstrate how to use 51Degrees products such as device detection, 
+then these are available in the corresponding [repository](https://github.com/51Degrees/device-detection-java) 
+and on our [website](http://51degrees.com/documentation/_examples__device_detection__index.html).
 
-- **examples/pipeline.developer-examples.flowelement** - Shows how to create a custom flow element that returns star sign based on a supplied date of birth.
-- **examples/pipeline.developer-examples.onpremise-engine** - Shows how to modify SimpleFlowElement to make use of the 'engine' functionality and use a custom data file to map dates to star signs rather than relying on hard coded data.
-- **examples/pipeline.developer-examples.clientside-element** - Shows how to modify SimpleFlowElement to request the data of birth from the user using client-side JavaScript.
-- **examples/pipeline.developer-examples.clientside-element-mvc** - An example project showing how to use the code from SimpleClientSideElement in a Java web application using the Model-View-Controller Pattern.
-- **examples/pipeline.developer-examples.cloud-engine** - Shows how to modify SimpleFlowElement to perform the star sign lookup via a cloud service rather than locally.
+| Example                                            | Description |
+|----------------------------------------------------|-------------|
+| pipeline.developer-examples.flowelement            | Shows how to create a custom flow element that returns star sign based on a supplied date of birth. |
+| pipeline.developer-examples.onpremise-engine       | Shows how to modify SimpleFlowElement to make use of the 'engine' functionality and use a custom data file to map dates to star signs rather than relying on hard coded data. |
+| pipeline.developer-examples.clientside-element     | Shows how to modify SimpleFlowElement to request the data of birth from the user using client-side JavaScript. |
+| pipeline.developer-examples.clientside-element-mvc | An example project showing how to use the code from SimpleClientSideElement in a Java web application using the Model-View-Controller Pattern. |
+| pipeline.developer-examples.cloud-engine           | Shows how to modify SimpleFlowElement to perform the star sign lookup via a cloud service rather than locally. |
+| pipeline.developer-examples.usage-sharing          | Shows how to share usage with 51Degrees. This helps us to keep our products up to date and accurate. |
 
 
 
