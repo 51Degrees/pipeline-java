@@ -1,27 +1,29 @@
-/* *********************************************************************
+/*
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2019 51 Degrees Mobile Experts Limited, 5 Charlotte Close,
- * Caversham, Reading, Berkshire, United Kingdom RG4 7BY.
+ * Copyright 2022 51 Degrees Mobile Experts Limited, Davidson House,
+ * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
- * This Original Work is licensed under the European Union Public Licence (EUPL) 
- * v.1.2 and is subject to its terms as set out below.
+ * This Original Work is licensed under the European Union Public Licence
+ *  (EUPL) v.1.2 and is subject to its terms as set out below.
  *
- * If a copy of the EUPL was not distributed with this file, You can obtain
- * one at https://opensource.org/licenses/EUPL-1.2.
+ *  If a copy of the EUPL was not distributed with this file, You can obtain
+ *  one at https://opensource.org/licenses/EUPL-1.2.
  *
- * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
- * amended by the European Commission) shall be deemed incompatible for
- * the purposes of the Work and the provisions of the compatibility
- * clause in Article 5 of the EUPL shall not apply.
- * 
- * If using the Work as, or as part of, a network application, by 
- * including the attribution notice(s) required under Article 5 of the EUPL
- * in the end user terms of the application under an appropriate heading, 
- * such notice(s) shall fulfill the requirements of that article.
- * ********************************************************************* */
+ *  The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ *  amended by the European Commission) shall be deemed incompatible for
+ *  the purposes of the Work and the provisions of the compatibility
+ *  clause in Article 5 of the EUPL shall not apply.
+ *
+ *   If using the Work as, or as part of, a network application, by
+ *   including the attribution notice(s) required under Article 5 of the EUPL
+ *   in the end user terms of the application under an appropriate heading,
+ *   such notice(s) shall fulfill the requirements of that article.
+ */
 
 package fiftyone.pipeline.engines.services;
 
+import ch.qos.logback.classic.Level;
+import fiftyone.common.testhelpers.LogbackHelper;
 import fiftyone.common.testhelpers.TestLogger;
 import fiftyone.common.wrappers.io.FileWrapperDefault;
 import fiftyone.common.wrappers.io.FileWrapperFactory;
@@ -44,7 +46,9 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.internal.matchers.LessOrEqual;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -99,10 +103,14 @@ public class DataUpdateServiceTests {
 
     private DataUpdateService dataUpdate;
 
+    private ch.qos.logback.classic.Logger realLogger;
+
     @Before
     public void Init() throws IOException {
+        realLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(this.getClass());
+        realLogger.setLevel(Level.INFO);
+        logger = new TestLogger("test", realLogger);
         // Create mocks
-        logger = new TestLogger("test", mock(Logger.class));
         fileWrapperFactory = mock(FileWrapperFactory.class);
         when(fileWrapperFactory.build(anyString())).then(new Answer<Object>() {
             @Override
@@ -539,8 +547,9 @@ public class DataUpdateServiceTests {
         // Arrange
         // Configure the timer to execute immediately.
         // When subsequent timers are created, they will not execute.
-        configureTimerImmediateCallbackOnce();
+        configureTimerDelayCallback(1, 1000);
 
+        realLogger.setLevel(Level.DEBUG);
         // Configure the mock HTTP handler to return the test data file
         when(httpClientConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
         when(httpClientConnection.getResponseMessage()).thenReturn(null);
@@ -571,6 +580,7 @@ public class DataUpdateServiceTests {
 
         String tempPath = System.getProperty("java.io.tmpdir");
         String dataFile = File.createTempFile("test", ".tmp").getAbsolutePath();
+        assertTrue("data file does not exist", Paths.get(dataFile).toFile().exists());
 
         try {
             // Configure the engine to return the relevant paths.
@@ -581,11 +591,10 @@ public class DataUpdateServiceTests {
             // Act
             dataUpdate.registerDataFile(file);
             // Wait until processing is complete.
-            boolean completed = completeFlag.tryAcquire(2, TimeUnit.SECONDS);
+            boolean completed = completeFlag.tryAcquire(3, TimeUnit.SECONDS);
 
             // Assert
-            assertTrue("The OnUpdateComplete event was never fired",
-                completed);
+            assertTrue("The OnUpdateComplete event was never fired", completed);
             verify(httpClient, times(1)).connect(
                 any(URL.class));
             // Make sure engine was refreshed
@@ -1324,15 +1333,15 @@ public class DataUpdateServiceTests {
         // Configure the timer factory to return a timer that will
         // execute the callback immediately
         when(futureFactory.schedule(
-            any(Runnable.class),
-            anyLong())).then(new Answer<ScheduledFuture<?>>() {
+                any(Runnable.class),
+                anyLong())).then(new Answer<ScheduledFuture<?>>() {
             @Override
             public ScheduledFuture<?> answer(InvocationOnMock invocationOnMock) throws Throwable {
                 lastDelay = invocationOnMock.getArgument(1);
                 return executorService.schedule(
-                    (Runnable) invocationOnMock.getArgument(0),
-                    0,
-                    TimeUnit.SECONDS);
+                        (Runnable) invocationOnMock.getArgument(0),
+                        0,
+                        TimeUnit.SECONDS);
             }
         });
     }
@@ -1356,7 +1365,32 @@ public class DataUpdateServiceTests {
                         0,
                         TimeUnit.MILLISECONDS);
                 } else {
-                    return termination;
+                    return executorService.schedule((Runnable) invocationOnMock.getArgument(0),
+                            lastDelay, TimeUnit.MILLISECONDS);
+                }
+            }
+        });
+    }
+
+    private void configureTimerDelayCallback(final int n, final int delay) {
+        // Configure the timer factory to return a timer that will
+        // execute the callback immediately
+        final AtomicInteger counter = new AtomicInteger(0);
+        when(futureFactory.schedule(
+                any(Runnable.class),
+                anyLong())).then(new Answer<ScheduledFuture<?>>() {
+            @Override
+            public ScheduledFuture<?> answer(InvocationOnMock invocationOnMock) throws Throwable {
+                if (counter.get() < n) {
+                    counter.incrementAndGet();
+                    lastDelay = invocationOnMock.getArgument(1);
+                    return executorService.schedule(
+                            (Runnable) invocationOnMock.getArgument(0),
+                            delay,
+                            TimeUnit.MILLISECONDS);
+                } else {
+                    return executorService.schedule((Runnable) invocationOnMock.getArgument(0),
+                            lastDelay, TimeUnit.MILLISECONDS);
                 }
             }
         });

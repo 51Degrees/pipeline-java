@@ -20,27 +20,39 @@
  *   such notice(s) shall fulfill the requirements of that article.
  */
 
-package pipeline.developerexamples.flowelement.flowelements;
+package fiftyone.pipeline.util;
 
-import pipeline.developerexamples.flowelement.data.StarSignData;
-import fiftyone.pipeline.core.data.ElementDataBase;
-import fiftyone.pipeline.core.data.FlowData;
-import org.slf4j.Logger;
+import org.junit.Test;
 
-//! [class]
-class StarSignDataInternal extends ElementDataBase implements StarSignData {
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-    public StarSignDataInternal(Logger logger, FlowData flowData) {
-        super(logger, flowData);
+import static org.junit.Assert.*;
+
+public class CheckTest {
+
+    @Test
+    public void notNullOrBlank() {
+        assertFalse(Check.notNullOrBlank(null));
+        assertFalse(Check.notNullOrBlank(""));
+        assertFalse(Check.notNullOrBlank("  "));
+        assertTrue(Check.notNullOrBlank("hello"));
     }
 
-    @Override
-    public String getStarSign() {
-        return getAs("starsign", String.class);
+    @Test
+    public void isNullOrBlank() {
+        assertTrue(Check.isNullOrBlank(null));
+        assertTrue(Check.isNullOrBlank(""));
+        assertTrue(Check.isNullOrBlank("  "));
+        assertFalse(Check.isNullOrBlank("hello"));
     }
 
-    void setStarSign(String starSign) {
-        put("starsign", starSign);
+    @Test
+    public void fileExists() throws IOException {
+        assertFalse(Check.fileExists("mumbo-jumbo"));
+        Path p = Files.createTempFile("test",".check");
+        assertTrue(Check.fileExists(p.toAbsolutePath().toString()));
+        assertTrue(p.toFile().delete());
     }
 }
-//! [class]

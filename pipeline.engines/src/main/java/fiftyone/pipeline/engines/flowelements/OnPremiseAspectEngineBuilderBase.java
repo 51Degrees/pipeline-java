@@ -1,24 +1,24 @@
-/* *********************************************************************
+/*
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2019 51 Degrees Mobile Experts Limited, 5 Charlotte Close,
- * Caversham, Reading, Berkshire, United Kingdom RG4 7BY.
+ * Copyright 2022 51 Degrees Mobile Experts Limited, Davidson House,
+ * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
- * This Original Work is licensed under the European Union Public Licence (EUPL) 
- * v.1.2 and is subject to its terms as set out below.
+ * This Original Work is licensed under the European Union Public Licence
+ *  (EUPL) v.1.2 and is subject to its terms as set out below.
  *
- * If a copy of the EUPL was not distributed with this file, You can obtain
- * one at https://opensource.org/licenses/EUPL-1.2.
+ *  If a copy of the EUPL was not distributed with this file, You can obtain
+ *  one at https://opensource.org/licenses/EUPL-1.2.
  *
- * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
- * amended by the European Commission) shall be deemed incompatible for
- * the purposes of the Work and the provisions of the compatibility
- * clause in Article 5 of the EUPL shall not apply.
- * 
- * If using the Work as, or as part of, a network application, by 
- * including the attribution notice(s) required under Article 5 of the EUPL
- * in the end user terms of the application under an appropriate heading, 
- * such notice(s) shall fulfill the requirements of that article.
- * ********************************************************************* */
+ *  The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ *  amended by the European Commission) shall be deemed incompatible for
+ *  the purposes of the Work and the provisions of the compatibility
+ *  clause in Article 5 of the EUPL shall not apply.
+ *
+ *   If using the Work as, or as part of, a network application, by
+ *   including the attribution notice(s) required under Article 5 of the EUPL
+ *   in the end user terms of the application under an appropriate heading,
+ *   such notice(s) shall fulfill the requirements of that article.
+ */
 
 package fiftyone.pipeline.engines.flowelements;
 
@@ -28,10 +28,16 @@ import fiftyone.pipeline.engines.data.AspectEngineDataFile;
 import fiftyone.pipeline.engines.data.AspectEngineDataFileDefault;
 import fiftyone.pipeline.engines.services.DataUpdateService;
 import org.slf4j.ILoggerFactory;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.apache.commons.lang3.BooleanUtils.isFalse;
 
 /**
  * Abstract base class that exposes the common options that all 51Degrees
@@ -50,7 +56,9 @@ public abstract class OnPremiseAspectEngineBuilderBase<
 
     protected final List<DataFileConfiguration> dataFileConfigs = new ArrayList<>();
     protected final List<AspectEngineDataFile> dataFiles = new ArrayList<>();
-    protected String tempDir = System.getProperty("java.io.tmpdir");
+    protected String tempDir;
+
+    protected Logger logger = LoggerFactory.getLogger(OnPremiseAspectEngineBuilderBase.class);
 
     /**
      * Default constructor which uses the {@link ILoggerFactory} implementation
@@ -80,6 +88,38 @@ public abstract class OnPremiseAspectEngineBuilderBase<
         DataUpdateService dataUpdateService) {
         super(loggerFactory);
         this.dataUpdateService = dataUpdateService;
+
+        // create an empty temp directory as a sub-directory of the system temp directory if it
+        // does not exist already
+        createAndVerifyTempDir(Paths.get(System.getProperty("java.io.tmpdir"),"fiftyone.tempfiles"));
+    }
+
+    public void createAndVerifyTempDir(Path pathToCreate) {
+        try {
+            File directory = pathToCreate.toFile();
+            if (isFalse(directory.exists())) {directory = Files.createDirectories(pathToCreate).toFile();
+
+            } else {
+                if (isFalse(directory.isDirectory())) {
+                    throw new IllegalStateException(
+                            "Temporary directory path exists and is not a directory: " + pathToCreate);
+                }
+            }
+            boolean success = directory.setReadable(true, false);
+            success = success && directory.setWritable(true, false);
+
+            tempDir = directory.getAbsolutePath();
+
+            logger.debug("Temp dir is {} can write {}", tempDir, directory.canWrite());
+            logger.debug("File permission setting reported {}.", success);
+
+            // ensure read/write access - throws an exception if not
+            FileSystem fs = Paths.get(directory.getPath()).getFileSystem();
+            fs.provider().checkAccess(pathToCreate, AccessMode.WRITE, AccessMode.READ);
+        } catch (IOException e) {
+            throw new IllegalStateException("Can't create Temp Directory '" + pathToCreate +
+                    "' with correct permissions", e);
+        }
     }
 
     /**

@@ -1,24 +1,24 @@
-/* *********************************************************************
+/*
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2019 51 Degrees Mobile Experts Limited, 5 Charlotte Close,
- * Caversham, Reading, Berkshire, United Kingdom RG4 7BY.
+ * Copyright 2022 51 Degrees Mobile Experts Limited, Davidson House,
+ * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
- * This Original Work is licensed under the European Union Public Licence (EUPL)
- * v.1.2 and is subject to its terms as set out below.
+ * This Original Work is licensed under the European Union Public Licence
+ *  (EUPL) v.1.2 and is subject to its terms as set out below.
  *
- * If a copy of the EUPL was not distributed with this file, You can obtain
- * one at https://opensource.org/licenses/EUPL-1.2.
+ *  If a copy of the EUPL was not distributed with this file, You can obtain
+ *  one at https://opensource.org/licenses/EUPL-1.2.
  *
- * The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
- * amended by the European Commission) shall be deemed incompatible for
- * the purposes of the Work and the provisions of the compatibility
- * clause in Article 5 of the EUPL shall not apply.
+ *  The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+ *  amended by the European Commission) shall be deemed incompatible for
+ *  the purposes of the Work and the provisions of the compatibility
+ *  clause in Article 5 of the EUPL shall not apply.
  *
- * If using the Work as, or as part of, a network application, by
- * including the attribution notice(s) required under Article 5 of the EUPL
- * in the end user terms of the application under an appropriate heading,
- * such notice(s) shall fulfill the requirements of that article.
- * ********************************************************************* */
+ *   If using the Work as, or as part of, a network application, by
+ *   including the attribution notice(s) required under Article 5 of the EUPL
+ *   in the end user terms of the application under an appropriate heading,
+ *   such notice(s) shall fulfill the requirements of that article.
+ */
 
 package fiftyone.pipeline.engines.data;
 
@@ -38,7 +38,7 @@ package fiftyone.pipeline.engines.data;
     import java.util.concurrent.*;
     import java.util.stream.Collectors;
 
-    import static fiftyone.pipeline.util.CheckArgument.checkNotNull;
+    import static fiftyone.pipeline.util.Check.getNotNull;
     import static fiftyone.pipeline.util.StringManipulation.stringJoin;
 
 /**
@@ -88,7 +88,7 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
         MissingPropertyService missingPropertyService) {
         super(logger, flowData);
         this.engines = new ArrayList<>();
-        this.engines.add(checkNotNull(engine, "Engine must not be null"));
+        this.engines.add(getNotNull(engine, "Engine must not be null"));
         this.processFutures = new HashMap<>();
         this.missingPropertyService = missingPropertyService;
     }
@@ -113,7 +113,7 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
         Map<String, Object> map) {
         super(logger, flowData, map);
         this.engines = new ArrayList<>();
-        this.engines.add(checkNotNull(engine, "Engine must not be null"));
+        this.engines.add(getNotNull(engine, "Engine must not be null"));
         this.processFutures = new HashMap<>();
         this.missingPropertyService = missingPropertyService;
     }
@@ -216,7 +216,7 @@ public abstract class AspectDataBase extends ElementDataBase implements AspectDa
 
     @Override
     protected <T> T getAs(String key, Class<T> type, Class<?>... parameterisedTypes) {
-        checkNotNull(key, "Key cannot be null.");
+        getNotNull(key, "Key cannot be null.");
         if (logger.isDebugEnabled()) {
             logger.debug("AspectData '" + getClass().getSimpleName() +
                 "'-'" + hashCode() + "' property value requested for key '" +
