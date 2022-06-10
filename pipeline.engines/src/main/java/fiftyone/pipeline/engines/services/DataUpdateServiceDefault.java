@@ -199,6 +199,7 @@ public class DataUpdateServiceDefault implements DataUpdateService {
                 // being used by the engine then we need to tell the engine
                 // to refresh itself.
                 if (fileModified > tempFileModified) {
+                    logger.debug("Specified file is newer than existing temp file");
                     newDataAvailable = true;
                 }
             }
@@ -226,15 +227,15 @@ public class DataUpdateServiceDefault implements DataUpdateService {
                     logger.debug("Cancelling and resetting update timer");
                     if (dataFile.getFuture() != null) {
                         dataFile.getFuture().cancel(true);
+                        dataFile.setFuture(futureFactory.schedule(
+                                new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        checkForUpdate(dataFile, false);
+                                    }
+                                },
+                                getInterval(dataFile.getConfiguration())));
                     }
-                    dataFile.setFuture(futureFactory.schedule(
-                            new Runnable() {
-                                @Override
-                                public void run() {
-                                    checkForUpdate(dataFile, false);
-                                }
-                            },
-                            getInterval(dataFile.getConfiguration())));
                 }
             }
             if (manualUpdate == false) {
@@ -275,6 +276,7 @@ public class DataUpdateServiceDefault implements DataUpdateService {
         if (dataFile.getEngine() == null) {
             // Engine not yet set so no need to refresh it.
             // We can consider the update a success.
+            logger.debug("No engine to update so we are done");
             return AutoUpdateStatus.AUTO_UPDATE_SUCCESS;
         }
 
@@ -401,7 +403,7 @@ public class DataUpdateServiceDefault implements DataUpdateService {
         // We also want to do this synchronously so that execution
         // will block until the engine is ready.
         if (dataFile.getConfiguration().getUpdateOnStartup() && isFalse(alreadyRegistered)) {
-            logger.debug("Checking for Update on Startup{}", dataFile.getDataFilePath());
+            logger.debug("Checking for Update on Startup {}", dataFile.getDataFilePath());
             AutoUpdateStatus status = checkForUpdate(dataFile, false);
             if (ObjectUtils.notEqual(status, AUTO_UPDATE_SUCCESS) &&
                     Check.notFileExists(dataFile.getDataFilePath())){
@@ -513,8 +515,8 @@ public class DataUpdateServiceDefault implements DataUpdateService {
                     configurations.add(aspectDataFile);
                 }
             }
-            logger.debug("Returning from registerDataFile");
         }
+        logger.debug("Returning from registerDataFile");
     }
 
     @Override
