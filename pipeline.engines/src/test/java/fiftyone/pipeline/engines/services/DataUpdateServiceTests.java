@@ -549,7 +549,7 @@ public class DataUpdateServiceTests {
         // When subsequent timers are created, they will not execute.
         configureTimerDelayCallback(1, 1000);
 
-        realLogger.setLevel(Level.DEBUG);
+        realLogger.setLevel(Level.INFO);
         // Configure the mock HTTP handler to return the test data file
         when(httpClientConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_OK);
         when(httpClientConnection.getResponseMessage()).thenReturn(null);
