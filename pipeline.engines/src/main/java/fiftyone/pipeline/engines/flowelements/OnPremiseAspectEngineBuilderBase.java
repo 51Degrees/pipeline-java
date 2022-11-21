@@ -97,7 +97,12 @@ public abstract class OnPremiseAspectEngineBuilderBase<
     public void createAndVerifyTempDir(Path pathToCreate) {
         try {
             File directory = pathToCreate.toFile();
-            if (isFalse(directory.exists())) {directory = Files.createDirectories(pathToCreate).toFile();
+            if (isFalse(directory.exists())) {
+                directory = Files.createDirectories(pathToCreate).toFile();
+                boolean success = directory.setReadable(true, false);
+                success = success && directory.setWritable(true, false);
+                logger.debug("Temp dir is {} can write {}", tempDir, directory.canWrite());
+                logger.debug("File permission setting reported {}.", success);
 
             } else {
                 if (isFalse(directory.isDirectory())) {
@@ -105,19 +110,14 @@ public abstract class OnPremiseAspectEngineBuilderBase<
                             "Temporary directory path exists and is not a directory: " + pathToCreate);
                 }
             }
-            boolean success = directory.setReadable(true, false);
-            success = success && directory.setWritable(true, false);
 
             tempDir = directory.getAbsolutePath();
-
-            logger.debug("Temp dir is {} can write {}", tempDir, directory.canWrite());
-            logger.debug("File permission setting reported {}.", success);
 
             // ensure read/write access - throws an exception if not
             FileSystem fs = Paths.get(directory.getPath()).getFileSystem();
             fs.provider().checkAccess(pathToCreate, AccessMode.WRITE, AccessMode.READ);
         } catch (IOException e) {
-            throw new IllegalStateException("Can't create Temp Directory '" + pathToCreate +
+            throw new IllegalStateException("Cannot access Temp Directory '" + pathToCreate +
                     "' with correct permissions", e);
         }
     }
