@@ -471,9 +471,12 @@ public class ShareUsageElement extends ShareUsageBase {
     protected void writeXmlElement(XMLStreamWriter writer,
                                    String elementName,
                                    String elementContent) throws XMLStreamException {
-        writer.writeStartElement(elementName);
-        writer.writeCharacters(elementContent);
-        writer.writeEndElement();
+        if(elementContent != null)
+        {
+            writer.writeStartElement(elementName);
+            writer.writeCharacters(elementContent);
+            writer.writeEndElement();
+        }
     }
 
     /**

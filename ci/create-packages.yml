@@ -108,8 +108,10 @@ stages:
         PathtoPublish: '$(build.artifactstagingdirectory)'
         failOnStderr: true
         
-  - template: shared-git-tag-job.yml@ciTemplates
-    parameters:
-      imageName: $(linuxImage)
-      jobDependencies: [Versioning,Create_Packages]
+  - ${{ if or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.SourceBranch'], 'refs/heads/master')) }}:
+    # Only tag this branch if it is the main branch
+    - template: shared-git-tag-job.yml@ciTemplates
+      parameters:
+        imageName: $(linuxImage)
+        jobDependencies: [Versioning,Create_Packages]
 
