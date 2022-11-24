@@ -212,12 +212,7 @@ public class PipelineBuilder
         // A service collection does not exist in the builder, so try
         // to construct a builder instance from the assemblies
         // currently loaded.
-        Object builderInstance;
-        try {
-            builderInstance = getBuilder(builderType);
-        } catch (Exception e) {
-            builderInstance = null;
-        }
+        Object builderInstance = getBuilder(builderType);
         if (builderInstance == null) {
             throw new PipelineConfigurationException(
                 "Builder '" + builderType.getName() + "' for " +
@@ -456,13 +451,11 @@ public class PipelineBuilder
      * Get the services required for the constructor, and call it with them.
      * @param constructor the constructor to call
      * @return instance returned by the constructor
-     * @throws IllegalAccessException
-     * @throws InvocationTargetException
-     * @throws InstantiationException
+     * @throws PipelineConfigurationException
      */
     @SuppressWarnings("unchecked")
-    private Object callConstructorWithServices(Constructor<?> constructor)
-        throws IllegalAccessException, InvocationTargetException, InstantiationException {
+    private Object callConstructorWithServices(Constructor<?> constructor, Class<?> builderType)
+        throws PipelineConfigurationException {
         Class[] types = constructor.getParameterTypes();
         Object[] services = new Object[types.length];
         for (int i = 0; i < types.length; i++) {
@@ -473,7 +466,13 @@ public class PipelineBuilder
                 services[i] = getService(types[i]);
             }
         }
-        return constructor.newInstance(services);
+        try {
+            return constructor.newInstance(services);        
+        } catch (Exception e) {
+            throw new PipelineConfigurationException(
+                "Failed to create builder '" + builderType.getName() + 
+                "'. See inner, 'cause' exception for more details", e);
+        }
     }
 
     /**
@@ -483,13 +482,11 @@ public class PipelineBuilder
      * implementing {@link PipelineService}.
      * @param builderType type of builder to get an instance of
      * @return new builder instance
-     * @throws IllegalAccessException
-     * @throws InvocationTargetException
-     * @throws InstantiationException
+     * @throws PipelineConfigurationException
      */
     @SuppressWarnings("deprecation")
     private Object getBuilder(Class<?> builderType)
-        throws IllegalAccessException, InvocationTargetException, InstantiationException {
+        throws PipelineConfigurationException {
         // Get the valid constructors. This means either a default
         // constructor, or a constructor taking a logger factory as an
         // argument.
@@ -519,12 +516,19 @@ public class PipelineBuilder
         if (serviceConstructors.size() != 0 &&
             getBestConstructor(serviceConstructors) != null) {
             return callConstructorWithServices(
-                getBestConstructor(serviceConstructors));
+                getBestConstructor(serviceConstructors), builderType);
         }
-        if (loggerConstructors.size() != 0) {
-            return loggerConstructors.get(0).newInstance(loggerFactory);
-        } else {
-            return builderType.newInstance();
+
+        try {
+            if (loggerConstructors.size() != 0) {
+                return loggerConstructors.get(0).newInstance(loggerFactory);
+            } else {
+                return builderType.newInstance();
+            }
+        } catch (Exception e) {
+            throw new PipelineConfigurationException(
+                "Failed to create builder '" + builderType.getName() + 
+                "'. See inner, 'cause' exception for more details", e);
         }
     }
 
