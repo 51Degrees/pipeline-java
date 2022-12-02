@@ -27,7 +27,7 @@
 
     <groupId>com.51degrees</groupId>
     <artifactId>pipeline</artifactId>
-    <version>4.4.9</version>
+    <version>4.4.10-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>51Degrees :: Pipeline</name>
@@ -71,7 +71,7 @@
         <mockito-core.version>4.3.1</mockito-core.version>
         <org.json.version>20211205</org.json.version>
         <reflections8.version>0.11.7</reflections8.version>
-        <commons-text.version>1.9</commons-text.version>
+        <commons-text.version>1.10.0</commons-text.version>
 
         <jakarta.xml.bind-api.version>3.0.1</jakarta.xml.bind-api.version>
         <jaxb-runtime.version>3.0.2</jaxb-runtime.version>
