@@ -112,7 +112,7 @@ public interface WebRequestEvidenceServiceCore {
                 }
             }
 
-            checkAndAdd(flowData, EVIDENCE_CLIENTIP_KEY, request.getLocalAddr());
+            checkAndAdd(flowData, EVIDENCE_CLIENTIP_KEY, request.getRemoteAddr());
             
             checkAndAdd(flowData, EVIDENCE_PROTOCOL, request.getScheme());
         }
