@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.concurrent.*;
 
 import static fiftyone.pipeline.util.StringManipulation.stringJoin;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
 public class PipelineOverheadTests {
@@ -69,8 +69,8 @@ public class PipelineOverheadTests {
         long end = System.currentTimeMillis();
 
         double msOverheadPerCall =
-            (end - start) / iterations;
-        assumeTrue("Pipeline overhead per Process call was " +
+            ((double)(end - start)) / iterations;
+        assertTrue("Pipeline overhead per Process call was " +
                 msOverheadPerCall + "ms. Maximum permitted is 0.1ms",
             msOverheadPerCall < 0.1);
     }
@@ -95,8 +95,8 @@ public class PipelineOverheadTests {
         long end = System.currentTimeMillis();
 
         double msOverheadPerCall =
-            (end - start) / iterations;
-        assumeTrue(
+            ((double)(end - start)) / iterations;
+        assertTrue(
             "Pipeline overhead per Process call was " +
                 msOverheadPerCall + "ms. Maximum permitted is 0.1ms",
             msOverheadPerCall < 0.1);
@@ -141,7 +141,7 @@ public class PipelineOverheadTests {
             times.add(time.toString());
         }
 
-        assumeTrue(
+        assertTrue(
             "Pipeline overhead per Process call was too high for " +
                 overran + " out of " + threads + "threads. Maximum permitted " +
                 "is 0.1. Actual results: " + stringJoin(times, ","),

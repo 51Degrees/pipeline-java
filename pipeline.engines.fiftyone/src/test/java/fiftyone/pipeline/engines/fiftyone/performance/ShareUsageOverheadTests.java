@@ -43,7 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -146,9 +146,9 @@ public class ShareUsageOverheadTests {
         });
 
         double msOverheadPerCall = (end - start) / iterations;
-        assumeTrue(msOverheadPerCall < 0.1,
-                "Pipeline with share usage overhead per Process call was " +
-                        msOverheadPerCall + "ms. Maximum permitted is 0.1ms");
+        assertTrue("Pipeline with share usage overhead per Process call was " +
+                        msOverheadPerCall + "ms. Maximum permitted is 0.1ms",
+                    msOverheadPerCall < 0.1);
     }
 
     @Test
@@ -181,8 +181,9 @@ public class ShareUsageOverheadTests {
         });
 
         double msOverheadPerCall = ((double)end - (double)start) / (double)iterations;
-        assumeTrue(msOverheadPerCall < 10,
+        assertTrue(
                 "Pipeline with share usage overhead per Process call was " +
-                        msOverheadPerCall + "ms. Maximum permitted is 10ms");
+                        msOverheadPerCall + "ms. Maximum permitted is 10ms",
+                msOverheadPerCall < 10);
     }
 }
