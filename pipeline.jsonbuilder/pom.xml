@@ -26,7 +26,7 @@
     <parent>
         <groupId>com.51degrees</groupId>
         <artifactId>pipeline</artifactId>
-        <version>4.4.12-SNAPSHOT</version>
+        <version>4.4.12</version>
     </parent>
     <artifactId>pipeline.jsonbuilder</artifactId>
     <packaging>jar</packaging>
