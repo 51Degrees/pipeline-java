@@ -27,11 +27,11 @@
 
     <groupId>com.51degrees</groupId>
     <artifactId>pipeline</artifactId>
-    <version>4.4.11</version>
+    <version>4.4.12</version>
     <packaging>pom</packaging>
 
     <name>51Degrees :: Pipeline</name>
-    <url>https:51degrees.com</url>
+    <url>https://51degrees.com</url>
     <description>Java implementation of 51Degrees Pipeline API</description>
 
     <organization>
