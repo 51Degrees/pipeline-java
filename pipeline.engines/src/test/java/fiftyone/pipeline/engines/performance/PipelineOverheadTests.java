@@ -83,7 +83,7 @@ public class PipelineOverheadTests {
         engine.setCache(new FlowCacheDefault(cacheConfig));
         // Set process cost to 0.2 ms. Therefore the test cannot be passed
         // unless the cache is mitigating this cost as it should do.
-        engine.setProcessCost(2000);
+        engine.setProcessCost(200);
 
         int iterations = 10000;
         long start = System.currentTimeMillis();
