@@ -81,7 +81,7 @@ public class PipelineOverheadTests {
             new LruPutCache.Builder(),
             100);
         engine.setCache(new FlowCacheDefault(cacheConfig));
-        // Set process cost to 0.2 ms. Therefore the test cannot be passed
+        // Set process cost to 0.2 sec. Therefore the test cannot be passed
         // unless the cache is mitigating this cost as it should do.
         engine.setProcessCost(200);
 
