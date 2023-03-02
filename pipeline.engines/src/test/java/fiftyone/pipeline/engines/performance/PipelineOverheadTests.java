@@ -33,6 +33,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +44,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
 public class PipelineOverheadTests {
-
+    static Logger logger = LoggerFactory.getLogger("testLogger");
     private Pipeline pipeline;
     private EmptyEngine engine;
 
@@ -70,6 +71,7 @@ public class PipelineOverheadTests {
 
         double msOverheadPerCall =
             ((double)(end - start)) / iterations;
+        logger.info("Average was {} millis", msOverheadPerCall);
         assertTrue("Pipeline overhead per Process call was " +
                 msOverheadPerCall + "ms. Maximum permitted is 0.1ms",
             msOverheadPerCall < 0.1);
@@ -96,6 +98,7 @@ public class PipelineOverheadTests {
 
         double msOverheadPerCall =
             ((double)(end - start)) / iterations;
+        logger.info("Average was {} millis", msOverheadPerCall);
         assertTrue(
             "Pipeline overhead per Process call was " +
                 msOverheadPerCall + "ms. Maximum permitted is 0.1ms",
@@ -134,13 +137,13 @@ public class PipelineOverheadTests {
         List<String> times = new ArrayList<>();
         int overran = 0;
         for (Future<Long> result : results) {
-            Long time = result.get() / iterations;
+            Double time = (double) result.get() / iterations;
             if (time >= 0.1) {
                 overran++;
             }
             times.add(time.toString());
         }
-
+        logger.info("Times were {}", stringJoin(times, ","));
         assertTrue(
             "Pipeline overhead per Process call was too high for " +
                 overran + " out of " + threads + "threads. Maximum permitted " +

@@ -36,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -50,7 +51,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ShareUsageOverheadTests {
-
+    static Logger logger = LoggerFactory.getLogger("testLogger");
     private Pipeline pipeline;
     private Pipeline baselinePipeline;
     private AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine;
@@ -145,7 +146,8 @@ public class ShareUsageOverheadTests {
             }
         });
 
-        double msOverheadPerCall = (end - start) / iterations;
+        double msOverheadPerCall = (double)(end - start) / iterations;
+        logger.info("Overhead was {} millis", msOverheadPerCall);
         assertTrue("Pipeline with share usage overhead per Process call was " +
                         msOverheadPerCall + "ms. Maximum permitted is 0.1ms",
                     msOverheadPerCall < 0.1);
@@ -181,6 +183,7 @@ public class ShareUsageOverheadTests {
         });
 
         double msOverheadPerCall = ((double)end - (double)start) / (double)iterations;
+        logger.info("Overhead was {} millis", msOverheadPerCall);
         assertTrue(
                 "Pipeline with share usage overhead per Process call was " +
                         msOverheadPerCall + "ms. Maximum permitted is 10ms",
