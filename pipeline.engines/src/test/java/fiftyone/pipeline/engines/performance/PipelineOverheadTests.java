@@ -61,7 +61,7 @@ public class PipelineOverheadTests {
 
     @Test
     public void PipelineOverhead_NoCache() {
-        int iterations = 10000;
+        int iterations = 10_000;
         long start = System.currentTimeMillis();
         for (int i = 0; i < iterations; i++) {
             pipeline.createFlowData()
@@ -70,7 +70,7 @@ public class PipelineOverheadTests {
         long end = System.currentTimeMillis();
 
         double msOverheadPerCall =
-            ((double)(end - start)) / iterations;
+            (double)(end - start) / iterations;
         logger.info("Average was {} millis", msOverheadPerCall);
         assertTrue("Pipeline overhead per Process call was " +
                 msOverheadPerCall + "ms. Maximum permitted is 0.1ms",
@@ -87,7 +87,7 @@ public class PipelineOverheadTests {
         // unless the cache is mitigating this cost as it should do.
         engine.setProcessCost(200);
 
-        int iterations = 10000;
+        int iterations = 10_000;
         long start = System.currentTimeMillis();
         for (int i = 0; i < iterations; i++) {
             pipeline.createFlowData()
@@ -97,7 +97,7 @@ public class PipelineOverheadTests {
         long end = System.currentTimeMillis();
 
         double msOverheadPerCall =
-            ((double)(end - start)) / iterations;
+            (double)(end - start) / iterations;
         logger.info("Average was {} millis", msOverheadPerCall);
         assertTrue(
             "Pipeline overhead per Process call was " +
@@ -107,8 +107,8 @@ public class PipelineOverheadTests {
 
     @Test
     public void PipelineOverhead_Concurrency() throws InterruptedException, ExecutionException {
-        final int iterations = 10000;
-        int threads = Runtime.getRuntime().availableProcessors();
+        final int iterations = 10_000;
+        int threads = Math.max(Runtime.getRuntime().availableProcessors() / 2, 1);
         List<Callable<Long>> callables = new ArrayList<>();
 
         // Create the threads.

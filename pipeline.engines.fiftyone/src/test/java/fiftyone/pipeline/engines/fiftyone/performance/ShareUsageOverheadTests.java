@@ -154,13 +154,14 @@ public class ShareUsageOverheadTests {
     }
 
     @Test
-    public void ShareUsageOverhead_HundredEvidence() {
+    public void ShareUsageOverhead_ThousandEvidence() {
         int iterations = 1000;
+        int evidenceCount = 1000;
         List<FlowData> data = new ArrayList<>();
         for (int i = 0; i < iterations; i++) {
             FlowData flowData = pipeline.createFlowData();
-            for (int j = 0; j < 100; j++) {
-                flowData.addEvidence("header." + Integer.toString(j), j);
+            for (int j = 0; j < evidenceCount; j++) {
+                flowData.addEvidence("header." + j, j);
             }
             flowData.addEvidence("header.user-agent", "Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7B405");
             data.add(flowData);
@@ -182,7 +183,7 @@ public class ShareUsageOverheadTests {
             }
         });
 
-        double msOverheadPerCall = ((double)end - (double)start) / (double)iterations;
+        double msOverheadPerCall = (double)(end - start) / iterations;
         logger.info("Overhead was {} millis", msOverheadPerCall);
         assertTrue(
                 "Pipeline with share usage overhead per Process call was " +
