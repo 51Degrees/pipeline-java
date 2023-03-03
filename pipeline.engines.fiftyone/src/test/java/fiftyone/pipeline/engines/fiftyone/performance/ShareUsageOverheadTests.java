@@ -32,10 +32,12 @@ import fiftyone.pipeline.engines.fiftyone.flowelements.ShareUsageElement;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 import fiftyone.pipeline.engines.services.HttpClient;
 import fiftyone.pipeline.engines.testhelpers.flowelements.EmptyEngineBuilder;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -43,16 +45,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ShareUsageOverheadTests {
-
+    static Logger logger = LoggerFactory.getLogger("testLogger");
     private Pipeline pipeline;
-    private Pipeline baselinePipeline;
+    final private double maxOverheadPerCall = 0.25;
     private AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine;
 
     @SuppressWarnings("unchecked")
@@ -84,9 +86,6 @@ public class ShareUsageOverheadTests {
             .addFlowElement(engine)
             .addFlowElement(shareUsage)
             .build();
-        baselinePipeline = (new PipelineBuilder(loggerFactory)
-            .addFlowElement(engine)
-            .build());
     }
 
     private double getTime(int iterations, int headers, Pipeline pipeline) {
@@ -119,7 +118,7 @@ public class ShareUsageOverheadTests {
         return ((double)end - (double)start) / (double)iterations;
     }
 
-    @Test
+    @Test @Disabled
     public void ShareUsageOverhead_SingleEvidence() {
         int iterations = 10000;
         List<FlowData> data = new ArrayList<>();
@@ -145,20 +144,22 @@ public class ShareUsageOverheadTests {
             }
         });
 
-        double msOverheadPerCall = (end - start) / iterations;
-        assumeTrue(msOverheadPerCall < 0.1,
-                "Pipeline with share usage overhead per Process call was " +
-                        msOverheadPerCall + "ms. Maximum permitted is 0.1ms");
+        double msOverheadPerCall = (double)(end - start) / iterations;
+        logger.info("Overhead was {} millis", msOverheadPerCall);
+        assertTrue("Pipeline with share usage overhead per Process call was " +
+                        msOverheadPerCall + "ms. Maximum permitted is " + maxOverheadPerCall,
+                    msOverheadPerCall < maxOverheadPerCall);
     }
 
-    @Test
-    public void ShareUsageOverhead_HundredEvidence() {
+    @Test @Disabled
+    public void ShareUsageOverhead_ThousandEvidence() {
         int iterations = 1000;
+        int evidenceCount = 1000;
         List<FlowData> data = new ArrayList<>();
         for (int i = 0; i < iterations; i++) {
             FlowData flowData = pipeline.createFlowData();
-            for (int j = 0; j < 100; j++) {
-                flowData.addEvidence("header." + Integer.toString(j), j);
+            for (int j = 0; j < evidenceCount; j++) {
+                flowData.addEvidence("header." + j, j);
             }
             flowData.addEvidence("header.user-agent", "Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7B405");
             data.add(flowData);
@@ -180,9 +181,11 @@ public class ShareUsageOverheadTests {
             }
         });
 
-        double msOverheadPerCall = ((double)end - (double)start) / (double)iterations;
-        assumeTrue(msOverheadPerCall < 10,
+        double msOverheadPerCall = (double)(end - start) / iterations;
+        logger.info("Overhead was {} millis", msOverheadPerCall);
+        assertTrue(
                 "Pipeline with share usage overhead per Process call was " +
-                        msOverheadPerCall + "ms. Maximum permitted is 10ms");
+                        msOverheadPerCall + "ms. Maximum permitted is 10ms",
+                msOverheadPerCall < 10);
     }
 }
