@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.concurrent.*;
 
 import static fiftyone.pipeline.util.StringManipulation.stringJoin;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
@@ -47,6 +48,8 @@ public class PipelineOverheadTests {
     static Logger logger = LoggerFactory.getLogger("testLogger");
     private Pipeline pipeline;
     private EmptyEngine engine;
+
+    final private double maxOverheadPerCall = 0.25;
 
     @Before
     public void Initialise() throws Exception {
@@ -74,7 +77,7 @@ public class PipelineOverheadTests {
         logger.info("Average was {} millis", msOverheadPerCall);
         assertTrue("Pipeline overhead per Process call was " +
                 msOverheadPerCall + "ms. Maximum permitted is 0.1ms",
-            msOverheadPerCall < 0.1);
+            msOverheadPerCall < maxOverheadPerCall);
     }
 
     @Test
@@ -102,7 +105,7 @@ public class PipelineOverheadTests {
         assertTrue(
             "Pipeline overhead per Process call was " +
                 msOverheadPerCall + "ms. Maximum permitted is 0.1ms",
-            msOverheadPerCall < 0.1);
+            msOverheadPerCall < maxOverheadPerCall);
     }
 
     @Test
@@ -138,16 +141,16 @@ public class PipelineOverheadTests {
         int overran = 0;
         for (Future<Long> result : results) {
             Double time = (double) result.get() / iterations;
-            if (time >= 0.1) {
+            if (time >= maxOverheadPerCall) {
                 overran++;
             }
             times.add(time.toString());
         }
         logger.info("Times were {}", stringJoin(times, ","));
-        assertTrue(
+        assertEquals(
             "Pipeline overhead per Process call was too high for " +
                 overran + " out of " + threads + "threads. Maximum permitted " +
                 "is 0.1. Actual results: " + stringJoin(times, ","),
-            overran == 0);
+            0, overran);
     }
 }

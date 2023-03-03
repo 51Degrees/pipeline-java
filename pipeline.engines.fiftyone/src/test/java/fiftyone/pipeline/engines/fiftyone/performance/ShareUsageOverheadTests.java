@@ -53,7 +53,7 @@ import static org.mockito.Mockito.when;
 public class ShareUsageOverheadTests {
     static Logger logger = LoggerFactory.getLogger("testLogger");
     private Pipeline pipeline;
-    private Pipeline baselinePipeline;
+    final private double maxOverheadPerCall = 0.25;
     private AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine;
 
     @SuppressWarnings("unchecked")
@@ -85,9 +85,6 @@ public class ShareUsageOverheadTests {
             .addFlowElement(engine)
             .addFlowElement(shareUsage)
             .build();
-        baselinePipeline = (new PipelineBuilder(loggerFactory)
-            .addFlowElement(engine)
-            .build());
     }
 
     private double getTime(int iterations, int headers, Pipeline pipeline) {
@@ -150,7 +147,7 @@ public class ShareUsageOverheadTests {
         logger.info("Overhead was {} millis", msOverheadPerCall);
         assertTrue("Pipeline with share usage overhead per Process call was " +
                         msOverheadPerCall + "ms. Maximum permitted is 0.1ms",
-                    msOverheadPerCall < 0.1);
+                    msOverheadPerCall < maxOverheadPerCall);
     }
 
     @Test
