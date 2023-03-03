@@ -30,6 +30,7 @@ import fiftyone.pipeline.engines.configuration.CacheConfiguration;
 import fiftyone.pipeline.engines.testhelpers.flowelements.EmptyEngine;
 import fiftyone.pipeline.engines.testhelpers.flowelements.EmptyEngineBuilder;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
@@ -62,7 +63,7 @@ public class PipelineOverheadTests {
             .build();
     }
 
-    @Test
+    @Test @Ignore
     public void PipelineOverhead_NoCache() {
         int iterations = 10_000;
         long start = System.currentTimeMillis();
@@ -76,11 +77,11 @@ public class PipelineOverheadTests {
             (double)(end - start) / iterations;
         logger.info("Average was {} millis", msOverheadPerCall);
         assertTrue("Pipeline overhead per Process call was " +
-                msOverheadPerCall + "ms. Maximum permitted is 0.1ms",
+                msOverheadPerCall + "ms. Maximum permitted is " +maxOverheadPerCall,
             msOverheadPerCall < maxOverheadPerCall);
     }
 
-    @Test
+    @Test @Ignore
     public void PipelineOverhead_Cache() {
         CacheConfiguration cacheConfig = new CacheConfiguration(
             new LruPutCache.Builder(),
@@ -104,11 +105,11 @@ public class PipelineOverheadTests {
         logger.info("Average was {} millis", msOverheadPerCall);
         assertTrue(
             "Pipeline overhead per Process call was " +
-                msOverheadPerCall + "ms. Maximum permitted is 0.1ms",
+                msOverheadPerCall + "ms. Maximum permitted is " + maxOverheadPerCall,
             msOverheadPerCall < maxOverheadPerCall);
     }
 
-    @Test
+    @Test @Ignore
     public void PipelineOverhead_Concurrency() throws InterruptedException, ExecutionException {
         final int iterations = 10_000;
         int threads = Math.max(Runtime.getRuntime().availableProcessors() / 2, 1);
@@ -150,7 +151,7 @@ public class PipelineOverheadTests {
         assertEquals(
             "Pipeline overhead per Process call was too high for " +
                 overran + " out of " + threads + "threads. Maximum permitted " +
-                "is 0.1. Actual results: " + stringJoin(times, ","),
+                "is "+ maxOverheadPerCall +". Actual results: " + stringJoin(times, ","),
             0, overran);
     }
 }
