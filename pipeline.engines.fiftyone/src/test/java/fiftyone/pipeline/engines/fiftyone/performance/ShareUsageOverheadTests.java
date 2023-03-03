@@ -32,7 +32,7 @@ import fiftyone.pipeline.engines.fiftyone.flowelements.ShareUsageElement;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 import fiftyone.pipeline.engines.services.HttpClient;
 import fiftyone.pipeline.engines.testhelpers.flowelements.EmptyEngineBuilder;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.ILoggerFactory;
@@ -118,7 +118,7 @@ public class ShareUsageOverheadTests {
         return ((double)end - (double)start) / (double)iterations;
     }
 
-    @Test @Ignore
+    @Test @Disabled
     public void ShareUsageOverhead_SingleEvidence() {
         int iterations = 10000;
         List<FlowData> data = new ArrayList<>();
@@ -151,7 +151,7 @@ public class ShareUsageOverheadTests {
                     msOverheadPerCall < maxOverheadPerCall);
     }
 
-    @Test @Ignore
+    @Test @Disabled
     public void ShareUsageOverhead_ThousandEvidence() {
         int iterations = 1000;
         int evidenceCount = 1000;
