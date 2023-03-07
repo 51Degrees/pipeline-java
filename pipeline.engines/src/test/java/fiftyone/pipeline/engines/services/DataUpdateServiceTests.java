@@ -23,7 +23,6 @@
 package fiftyone.pipeline.engines.services;
 
 import ch.qos.logback.classic.Level;
-import fiftyone.common.testhelpers.LogbackHelper;
 import fiftyone.common.testhelpers.TestLogger;
 import fiftyone.common.wrappers.io.FileWrapperDefault;
 import fiftyone.common.wrappers.io.FileWrapperFactory;
@@ -46,8 +45,6 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.internal.matchers.LessOrEqual;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.slf4j.ILoggerFactory;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -69,7 +66,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static fiftyone.pipeline.engines.services.DataUpdateService.AutoUpdateStatus.AUTO_UPDATE_HTTPS_ERR;
 import static fiftyone.pipeline.engines.services.DataUpdateService.AutoUpdateStatus.AUTO_UPDATE_NOT_NEEDED;
 import static org.junit.Assert.*;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.*;
 
 @SuppressWarnings("unchecked")
@@ -338,12 +335,9 @@ public class DataUpdateServiceTests {
 
     @Test
     public void DataUpdateService_UpdateFromWatcher() throws IOException, InterruptedException {
-        if (System.getProperty("os.name").contains("Mac OS X")) {
-            assumeTrue(
-                "File watchers are not well implemented in OS X, " +
-                    "so don't run this unit test as it is unlikely to pass.",
-                false);
-        }
+        assumeFalse("File watchers are not well implemented in OS X, " +
+                        "so don't run this unit test as it is unlikely to pass.",
+                System.getProperty("os.name").contains("Mac OS X"));
 
         // Arrange
         OnPremiseAspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine = mock(OnPremiseAspectEngine.class);
