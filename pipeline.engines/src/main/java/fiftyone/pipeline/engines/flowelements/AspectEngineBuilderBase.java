@@ -46,7 +46,7 @@ public abstract class AspectEngineBuilderBase<
     TEngine extends AspectEngine> {
     protected final ILoggerFactory loggerFactory;
     private final List<String> properties = new ArrayList<>();
-    private CacheConfiguration cacheConfig = null;
+    protected CacheConfiguration cacheConfig = null;
     private LazyLoadingConfiguration lazyLoadingConfig = null;
 
     /**

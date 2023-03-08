@@ -22,6 +22,7 @@
 
 package fiftyone.pipeline.engines.flowelements;
 
+import fiftyone.pipeline.engines.configuration.CacheConfiguration;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.LoggerFactory;
 
@@ -51,5 +52,18 @@ public abstract class CloudAspectEngineBuilderBase<
      */
     public CloudAspectEngineBuilderBase(ILoggerFactory loggerFactory) {
         super(loggerFactory);
+    }
+
+    /**
+     * Configure the size of a {@link fiftyone.caching.LruPutCache} cache to use.
+     * Default is that there is no cache unless one is configured using this method
+     * or by using {@link AspectEngineBuilderBase#setCache(CacheConfiguration)}
+     * @param size the size of the cache
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
+    public TBuilder setCacheSize(int size) {
+        this.cacheConfig = new CacheConfiguration(size);
+        return (TBuilder) this;
     }
 }
