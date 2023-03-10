@@ -60,10 +60,19 @@ public class Constants {
             EVIDENCE_SEQUENCE_SUFIX;
 
     /**
+     * The minimum number of entries to be sent when sharing data
+     */
+    static final Integer SHARE_USAGE_DEFAULT_MIN_ENTRIES_PER_MESSAGE = 50;
+    /**
+     * ratio of the queue size to minimum entries per message
+     */
+    static final int SHARE_USAGE_MAX_QUEUE_SIZE_MULTIPLIER = 20;
+    /**
      * The default maximum size of the usage data queue which is stored before
      * sending to the remote service.
      */
-    static final int SHARE_USAGE_DEFAULT_MAX_QUEUE_SIZE = 1000;
+    static final int SHARE_USAGE_DEFAULT_MAX_QUEUE_SIZE
+            = SHARE_USAGE_DEFAULT_MIN_ENTRIES_PER_MESSAGE * SHARE_USAGE_MAX_QUEUE_SIZE_MULTIPLIER;
 
     /**
      * The default timeout in milliseconds to use when adding usage data to the
