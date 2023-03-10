@@ -29,6 +29,7 @@ import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.core.flowelements.FlowElement;
+import fiftyone.pipeline.engines.configuration.CacheConfiguration;
 import fiftyone.pipeline.engines.flowelements.AspectEngineBuilderBase;
 import fiftyone.pipeline.engines.services.HttpClient;
 import fiftyone.pipeline.engines.services.HttpClientDefault;
@@ -230,5 +231,21 @@ public class CloudRequestEngineBuilder extends
                 flowData,
                 (CloudRequestEngine) engine);
         }
+    }
+
+
+    /**
+     * Configure the size of a {@link fiftyone.caching.LruPutCache} cache to use.
+     * Default is that there is no cache unless one is configured using this method
+     * or by using {@link AspectEngineBuilderBase#setCache(CacheConfiguration)} - or
+     * if it is set in a pipelineBuilder e.g.
+     * {@link fiftyone.pipeline.engines.flowelements.PrePackagedPipelineBuilderBase#useResultsCache()}
+     * @param size the size of the cache
+     * @return this builder
+     */
+    @SuppressWarnings("unchecked")
+    public CloudRequestEngineBuilder setCacheSize(int size) {
+        this.cacheConfig = new CacheConfiguration(size);
+        return this;
     }
 }

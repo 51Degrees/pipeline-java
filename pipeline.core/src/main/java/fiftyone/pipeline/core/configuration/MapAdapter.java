@@ -47,6 +47,9 @@ public class MapAdapter extends XmlAdapter<Object, Map<String, Object>> {
                 map.put(current.getNodeName(), unmarshal(current));
             } else if (values.getLength() == 1) {
                 map.put(current.getNodeName(), values.item(0).getNodeValue());
+            } else if (current.getNodeType() == Node.ELEMENT_NODE){
+                // empty element gets empty string
+                map.put(current.getNodeName(), "");
             }
             current = current.getNextSibling();
         }

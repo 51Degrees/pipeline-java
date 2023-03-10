@@ -245,6 +245,19 @@ public class PipelineBuilder
             }
         }
         if (possibleBuildMethods.size() != 1) {
+            // the assumption was that anything left over from the "optional" parameter
+            // processing must be a build method parameter, so we need a build method
+            // with the right number of parameters to match. If there is one, and only one,
+            // then processing will continue and errors in the options will be picked up in
+            // subsequent processing. At this point it's actually more likely that an option
+            // has been misspelled or that it just doesn't exist.
+            if (buildParameterList.size() > 0) {
+                String exceptionMessage = String.format(
+                        "Build parameters \"%s\" were not matched for Builder \"%s\".",
+                        stringJoin(buildParameterList, ","), builderType.getName());
+                throw new PipelineConfigurationException(exceptionMessage);
+            }
+            // otherwise we can't find a build() method
             throw new PipelineConfigurationException(
                 "Builder '" + builderType.getName() + "' for " +
                     elementLocation + " has " +
