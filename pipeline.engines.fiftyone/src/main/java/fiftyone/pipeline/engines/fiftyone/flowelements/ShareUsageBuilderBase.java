@@ -28,20 +28,24 @@ import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.net.HttpCookie;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 
 /**
  * Abstract base class for ShareUsageElement builders.
  * @param <T> element type
  */
+@SuppressWarnings({"UnusedReturnValue", "DefaultAnnotationParam"})
 public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
 
     protected final ILoggerFactory loggerFactory;
 
-    private final Logger logger;
+    protected final Logger logger;
 
-    protected int repeatEvidenceInterval;
-    protected double sharePercentage = 1;
+    protected int repeatEvidenceInterval = Constants.SHARE_USAGE_DEFAULT_REPEAT_EVIDENCE_MINUTES;
+    protected double sharePercentage = Constants.SHARE_USAGE_DEFAULT_SHARE_PERCENTAGE;
     protected int minimumEntriesPerMessage = Constants.SHARE_USAGE_DEFAULT_MIN_ENTRIES_PER_MESSAGE;
     // This value must be accessed through the corresponding getter/setter.
     protected int maximumQueueSize = Constants.SHARE_USAGE_DEFAULT_MAX_QUEUE_SIZE;
@@ -79,9 +83,11 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
     /**
      * By default, query string parameters are not shared.
      * <p>
+     * This setter replaces the current list, if any
+     * <p>
      * This setting allows you to share these parameters with 51Degrees
      * if needed.
-     * @param queryStringParameterNames the (case insensitive) names of 
+     * @param queryStringParameterNames the (case-insensitive) names of
      *                                  the query string parameters
      *                                  to include
      * @return this builder
@@ -90,6 +96,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
     @DefaultValue("No sharing")
     public ShareUsageBuilderBase<T> setIncludedQueryStringParameters(
         List<String> queryStringParameterNames) {
+        includedQueryStringParameters.clear();
         includedQueryStringParameters.addAll(queryStringParameterNames);
         return this;
     }
@@ -97,18 +104,19 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
     /**
      * By default, query string parameters are not shared.
      * <p>
-     * This setter adds to the current list
+     * This setter replaces the current list, if any
      * <p>
      * This setting allows you to share these parameters with 51Degrees
      * if needed.
      * @param queryStringParameterNames a comma separated list of
-     *                                  (case insensitive) names of the
+     *                                  (case-insensitive) names of the
      *                                  query string parameters to include
      * @return this builder
      */
     @DefaultValue("No sharing")
     public ShareUsageBuilderBase<T> setIncludedQueryStringParameters(
             String queryStringParameterNames) {
+        includedQueryStringParameters.clear();
         includedQueryStringParameters.addAll(
                 Arrays.asList(queryStringParameterNames.split("\\s*,\\s*")));
         return this;
@@ -119,7 +127,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * <p>
      * This setting adds the name of a parameter to share with 51Degrees
      * if needed.
-     * @param queryStringParameterName the (case insensitive) name of the 
+     * @param queryStringParameterName the (case-insensitive) name of the
      *                                 query string parameter to include
      * @return this builder
      */
@@ -136,7 +144,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * adding them to this list.
      * <p>
      * This setter replaces the current list
-     * @param blockedHeaders the (case insensitive) names of the headers to block
+     * @param blockedHeaders the (case-insensitive) names of the headers to block
      * @return this builder
      */
     @DefaultValue("All HTTP Headers are shared except cookies that do not start with 51D_")
@@ -152,7 +160,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * <p>
      * This setter adds to the blocked headers
      * @param blockedHeaders a comma separated list of
-     *                                  (case insensitive) names of the
+     *                                  (case-insensitive) names of the
      *                                  headers to include
      * @return this builder
      */
@@ -167,8 +175,8 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * don't start with 51D_) are shared. Individual headers can be excluded from sharing by
      * adding them to this list.
      * <p>
-     * This setting allows you to add the name of a header to block.
-     * @param blockedHeader the (case insensitive) name of the header to block
+     * This setter allows you to add the name of a header to block.
+     * @param blockedHeader the (case-insensitive) name of the header to block
      * @return this builder
      */
     @DefaultValue("All HTTP Headers are shared except cookies that do not start with 51D_")
@@ -178,7 +186,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
     }
 
     /**
-     * This setting can be used to stop the usage sharing element 
+     * This setter can be used to stop the usage sharing element
      * from sharing anything about specific requests. By default, no values
      * are suppressed.
      * <p>
@@ -220,7 +228,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      *                        0.5 = 50%, etc.
      * @return this builder
      */
-    @DefaultValue(value="100% represented as 1.0", location=ShareUsageBuilderBase.class)
+    @DefaultValue(doubleValue = Constants.SHARE_USAGE_DEFAULT_SHARE_PERCENTAGE, location=Constants.class)
     public ShareUsageBuilderBase<T> setSharePercentage(double sharePercentage) {
         if (sharePercentage < 0 || sharePercentage > 1.0) {
             throw new IllegalArgumentException("Share percentage must be between 0 and 1 (" +
@@ -243,7 +251,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      *                                 service
      * @return this builder
      */
-    @DefaultValue(value="50", location = Constants.class)
+    @DefaultValue(intValue=Constants.SHARE_USAGE_DEFAULT_MIN_ENTRIES_PER_MESSAGE, location = Constants.class)
     public ShareUsageBuilderBase<T> setMinimumEntriesPerMessage(int minimumEntriesPerMessage) {
         if (minimumEntriesPerMessage <= 0) {
             throw new IllegalArgumentException("Minimum entries per message must be greater than 0");
@@ -261,7 +269,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * @param size the size to set
      * @return this builder
      */
-    @DefaultValue(value = "1000", location = Constants.class)
+    @DefaultValue(intValue = Constants.SHARE_USAGE_DEFAULT_MAX_QUEUE_SIZE, location = Constants.class)
     public ShareUsageBuilderBase<T> setMaximumQueueSize(int size) {
         if (size <= minimumEntriesPerMessage) {
             throw new IllegalArgumentException("Maximum queue size must be greater than " +
@@ -301,7 +309,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * @param milliseconds timeout to set
      * @return this builder
      */
-    @DefaultValue(value = "0", location = Constants.class)
+    @DefaultValue(intValue = Constants.SHARE_USAGE_DEFAULT_ADD_TIMEOUT, location = Constants.class)
     public ShareUsageBuilderBase<T> setAddTimeoutMillis(int milliseconds) {
         if (milliseconds < 0) {
             throw new IllegalArgumentException("Timeout must be greater than 0");
@@ -330,7 +338,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * @param milliseconds timeout to set
      * @return this builder
      */
-    @DefaultValue(value = "0", location = Constants.class)
+    @DefaultValue(intValue = Constants.SHARE_USAGE_DEFAULT_TAKE_TIMEOUT, location = Constants.class)
     public ShareUsageBuilderBase<T> setTakeTimeoutMillis(int milliseconds) {
         if (milliseconds < 0) {
             throw new IllegalArgumentException("Timeout must be greater than 0");
@@ -346,8 +354,14 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * @param shareUsageUrl the URL to use when sharing usage data
      * @return this builder
      */
-    @DefaultValue(value="Send to 51D", location = Constants.class)
+    @DefaultValue(value="Send to 51D - " + Constants.SHARE_USAGE_DEFAULT_URL, location = Constants.class)
     public ShareUsageBuilderBase<T> setShareUsageUrl(String shareUsageUrl) {
+        try {
+            URL url = new URL(shareUsageUrl);
+            assert !url.toString().isEmpty();
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException(e);
+        }
         this.shareUsageUrl = shareUsageUrl;
         return this;
     }
@@ -361,8 +375,11 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * @param cookieName the name of the cookie that contains the session id
      * @return this builder
      */
-    @DefaultValue(value="JSESSIONID", location = fiftyone.pipeline.engines.Constants.class)
+    @DefaultValue(value=fiftyone.pipeline.engines.Constants.DEFAULT_SESSION_COOKIE_NAME, location = fiftyone.pipeline.engines.Constants.class)
     public ShareUsageBuilderBase<T> setSessionCookieName(String cookieName) {
+        // test that the cookie name is valid
+        HttpCookie cookie = new HttpCookie(cookieName, "test");
+        assert !cookie.getName().isEmpty();
         this.sessionCookieName = cookieName;
         return this;
     }
@@ -371,11 +388,11 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * If exactly the same evidence values are seen multiple times within this
      * time limit then they will only be shared once.
      * <p>
-     * The default value for this is 0.
+     * The default value for this is 0 - meaning always share, if tracker is enabled.
      * @param interval the interval in minutes
      * @return this builder
      */
-    @DefaultValue(value="0",location = ShareUsageBuilderBase.class)
+    @DefaultValue(intValue=Constants.SHARE_USAGE_DEFAULT_REPEAT_EVIDENCE_MINUTES,location = Constants.class)
     public ShareUsageBuilderBase<T> setRepeatEvidenceIntervalMinutes(int interval) {
         this.repeatEvidenceInterval = interval;
         return this;

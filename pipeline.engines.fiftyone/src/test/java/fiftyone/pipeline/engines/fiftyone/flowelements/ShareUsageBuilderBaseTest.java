@@ -22,11 +22,11 @@
 
 package fiftyone.pipeline.engines.fiftyone.flowelements;
 
-import fiftyone.pipeline.engines.fiftyone.exceptions.HttpException;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
@@ -45,6 +45,7 @@ public class ShareUsageBuilderBaseTest {
     }
     @Test
     public void setIncludedQueryStringParameters() {
+        base.includedQueryStringParameters.addAll(Arrays.asList("g", "h", "i"));
         base.setIncludedQueryStringParameters("a, b, c");
         assertEquals(3, base.includedQueryStringParameters.size());
         assertTrue(base.includedQueryStringParameters.contains("a"));
@@ -65,7 +66,19 @@ public class ShareUsageBuilderBaseTest {
     }
 
     @Test
+    public void testSetIncludedQueryStringParameters() {
+        base.includedQueryStringParameters.addAll(Arrays.asList("g", "h", "i"));
+        base.setIncludedQueryStringParameters(Arrays.asList("a", "b", "c"));
+        assertEquals(3, base.includedQueryStringParameters.size());
+        assertTrue(base.includedQueryStringParameters.contains("a"));
+        assertTrue(base.includedQueryStringParameters.contains("b"));
+        assertTrue(base.includedQueryStringParameters.contains("c"));
+    }
+
+
+    @Test
     public void setBlockedHttpHeaders() {
+        base.setBlockedHttpHeaders("g, h, i");
         base.setBlockedHttpHeaders("a, b, c");
         assertEquals(3, base.blockedHttpHeaders.size());
         assertTrue(base.blockedHttpHeaders.contains("a"));
@@ -83,6 +96,19 @@ public class ShareUsageBuilderBaseTest {
         assertEquals(2, base.blockedHttpHeaders.size());
         assertTrue(base.blockedHttpHeaders.contains("a"));
         assertTrue(base.blockedHttpHeaders.contains("b"));
+    }
+
+
+
+    @Test
+    public void testSetBlockedHttpHeaders() {
+        base.setBlockedHttpHeaders(Arrays.asList("g", "h", "i"));
+        base.setBlockedHttpHeaders(Arrays.asList("a", "b", "c"));
+        assertEquals(3, base.blockedHttpHeaders.size());
+        assertTrue(base.blockedHttpHeaders.contains("a"));
+        assertTrue(base.blockedHttpHeaders.contains("b"));
+        assertTrue(base.blockedHttpHeaders.contains("c"));
+
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -113,46 +139,108 @@ public class ShareUsageBuilderBaseTest {
     }
 
     @Test
-    public void setSharePercentage() {
+    public void setSharePercentage1() {
+        base.setSharePercentage(0.1);
+        assertEquals(0.1, base.sharePercentage, 0.00001);
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void setSharePercentage2() {
+        base.setSharePercentage(-0.1);
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void setSharePercentage3() {
+        base.setSharePercentage(1.1);
     }
 
     @Test
-    public void setMinimumEntriesPerMessage() {
+    public void setMinimumEntriesPerMessage1() {
+        base.setMinimumEntriesPerMessage(50);
+        assertEquals(50, base.minimumEntriesPerMessage);
     }
-
+    @Test(expected = IllegalArgumentException.class)
+    public void setMinimumEntriesPerMessage2() {
+        base.setMinimumEntriesPerMessage(0);
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void setMinimumEntriesPerMessage3() {
+        base.setMinimumEntriesPerMessage(-1);
+    }
     @Test
     public void setMaximumQueueSize() {
+        base.setMaximumQueueSize(200);
+        assertEquals(200, base.maximumQueueSize);
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void setMaximumQueueSize1() {
+        base.setMaximumQueueSize(0);
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void setMaximumQueueSize2() {
+        base.setMaximumQueueSize(-1);
     }
 
     @Test
     public void getMaximumQueueSize() {
+        base.setMaximumQueueSize(200);
+        assertEquals(200, base.getMaximumQueueSize());
     }
 
     @Test
-    public void setAddTimeout() {
+    public void setAddTimeoutMillis1() {
+        base.setAddTimeoutMillis(1000);
+        assertEquals(1000, base.addTimeout);
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void setAddTimeoutMillis2() {
+        base.setAddTimeoutMillis(-1);
     }
 
     @Test
-    public void setTakeTimeout() {
+    public void setTakeTimeoutMillis1() {
+        base.setTakeTimeoutMillis(1000);
+        assertEquals(1000, base.takeTimeout);
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void setTakeTimeoutMillis2() {
+        base.setTakeTimeoutMillis(-1);
     }
 
     @Test
     public void setShareUsageUrl() {
+        base.setShareUsageUrl("https://dog-food.com");
+        assertEquals(base.shareUsageUrl, "https://dog-food.com");
+
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void setShareUsageUrl1() {
+        base.setShareUsageUrl("dog food");
     }
 
     @Test
     public void setSessionCookieName() {
+        base.setSessionCookieName("test");
+        assertEquals("test", base.sessionCookieName);
+    }
+    @Test (expected = IllegalArgumentException.class)
+    public void setSessionCookieName1() {
+        // illegal name
+        base.setSessionCookieName("te st");
+        assertEquals("test", base.sessionCookieName);
     }
 
     @Test
     public void setRepeatEvidenceIntervalMinutes() {
+        base.setRepeatEvidenceIntervalMinutes(1);
+        assertEquals(1, base.repeatEvidenceInterval);
+    }
+    @Test (expected = IllegalArgumentException.class)
+    public void setRepeatEvidenceIntervalMinutes1() {
+        base.setRepeatEvidenceIntervalMinutes(-1);
     }
 
     @Test
     public void setTrackSession() {
-    }
-
-    @Test
-    public void build() {
+        base.setTrackSession(true);
+        assertTrue(base.trackSession);
     }
 }

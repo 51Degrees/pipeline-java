@@ -30,6 +30,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface DefaultValue {
-    String value();
+    String value() default "";
+    int intValue() default 0;
+
+    double doubleValue() default 0.0;
     Class<?> location() default Object.class;
 }
