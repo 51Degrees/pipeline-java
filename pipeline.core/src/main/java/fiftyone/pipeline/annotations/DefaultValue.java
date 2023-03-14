@@ -22,17 +22,13 @@
 
 package fiftyone.pipeline.annotations;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
+@Documented
 public @interface DefaultValue {
     String value() default "";
-    int intValue() default 0;
-
-    double doubleValue() default 0.0;
-    Class<?> location() default Object.class;
+    int intValue() default Integer.MIN_VALUE;
+    double doubleValue() default Double.MIN_VALUE;
 }

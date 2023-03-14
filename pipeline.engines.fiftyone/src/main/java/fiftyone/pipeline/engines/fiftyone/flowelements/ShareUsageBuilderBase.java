@@ -228,7 +228,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      *                        0.5 = 50%, etc.
      * @return this builder
      */
-    @DefaultValue(doubleValue = Constants.SHARE_USAGE_DEFAULT_SHARE_PERCENTAGE, location=Constants.class)
+    @DefaultValue(doubleValue = Constants.SHARE_USAGE_DEFAULT_SHARE_PERCENTAGE)
     public ShareUsageBuilderBase<T> setSharePercentage(double sharePercentage) {
         if (sharePercentage < 0 || sharePercentage > 1.0) {
             throw new IllegalArgumentException("Share percentage must be between 0 and 1 (" +
@@ -251,7 +251,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      *                                 service
      * @return this builder
      */
-    @DefaultValue(intValue=Constants.SHARE_USAGE_DEFAULT_MIN_ENTRIES_PER_MESSAGE, location = Constants.class)
+    @DefaultValue(intValue=Constants.SHARE_USAGE_DEFAULT_MIN_ENTRIES_PER_MESSAGE)
     public ShareUsageBuilderBase<T> setMinimumEntriesPerMessage(int minimumEntriesPerMessage) {
         if (minimumEntriesPerMessage <= 0) {
             throw new IllegalArgumentException("Minimum entries per message must be greater than 0");
@@ -269,7 +269,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * @param size the size to set
      * @return this builder
      */
-    @DefaultValue(intValue = Constants.SHARE_USAGE_DEFAULT_MAX_QUEUE_SIZE, location = Constants.class)
+    @DefaultValue(intValue = Constants.SHARE_USAGE_DEFAULT_MAX_QUEUE_SIZE)
     public ShareUsageBuilderBase<T> setMaximumQueueSize(int size) {
         if (size <= minimumEntriesPerMessage) {
             throw new IllegalArgumentException("Maximum queue size must be greater than " +
@@ -309,7 +309,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * @param milliseconds timeout to set
      * @return this builder
      */
-    @DefaultValue(intValue = Constants.SHARE_USAGE_DEFAULT_ADD_TIMEOUT, location = Constants.class)
+    @DefaultValue(intValue = Constants.SHARE_USAGE_DEFAULT_ADD_TIMEOUT)
     public ShareUsageBuilderBase<T> setAddTimeoutMillis(int milliseconds) {
         if (milliseconds < 0) {
             throw new IllegalArgumentException("Timeout must be greater than 0");
@@ -338,7 +338,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * @param milliseconds timeout to set
      * @return this builder
      */
-    @DefaultValue(intValue = Constants.SHARE_USAGE_DEFAULT_TAKE_TIMEOUT, location = Constants.class)
+    @DefaultValue(intValue = Constants.SHARE_USAGE_DEFAULT_TAKE_TIMEOUT)
     public ShareUsageBuilderBase<T> setTakeTimeoutMillis(int milliseconds) {
         if (milliseconds < 0) {
             throw new IllegalArgumentException("Timeout must be greater than 0");
@@ -354,7 +354,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * @param shareUsageUrl the URL to use when sharing usage data
      * @return this builder
      */
-    @DefaultValue(value="Send to 51D - " + Constants.SHARE_USAGE_DEFAULT_URL, location = Constants.class)
+    @DefaultValue(value="Send to 51D - " + Constants.SHARE_USAGE_DEFAULT_URL)
     public ShareUsageBuilderBase<T> setShareUsageUrl(String shareUsageUrl) {
         try {
             URL url = new URL(shareUsageUrl);
@@ -375,7 +375,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * @param cookieName the name of the cookie that contains the session id
      * @return this builder
      */
-    @DefaultValue(value=fiftyone.pipeline.engines.Constants.DEFAULT_SESSION_COOKIE_NAME, location = fiftyone.pipeline.engines.Constants.class)
+    @DefaultValue(value=fiftyone.pipeline.engines.Constants.DEFAULT_SESSION_COOKIE_NAME)
     public ShareUsageBuilderBase<T> setSessionCookieName(String cookieName) {
         // test that the cookie name is valid
         HttpCookie cookie = new HttpCookie(cookieName, "test");
@@ -388,11 +388,11 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * If exactly the same evidence values are seen multiple times within this
      * time limit then they will only be shared once.
      * <p>
-     * The default value for this is 0 - meaning always share, if tracker is enabled.
+     * The default value for this is 0 - meaning always share.
      * @param interval the interval in minutes
      * @return this builder
      */
-    @DefaultValue(intValue=Constants.SHARE_USAGE_DEFAULT_REPEAT_EVIDENCE_MINUTES,location = Constants.class)
+    @DefaultValue(intValue=Constants.SHARE_USAGE_DEFAULT_REPEAT_EVIDENCE_MINUTES)
     public ShareUsageBuilderBase<T> setRepeatEvidenceIntervalMinutes(int interval) {
         this.repeatEvidenceInterval = interval;
         return this;
@@ -409,7 +409,7 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
      * @param track boolean value sets whether the usage element should track sessions
      * @return this builder
      */
-    @DefaultValue(value="false", location = ShareUsageBuilderBase.class)
+    @DefaultValue(value="false")
     public ShareUsageBuilderBase<T> setTrackSession(boolean track) {
         this.trackSession = track;
         return this;
