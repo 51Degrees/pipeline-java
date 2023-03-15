@@ -111,11 +111,16 @@ public class PipelineBuilder
 
             // Process any additional parameters for the pipeline
             // builder itself.
-            processBuildParameters(
+            List<String> builderParams = processBuildParameters(
                 options.pipelineBuilderParameters,
                 getClass(),
                 this,
                 "pipeline");
+            if (builderParams.size() != 0) {
+                throw new PipelineConfigurationException(
+                        "The following builder parameters could not be processed: "
+                                + stringJoin(builderParams, ","));
+            }
         } catch (PipelineConfigurationException ex) {
             logger.debug("Problem with pipeline configuration, " +
                 "failed to create pipeline.", ex);

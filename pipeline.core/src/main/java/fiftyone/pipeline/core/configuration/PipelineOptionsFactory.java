@@ -22,21 +22,36 @@
 
 package fiftyone.pipeline.core.configuration;
 
+import fiftyone.pipeline.util.FileFinder;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Unmarshaller;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.xml.XMLConstants;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
 import java.io.File;
 
 /**
  * Instantiate pipeline options from an XML config file
  */
 public class PipelineOptionsFactory {
+
+    public static final String PIPELINE_OPTIONS_SCHEMA = "pipelineOptions.xsd";
+
     public static PipelineOptions getOptionsFromFile(String configFile) throws Exception{
         return getOptionsFromFile(new File(configFile));
     }
     public static PipelineOptions getOptionsFromFile(File configFile) throws Exception{
         JAXBContext jaxbContext = JAXBContext.newInstance(PipelineOptions.class);
         Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+
+        //Setup schema validator
+        SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+        Schema optionsSchema = sf.newSchema(PipelineOptionsFactory.class.getClassLoader().getResource(PIPELINE_OPTIONS_SCHEMA));
+        unmarshaller.setSchema(optionsSchema);
+
         return (PipelineOptions) unmarshaller.unmarshal(configFile);
     }
 }
