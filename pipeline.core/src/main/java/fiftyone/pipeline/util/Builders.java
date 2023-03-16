@@ -199,7 +199,8 @@ public class Builders {
             if (parameterType.equals("[B")) {
                 builder.append("byte[]");
             } else if (parameterType.startsWith("[L")) {
-                builder.append(parameterType.substring(2))
+                // lose the trailing ";"
+                builder.append(parameterType.substring(2, parameterType.length()-1))
                         .append("[]");
             } else {
                 builder.append(parameterType);
@@ -220,9 +221,7 @@ public class Builders {
             if (parameterType.equals("[B")) {
                 return false;
             } else if (parameterType.startsWith("[L")) {
-                if (parameterType.substring(2).startsWith("fiftyone")) {
-                    return false;
-                }
+                return false;
             } else if (parameterType.startsWith("fiftyone")) {
                 return false;
 
