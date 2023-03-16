@@ -44,6 +44,8 @@ public abstract class FiftyOneOnPremiseAspectEngineBuilderBase<
     TEngine extends FiftyOneAspectEngine> extends
     SingleFileAspectEngineBuilderBase<TBuilder, TEngine> {
 
+    public static final String DATA_UPDATE_URL =
+            "https://distributor.51degrees.com/api/v2/download";
     private String dataDownloadType;
     
     /**
@@ -73,7 +75,7 @@ public abstract class FiftyOneOnPremiseAspectEngineBuilderBase<
         ILoggerFactory loggerFactory,
         DataUpdateService dataUpdateService) {
         super(loggerFactory, dataUpdateService);
-        setDataUpdateUrl("https://distributor.51degrees.com/api/v2/download");
+        setDataUpdateUrl(DATA_UPDATE_URL);
         setDataUpdateUrlFormatter(new FiftyOneUrlFormatter());
     }
 

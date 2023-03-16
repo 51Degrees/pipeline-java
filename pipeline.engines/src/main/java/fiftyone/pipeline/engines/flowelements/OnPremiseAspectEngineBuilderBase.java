@@ -22,6 +22,7 @@
 
 package fiftyone.pipeline.engines.flowelements;
 
+import fiftyone.pipeline.annotations.DefaultValue;
 import fiftyone.pipeline.engines.Constants;
 import fiftyone.pipeline.engines.configuration.DataFileConfiguration;
 import fiftyone.pipeline.engines.data.AspectEngineDataFile;
@@ -56,7 +57,8 @@ public abstract class OnPremiseAspectEngineBuilderBase<
 
     protected final List<DataFileConfiguration> dataFileConfigs = new ArrayList<>();
     protected final List<AspectEngineDataFile> dataFiles = new ArrayList<>();
-    protected String tempDir;
+    protected String tempDir = Paths.get(
+            System.getProperty("java.io.tmpdir"),"fiftyone.tempfiles").toString();
 
     protected Logger logger = LoggerFactory.getLogger(OnPremiseAspectEngineBuilderBase.class);
 
@@ -91,7 +93,7 @@ public abstract class OnPremiseAspectEngineBuilderBase<
 
         // create an empty temp directory as a sub-directory of the system temp directory if it
         // does not exist already
-        createAndVerifyTempDir(Paths.get(System.getProperty("java.io.tmpdir"),"fiftyone.tempfiles"));
+        createAndVerifyTempDir(Paths.get(tempDir));
     }
 
     public void createAndVerifyTempDir(Path pathToCreate) {
@@ -136,9 +138,12 @@ public abstract class OnPremiseAspectEngineBuilderBase<
     /**
      * Set the temporary path to use when the engine needs to create
      * temporary files. (e.g. when downloading data updates)
+     * <p>
+     * By default, this is set to System.getProperty(java.io.tmpdir)+"/fiftyone.tempfiles"
      * @param dirPath the full path to the temporary directory
      * @return this engine builder instance
      */
+    @DefaultValue("System.getProperty(java.io.tmpdir)+\"/fiftyone.tempfiles\"")
     @SuppressWarnings("unchecked")
     public TBuilder setTempDirPath(String dirPath) {
         tempDir = dirPath;

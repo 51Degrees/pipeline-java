@@ -22,6 +22,7 @@
 
 package fiftyone.pipeline.engines.flowelements;
 
+import fiftyone.pipeline.annotations.DefaultValue;
 import fiftyone.pipeline.engines.caching.FlowCacheDefault;
 import fiftyone.pipeline.engines.configuration.CacheConfiguration;
 import fiftyone.pipeline.engines.configuration.LazyLoadingConfiguration;
@@ -104,10 +105,13 @@ public abstract class AspectEngineBuilderBase<
 
     /**
      * Add a property to the list of properties that the engine will populate in
-     * the response. By default all properties will be populated.
+     * the response.
+     * <p>
+     * By default, all properties will be populated.
      * @param s the property that we want the engine to populate
      * @return this builder
      */
+    @DefaultValue("All properties")
     @SuppressWarnings("unchecked")
     public TBuilder setProperty(String s) {
         tryAddProperty(s);
@@ -130,13 +134,15 @@ public abstract class AspectEngineBuilderBase<
 
     /**
      * Configure the properties that the engine will populate in the response.
-     * By default all properties will be populated.
+     * <p>
+     * By default, all properties will be populated.
      * @param properties The properties that we want the engine to populate
      * @return this builder
      */
+    @DefaultValue("All properties")
     @SuppressWarnings("unchecked")
     public TBuilder setProperties(String properties) {
-        for (String property : properties.split(",")) {
+        for (String property : properties.split("\\s,\\s")) {
             tryAddProperty(property);
         }
         return (TBuilder) this;

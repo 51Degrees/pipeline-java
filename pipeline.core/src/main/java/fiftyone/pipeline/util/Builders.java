@@ -110,6 +110,21 @@ public class Builders {
             if (Arrays.stream(clazz.getMethods()).noneMatch((m) -> m.getName().startsWith("set"))) {
                 logger.debug("No methods");
             }
+            // detail build args first
+            for (Method method : clazz.getMethods()) {
+                if (method.getName().equals("build")) {
+                    for (Parameter parameter : method.getParameters()) {
+                        BuildArg buildArg = parameter.getAnnotation(BuildArg.class);
+                        if (buildArg != null) {
+                            String methodDetail = detailMethod(method, buildArg.value());
+                            if (Check.notNullOrBlank(methodDetail)) {
+                                out.println(methodDetail);
+                            }
+                        }
+                    }
+                }
+            }
+            // now detail the set methods
             for (Method method : clazz.getMethods()) {
                 if (method.getName().startsWith("set")) {
                     // detail the method under its name minus set
@@ -123,19 +138,6 @@ public class Builders {
                         out.println(detailMethod(method, alternateName1.value()));
                     }
                 }
-                // detail any build args
-                if (method.getName().equals("build")) {
-                    for (Parameter parameter : method.getParameters()) {
-                        BuildArg buildArg = parameter.getAnnotation(BuildArg.class);
-                        if (buildArg != null) {
-                            String methodDetail = detailMethod(method, buildArg.value());
-                            if (Check.notNullOrBlank(methodDetail)) {
-                                out.println(methodDetail);
-                            }
-                        }
-                    }
-                }
-
             }
 
             out.println("            </BuildParameters>");
@@ -162,8 +164,11 @@ public class Builders {
         builder.append("             <")
                 .append(name)
                 .append(">");
-        builder.append(getDefaultValue(method));
-
+        if (method.getName().equals("build")) {
+            builder.append("No default, value must be supplied");
+        } else {
+            builder.append(getDefaultValue(method));
+        }
         builder.append(" - see ")
                 .append(method.getDeclaringClass().getName())
                 .append("#")
@@ -220,6 +225,10 @@ public class Builders {
                 }
             } else if (parameterType.startsWith("fiftyone")) {
                 return false;
+
+            // not interested in List or Set
+            } else if (parameterType.startsWith("java.util")) {
+                return false;
             }
         }
         return true;
@@ -235,6 +244,8 @@ public class Builders {
                 return String.valueOf(defaultValue.intValue());
             } else if (defaultValue.doubleValue() != Double.MIN_VALUE) {
                 return String.valueOf(defaultValue.doubleValue());
+            } else {
+                return String.valueOf(defaultValue.booleanValue());
             }
         }
         return "";

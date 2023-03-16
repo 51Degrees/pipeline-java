@@ -31,4 +31,5 @@ public @interface DefaultValue {
     String value() default "";
     int intValue() default Integer.MIN_VALUE;
     double doubleValue() default Double.MIN_VALUE;
+    boolean booleanValue() default false;
 }
