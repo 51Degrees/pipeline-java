@@ -38,11 +38,6 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>pipeline.web.mvc</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
             <artifactId>pipeline.javascriptbuilder</artifactId>
             <version>${project.version}</version>
         </dependency>
