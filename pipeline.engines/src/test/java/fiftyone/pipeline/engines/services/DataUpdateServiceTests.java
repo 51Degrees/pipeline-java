@@ -23,6 +23,7 @@
 package fiftyone.pipeline.engines.services;
 
 import ch.qos.logback.classic.Level;
+import fiftyone.common.testhelpers.LogbackHelper;
 import fiftyone.common.testhelpers.TestLogger;
 import fiftyone.common.wrappers.io.FileWrapperDefault;
 import fiftyone.common.wrappers.io.FileWrapperFactory;
@@ -104,6 +105,7 @@ public class DataUpdateServiceTests {
 
     @Before
     public void Init() throws IOException {
+        // done this way to be able to set log level programmatically
         realLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(this.getClass());
         realLogger.setLevel(Level.INFO);
         logger = new TestLogger("test", realLogger);
@@ -709,6 +711,11 @@ public class DataUpdateServiceTests {
                 throw new Exception(errorText);
             }
         });
+
+        LogbackHelper.intentionalErrorConfig();
+        TestLogger tempLogger = new TestLogger("test", LoggerFactory.getLogger("temp"));
+        DataUpdateService tempDataUpdate = new DataUpdateServiceDefault(
+                tempLogger,httpClient,fileWrapperFactory,futureFactory);
         // Configure a ManualResetEvent to be set when processing
         // is complete.
         final Semaphore completeFlag = new Semaphore(1);
@@ -742,10 +749,11 @@ public class DataUpdateServiceTests {
             file.setConfiguration(config);
             when(engine.getDataFileMetaData(anyString())).thenReturn(file);
 
-            // Act
+            realLogger.info("This test deliberately causes errors");
             dataUpdate.registerDataFile(file);
             // Wait until processing is complete.
             boolean completed = completeFlag.tryAcquire(1, TimeUnit.SECONDS);
+            //LogbackHelper.defaultConfig();
 
             // Assert
             assertTrue("The 'checkForUpdateComplete' " +
