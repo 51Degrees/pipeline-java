@@ -23,7 +23,9 @@
 package fiftyone.pipeline.engines.flowelements;
 
 import fiftyone.pipeline.annotations.BuildArg;
+import fiftyone.pipeline.annotations.DefaultValue;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
+import fiftyone.pipeline.engines.Constants;
 import fiftyone.pipeline.engines.configuration.DataFileConfiguration;
 import fiftyone.pipeline.engines.configuration.DataFileConfigurationBuilder;
 import fiftyone.pipeline.engines.data.DataUpdateUrlFormatter;
@@ -133,9 +135,12 @@ public abstract class SingleFileAspectEngineBuilderBase<
     /**
      * Configure the engine to use the specified URL when looking for
      * an updated data file.
+     * <p>
+     * Default is the 51Degrees update URL
      * @param url the URL to check for a new data file
      * @return this builder
      */
+    @DefaultValue("51Degrees default, set by subclass")
     @SuppressWarnings("unchecked")
     public TBuilder setDataUpdateUrl(String url) {
         dataFileBuilder.setDataUpdateUrl(url);
@@ -149,6 +154,7 @@ public abstract class SingleFileAspectEngineBuilderBase<
      * @param formatter the formatter to use
      * @return this builder
      */
+    @DefaultValue("51Degrees default, set by subclass")
     @SuppressWarnings("unchecked")
     public TBuilder setDataUpdateUrlFormatter(DataUpdateUrlFormatter formatter) {
         dataFileBuilder.setDataUpdateUrlFormatter(formatter);
@@ -159,10 +165,13 @@ public abstract class SingleFileAspectEngineBuilderBase<
      * Set a value indicating if the {@link DataUpdateService} should expect the
      * response from the data update URL to contain a 'content-md5' HTTP header
      * that can be used to verify the integrity of the content.
+     * <p>
+     * Default true
      * @param verify true if the content should be verified with the Md5 hash.
      * False otherwise
      * @return this builder
      */
+    @DefaultValue(booleanValue = fiftyone.pipeline.engines.Constants.DEFAULT_VERIFY_MD5)
     @SuppressWarnings("unchecked")
     public TBuilder setDataUpdateVerifyMd5(boolean verify) {
         dataFileBuilder.setDataUpdateVerifyMd5(verify);
@@ -172,10 +181,13 @@ public abstract class SingleFileAspectEngineBuilderBase<
     /**
      * Set a value indicating if the {@link DataUpdateService} should expect
      * content from the configured data update URL to be compressed or not.
+     * <p>
+     * Default true
      * @param decompress true if the content from the data update URL needs to
      * be decompressed. False otherwise
      * @return this builder
      */
+    @DefaultValue(booleanValue = Constants.DEFAULT_DECOMPRESS)
     @SuppressWarnings("unchecked")
     public TBuilder setDataUpdateDecompress(boolean decompress) {
         dataFileBuilder.setDataUpdateDecompress(decompress);
@@ -184,12 +196,15 @@ public abstract class SingleFileAspectEngineBuilderBase<
 
     /**
      * Enable or disable automatic updates for this engine.
-     * @param enabled  if true, the engine will update it's data file with no
+     * <p>
+     * Default true
+     * @param enabled  if true, the engine will update its data file with no
      *                 manual intervention. If false, the engine will never
-     *                 update it's data file unless the manual update method is
+     *                 update its data file unless the update method is
      *                 called on {@link DataUpdateService}
      * @return this builder
      */
+    @DefaultValue(booleanValue = Constants.DEFAULT_AUTOUPDATE_ENABLED)
     @SuppressWarnings("unchecked")
     public TBuilder setAutoUpdate(boolean enabled) {
         dataFileBuilder.setAutoUpdate(enabled);
@@ -200,13 +215,17 @@ public abstract class SingleFileAspectEngineBuilderBase<
      * The {@link DataUpdateService} has the ability to watch a data file on
      * disk and automatically refresh the engine as soon as the file is updated.
      * This setting enables/disables that feature.
-     *
+     * <p>
      * The {@link #setAutoUpdate(boolean)} feature must also be enabled in order
      * for the file system watcher to work.
+     * <p>
      * If the engine is built from a byte[] then this setting does nothing.
+     * <p>
+     * Default is true
      * @param enabled the cache configuration to use
      * @return this builder
      */
+    @DefaultValue(booleanValue = Constants.DEFAULT_WATCHER_ENABLED)
     @SuppressWarnings("unchecked")
     public TBuilder setDataFileSystemWatcher(boolean enabled) {
         dataFileBuilder.setDataFileSystemWatcher(enabled);
@@ -215,52 +234,98 @@ public abstract class SingleFileAspectEngineBuilderBase<
 
     /**
      * Set the time between checks for a new data file made by the
-     * {@link DataUpdateService}.
-     * Default = 30 minutes.
-     *
+     * {@link DataUpdateService} in seconds.
+     * <p>
+     * @deprecated use {@link #setUpdatePollingIntervalSeconds(int)}
+     * @param pollingIntervalSeconds the number of seconds between checks
+     * @return this builder
+     */
+    @Deprecated
+    @SuppressWarnings("unchecked")
+    public TBuilder setUpdatePollingInterval(int pollingIntervalSeconds) {
+        dataFileBuilder.setUpdatePollingInterval(pollingIntervalSeconds);
+        return (TBuilder)this;
+    }
+    /**
+     * Set the time between checks for a new data file made by the
+     * {@link DataUpdateService} in seconds.
+     * <p>
      * Generally, the {@link DataUpdateService} will not check for a new data
      * file until the 'expected update time' that is stored in the current data
      * file. This interval is the time to wait between checks after that time
      * if no update is initially found.
+     * <p>
      * If automatic updates are disabled then this setting does nothing.
+     * <p>
+     * Default = 30 minutes.
      * @param pollingIntervalSeconds the number of seconds between checks
      * @return this builder
      */
+    @DefaultValue(intValue=Constants.DATA_UPDATE_POLLING_DEFAULT)
     @SuppressWarnings("unchecked")
-    public TBuilder setUpdatePollingInterval(int pollingIntervalSeconds) {
+    public TBuilder setUpdatePollingIntervalSeconds(int pollingIntervalSeconds) {
         dataFileBuilder.setUpdatePollingInterval(pollingIntervalSeconds);
         return (TBuilder)this;
     }
 
     /**
      * Set the time between checks for a new data file made by the
-     * {@link DataUpdateService}.
-     * Default = 30 minutes.
-     *
-     * Generally, the {@link DataUpdateService} will not check for a new data
-     * file until the 'expected update time' that is stored in the current data
-     * file. This interval is the time to wait between checks after that time
-     * if no update is initially found.
-     * If automatic updates are disabled then this setting does nothing.
+     * {@link DataUpdateService} in milliseconds
+     * @deprecated use {@link #setUpdatePollingIntervalSeconds(int)}
+     * @param pollingIntervalMillis the time between checks
+     * @return this builder
+     */
+    @Deprecated
+    @SuppressWarnings("unchecked")
+    public TBuilder setUpdatePollingInterval(long pollingIntervalMillis) {
+        dataFileBuilder.setUpdatePollingInterval(pollingIntervalMillis);
+        return (TBuilder)this;
+    }
+    /**
+     * Set the time between checks for a new data file made by the
+     * {@link DataUpdateService} in milliseconds
+     * <p>
+     * Default is 30 minutes
      * @param pollingIntervalMillis the time between checks
      * @return this builder
      */
     @SuppressWarnings("unchecked")
-    public TBuilder setUpdatePollingInterval(long pollingIntervalMillis) {
+    @DefaultValue(intValue=Constants.DATA_UPDATE_POLLING_DEFAULT * 1000)
+    public TBuilder setUpdatePollingIntervalMillis(long pollingIntervalMillis) {
         dataFileBuilder.setUpdatePollingInterval(pollingIntervalMillis);
         return (TBuilder)this;
     }
 
     /**
      * A random element can be added to the {@link DataUpdateService} polling
-     * interval. This option sets the maximum length of this random addition.
+     * interval. This option sets the maximum length of this random addition in milliseconds.
+     * <p>
+     * Default = 10 minutes.
+     * @deprecated use {@link #setUpdateRandomisationMaxMillis(long)}
+     * @param maximumDeviationMillis the maximum time added to the data update
+     *                               polling interval
+     * @return this builder
+     */
+    @Deprecated
+    @SuppressWarnings("unchecked")
+    public TBuilder setUpdateRandomisationMax(long maximumDeviationMillis) {
+        dataFileBuilder.setUpdateRandomisationMax(maximumDeviationMillis);
+        return (TBuilder)this;
+    }
+
+
+    /**
+     * A random element can be added to the {@link DataUpdateService} polling
+     * interval. This option sets the maximum length of this random addition in milliseconds.
+     * <p>
      * Default = 10 minutes.
      * @param maximumDeviationMillis the maximum time added to the data update
      *                               polling interval
      * @return this builder
      */
+    @DefaultValue(intValue = Constants.DATA_UPDATE_RANDOMISATION_DEFAULT)
     @SuppressWarnings("unchecked")
-    public TBuilder setUpdateRandomisationMax(long maximumDeviationMillis) {
+    public TBuilder setUpdateRandomisationMaxMillis(long maximumDeviationMillis) {
         dataFileBuilder.setUpdateRandomisationMax(maximumDeviationMillis);
         return (TBuilder)this;
     }
@@ -268,9 +333,12 @@ public abstract class SingleFileAspectEngineBuilderBase<
     /**
      * Set if {@link DataUpdateService} sends the If-Modified-Since header
      * in the request for a new data file.
+     * <p>
+     * Default is true
      * @param enabled whether to use the If-Modified-Since header
      * @return this builder
      */
+    @DefaultValue(booleanValue = Constants.DEFAULT_VERIFY_IF_MODIFIED_SINCE)
     @SuppressWarnings("unchecked")
     public TBuilder setVerifyIfModifiedSince(boolean enabled) {
         dataFileBuilder.setVerifyIfModifiedSince(enabled);
@@ -279,6 +347,8 @@ public abstract class SingleFileAspectEngineBuilderBase<
 
     /**
      * Set the license key to use when updating the Engine's data file.
+     * <p>
+     * Default is no license key.
      * @param key the license key to use when checking for updates to the data
      *            file. A license key can be obtained from the
      *            <a href="https://51degrees.com/pricing">51Degrees website</a>.
@@ -286,6 +356,7 @@ public abstract class SingleFileAspectEngineBuilderBase<
      *            null, but doing so will disable automatic updates.
      * @return this builder
      */
+    @DefaultValue("No licence keys")
     @SuppressWarnings("unchecked")
     public TBuilder setDataUpdateLicenseKey(String key) {
         dataFileBuilder.setDataUpdateLicenseKey(key);
@@ -294,9 +365,12 @@ public abstract class SingleFileAspectEngineBuilderBase<
 
     /**
      * Set the license keys to use when updating the Engine's data file.
+     * <p>
+     * Default is no license keys.
      * @param keys 51Degrees license keys
      * @return this builder
      */
+    @DefaultValue("No license keys")
     @SuppressWarnings("unchecked")
     public TBuilder setDataUpdateLicenseKeys(String[] keys) {
         dataFileBuilder.setDataUpdateLicenseKeys(keys);
@@ -305,6 +379,8 @@ public abstract class SingleFileAspectEngineBuilderBase<
 
     /**
      * Configure the data file to update on startup or not.
+     * <p>
+     * Default is false
      * @param enabled if true then when this file is registered with the data
      *                update service, it will immediately try to download the
      *                latest copy of the file.
@@ -312,6 +388,7 @@ public abstract class SingleFileAspectEngineBuilderBase<
      *                complete and the engine has loaded the new file.
      * @return this builder
      */
+    @DefaultValue(booleanValue = Constants.DEFAULT_UPDATE_ON_STARTUP)
     @SuppressWarnings("unchecked")
     public TBuilder setDataUpdateOnStartup(boolean enabled) {
         dataFileBuilder.setUpdateOnStartup(enabled);

@@ -133,7 +133,7 @@ public class JavaScriptBuilderElement
         this.host = host;
         this.endpoint = endpoint;
         this.protocol = protocol;
-        this.objName = objName.isEmpty() ? "fod" : objName;
+        this.objName = objName.isEmpty() ? Constants.DEFAULT_OBJECT_NAME : objName;
         this.enableCookies = enableCookies;
         this.contextRoot = contextRoot;
     }
@@ -157,7 +157,7 @@ public class JavaScriptBuilderElement
         }
         
         // Try and get the web server context root evidence so it can be 
-        // used to contruct the correct path for the Json refresh.
+        // used to construct the correct path for the Json refresh.
         if(this.contextRoot == null || this.contextRoot.isEmpty()) {
             TryGetResult<String> contextRoot = data.tryGetEvidence(
                 fiftyone.pipeline.core.Constants.EVIDENCE_WEB_CONTEXT_ROOT,

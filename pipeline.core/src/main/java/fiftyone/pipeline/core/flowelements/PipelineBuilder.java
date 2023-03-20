@@ -37,7 +37,6 @@ import org.slf4j.ILoggerFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.function.Predicate;
 import java.util.*;
@@ -60,14 +59,14 @@ public class PipelineBuilder
     implements PipelineBuilderFromConfiguration {
 
     private final Map<Class<?>, Class<?>> primitiveTypes = getPrimitiveTypeMap();
-    private Set<Class<?>> elementBuilders;
+    private final Set<Class<?>> elementBuilders;
 
     /**
      * Construct a new builder.
      */
     public PipelineBuilder() {
         super();
-        getAvailableElementBuilders();
+        elementBuilders = getAvailableElementBuilders();
     }
 
     /**
@@ -77,7 +76,7 @@ public class PipelineBuilder
      */
     public PipelineBuilder(ILoggerFactory loggerFactory) {
         super(loggerFactory);
-        getAvailableElementBuilders();
+        elementBuilders = getAvailableElementBuilders();
     }
 
     @Override
@@ -112,11 +111,16 @@ public class PipelineBuilder
 
             // Process any additional parameters for the pipeline
             // builder itself.
-            processBuildParameters(
+            List<String> builderParams = processBuildParameters(
                 options.pipelineBuilderParameters,
                 getClass(),
                 this,
                 "pipeline");
+            if (builderParams.size() != 0) {
+                throw new PipelineConfigurationException(
+                        "The following builder parameters could not be processed: "
+                                + stringJoin(builderParams, ","));
+            }
         } catch (PipelineConfigurationException ex) {
             logger.debug("Problem with pipeline configuration, " +
                 "failed to create pipeline.", ex);
@@ -135,8 +139,10 @@ public class PipelineBuilder
     /**
      * Uses reflection to populate {@link #elementBuilders} with all classes
      * which are annotated with the {@link ElementBuilder} annotation.
+     *
+     * @return
      */
-    private void getAvailableElementBuilders() {
+    public static Set<Class<?>> getAvailableElementBuilders() {
 
         ConfigurationBuilder config = ConfigurationBuilder.build();
 
@@ -151,7 +157,7 @@ public class PipelineBuilder
         // Get all the classes annotated with '@ElementBuilder'.
         Reflections reflections = new Reflections(config);
 
-        elementBuilders = reflections.getTypesAnnotatedWith(ElementBuilder.class);
+        return reflections.getTypesAnnotatedWith(ElementBuilder.class);
     }
 
     /**

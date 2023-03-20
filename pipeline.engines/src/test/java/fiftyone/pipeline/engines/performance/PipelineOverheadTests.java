@@ -23,114 +23,125 @@
 package fiftyone.pipeline.engines.performance;
 
 import fiftyone.caching.LruPutCache;
+import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.flowelements.PipelineBuilder;
 import fiftyone.pipeline.engines.caching.FlowCacheDefault;
 import fiftyone.pipeline.engines.configuration.CacheConfiguration;
 import fiftyone.pipeline.engines.testhelpers.flowelements.EmptyEngine;
 import fiftyone.pipeline.engines.testhelpers.flowelements.EmptyEngineBuilder;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.*;
 
 import static fiftyone.pipeline.util.StringManipulation.stringJoin;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.*;
 
 public class PipelineOverheadTests {
     static Logger logger = LoggerFactory.getLogger("testLogger");
     private Pipeline pipeline;
     private EmptyEngine engine;
+    final private double maxOverheadPerCallMillis = 0.1;
 
-    final private double maxOverheadPerCall = 0.25;
+    static class TestCallable implements Callable<Long> {
+        final int iterations;
+        final Pipeline pipeline;
+        final Map<String, Object> evidence;
+
+        TestCallable(Pipeline pipeline, int iterations) {
+            this(pipeline, iterations, null);
+        }
+        TestCallable(Pipeline pipeline, int iterations, Map<String, Object> evidence) {
+            this.pipeline = pipeline;
+            this.iterations = iterations;
+            this.evidence = evidence;
+        }
+
+        @Override
+        public Long call() throws Exception {
+            long start = System.currentTimeMillis();
+            for (int j = 0; j < iterations; j++) {
+                try (FlowData flowData = pipeline.createFlowData()) {
+                    if (Objects.nonNull(this.evidence)) {
+                        flowData.addEvidence(this.evidence);
+                    }
+                    flowData.process();
+                }
+            }
+            return System.currentTimeMillis() - start;
+        }
+    }
+
 
     @Before
     public void Initialise() throws Exception {
-        ILoggerFactory loggerFactory = mock(ILoggerFactory.class);
-        when(loggerFactory.getLogger(anyString())).thenReturn(mock(Logger.class));
+        ILoggerFactory loggerFactory = LoggerFactory.getILoggerFactory();
         PipelineBuilder builder = new PipelineBuilder(loggerFactory);
-        engine = new EmptyEngineBuilder(loggerFactory).build();
+        engine = new EmptyEngineBuilder(loggerFactory)
+                .build();
 
         pipeline = builder.addFlowElement(engine)
             .build();
     }
 
-    @Test @Ignore
-    public void PipelineOverhead_NoCache() {
-        int iterations = 10_000;
-        long start = System.currentTimeMillis();
-        for (int i = 0; i < iterations; i++) {
-            pipeline.createFlowData()
-                .process();
-        }
-        long end = System.currentTimeMillis();
-
-        double msOverheadPerCall =
-            (double)(end - start) / iterations;
-        logger.info("Average was {} millis", msOverheadPerCall);
-        assertTrue("Pipeline overhead per Process call was " +
-                msOverheadPerCall + "ms. Maximum permitted is " +maxOverheadPerCall,
-            msOverheadPerCall < maxOverheadPerCall);
+    @After
+    public void tearDown() throws Exception {
+        pipeline.close();
+        engine.close();
     }
 
-    @Test @Ignore
-    public void PipelineOverhead_Cache() {
+    @Test
+    public void PipelineOverhead_NoCache() throws Exception {
+        int iterations = 10_000;
+        long result = new TestCallable(pipeline, iterations).call();
+        double msOverheadPerCall = (double) result / iterations;
+        logger.info("Process cost {}", engine.getProcessCost());
+        logger.info("Average was {} millis", msOverheadPerCall);
+        assertTrue("Pipeline overhead per Process call was " +
+                msOverheadPerCall + "ms. Maximum permitted is " + maxOverheadPerCallMillis,
+            msOverheadPerCall < maxOverheadPerCallMillis);
+    }
+
+    @Test
+    public void PipelineOverhead_Cache() throws Exception {
         CacheConfiguration cacheConfig = new CacheConfiguration(
-            new LruPutCache.Builder(),
-            100);
+            new LruPutCache.Builder(),100);
         engine.setCache(new FlowCacheDefault(cacheConfig));
-        // Set process cost to 0.2 sec. Therefore the test cannot be passed
+        // Set process cost to 0.2 sec. Therefore, the test cannot pass
         // unless the cache is mitigating this cost as it should do.
         engine.setProcessCost(200);
-
         int iterations = 10_000;
-        long start = System.currentTimeMillis();
-        for (int i = 0; i < iterations; i++) {
-            pipeline.createFlowData()
-                .addEvidence("test.value", 10)
-                .process();
-        }
-        long end = System.currentTimeMillis();
+        Map<String, Object> evidence = new HashMap<>();
+        evidence.put("test.value", 10);
+        long result = new TestCallable(pipeline, iterations, evidence).call();
 
-        double msOverheadPerCall =
-            (double)(end - start) / iterations;
+        double msOverheadPerCall = (double)(result) / iterations;
+        logger.info("Process cost {}", engine.getProcessCost());
         logger.info("Average was {} millis", msOverheadPerCall);
         assertTrue(
             "Pipeline overhead per Process call was " +
-                msOverheadPerCall + "ms. Maximum permitted is " + maxOverheadPerCall,
-            msOverheadPerCall < maxOverheadPerCall);
+                msOverheadPerCall + "ms. Maximum permitted is " + maxOverheadPerCallMillis,
+            msOverheadPerCall < maxOverheadPerCallMillis);
     }
 
-    @Test @Ignore
+    @Test
     public void PipelineOverhead_Concurrency() throws InterruptedException, ExecutionException {
-        final int iterations = 10_000;
+        // use half the available processors, we don't know what the rest are doing
         int threads = Math.max(Runtime.getRuntime().availableProcessors() / 2, 1);
+        final int iterations = 800_000;
         List<Callable<Long>> callables = new ArrayList<>();
 
         // Create the threads.
         // Each will create a FlowData instance and process it.
         for (int i = 0; i < threads; i++) {
-            callables.add(
-                new Callable<Long>() {
-                    @Override
-                    public Long call() throws Exception {
-                        long start = System.currentTimeMillis();
-                        for (int j = 0; j < iterations; j++) {
-                            pipeline.createFlowData()
-                                .process();
-                        }
-                        return System.currentTimeMillis() - start;
-                    }
-                }
-            );
+            callables.add(new TestCallable(pipeline, iterations));
         }
         // Start all tasks together
         ExecutorService service = Executors.newFixedThreadPool(threads);
@@ -141,17 +152,18 @@ public class PipelineOverheadTests {
         List<String> times = new ArrayList<>();
         int overran = 0;
         for (Future<Long> result : results) {
-            Double time = (double) result.get() / iterations;
-            if (time >= maxOverheadPerCall) {
+            double time = (double) result.get() / iterations;
+            if (time >= maxOverheadPerCallMillis) {
                 overran++;
             }
-            times.add(time.toString());
+            times.add(Double.toString(time));
         }
+        logger.info("Process cost {}", engine.getProcessCost());
         logger.info("Times were {}", stringJoin(times, ","));
         assertEquals(
             "Pipeline overhead per Process call was too high for " +
                 overran + " out of " + threads + "threads. Maximum permitted " +
-                "is "+ maxOverheadPerCall +". Actual results: " + stringJoin(times, ","),
+                "is "+ maxOverheadPerCallMillis +". Actual results: " + stringJoin(times, ","),
             0, overran);
     }
 }

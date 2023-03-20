@@ -1,6 +1,6 @@
 /*
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2022 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -20,24 +20,16 @@
  *   such notice(s) shall fulfill the requirements of that article.
  */
 
-package fiftyone.pipeline.javascriptbuilder;
+package fiftyone.pipeline.annotations;
 
-public class Constants {
-    public static final String EVIDENCE_HOST_KEY = 
-            fiftyone.pipeline.core.Constants.EVIDENCE_HTTPHEADER_PREFIX +
-            fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR +
-            "Host";
-    
-    public static final String EVIDENCE_OBJECT_NAME_SUFFIX =
-            "fod-js-object-name";
-    
-    public static final String EVIDENCE_OBJECT_NAME = 
-             fiftyone.pipeline.core.Constants.EVIDENCE_QUERY_PREFIX +
-             fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR +
-            EVIDENCE_OBJECT_NAME_SUFFIX;
-    
-    public static final String DEFAULT_PROTOCOL = "https";
-    
-    public static final String TEMPLATE = "/fiftyone/pipeline/javascriptbuilder/templates/JavaScriptResource.mustache";
-    public static final String DEFAULT_OBJECT_NAME = "fod";
+import java.lang.annotation.*;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+@Documented
+public @interface DefaultValue {
+    String value() default "";
+    int intValue() default Integer.MIN_VALUE;
+    double doubleValue() default Double.MIN_VALUE;
+    boolean booleanValue() default false;
 }

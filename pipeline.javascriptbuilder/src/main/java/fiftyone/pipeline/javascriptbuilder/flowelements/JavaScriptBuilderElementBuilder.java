@@ -22,11 +22,13 @@
 
 package fiftyone.pipeline.javascriptbuilder.flowelements;
 
+import fiftyone.pipeline.annotations.DefaultValue;
 import fiftyone.pipeline.annotations.ElementBuilder;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
 import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.core.exceptions.*;
+import fiftyone.pipeline.javascriptbuilder.Constants;
 import fiftyone.pipeline.javascriptbuilder.data.JavaScriptBuilderData;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,6 +41,7 @@ import org.slf4j.Logger;
  */
 @ElementBuilder
 public class JavaScriptBuilderElementBuilder {
+    public static final boolean ENABLE_COOKIES = true;
     private final ILoggerFactory loggerFactory;
     private final Logger logger;
     
@@ -47,7 +50,7 @@ public class JavaScriptBuilderElementBuilder {
     protected String protocol = "";
     protected String contextRoot = "";
     protected String objName = "";
-    private boolean enableCookies = true;
+    private boolean enableCookies = ENABLE_COOKIES;
 
     /**
      * Construct a new instance.
@@ -62,10 +65,12 @@ public class JavaScriptBuilderElementBuilder {
     
     /**
      * Set the host that the client JavaScript should query for updates.
+     * <p>
      * By default, the host from the request will be used.
      * @param host the hostname
      * @return this builder
      */
+    @DefaultValue("The host from the request")
     public JavaScriptBuilderElementBuilder setHost(String host) {
         this.host = host;
         return this;
@@ -73,14 +78,24 @@ public class JavaScriptBuilderElementBuilder {
 
     /**
      * Set the endpoint which will be queried on the host. e.g /api/v4/json
+     * <p>
+     * By default, this value is an empty string
      * @param endpoint the endpoint
      * @return this builder
      */
+    @DefaultValue("Empty string")
     public JavaScriptBuilderElementBuilder setEndpoint(String endpoint) {
         this.endpoint = endpoint;
         return this;
     }
-
+    /**
+     * Set the evidence value for the context root
+     * <p>
+     * Default is value from evidence "server.contextroot"
+     * @param contextRoot
+     * @return this builder
+     */
+    @DefaultValue("Value from evidence " + fiftyone.pipeline.core.Constants.EVIDENCE_WEB_CONTEXT_ROOT)
     public JavaScriptBuilderElementBuilder setContextRoot(String contextRoot) {
         this.contextRoot = contextRoot;
         return this;
@@ -88,11 +103,14 @@ public class JavaScriptBuilderElementBuilder {
 
     /**
      * The protocol that the client JavaScript will use when querying
-     * for updates. By default, the protocol from the request will be
+     * for updates.
+     * <p>
+     * By default, the protocol from the request will be
      * used.
      * @param protocol The protocol to use (http / https)
      * @return this builder
      */
+    @DefaultValue("The protocol from the request")
     public JavaScriptBuilderElementBuilder setProtocol(String protocol) {
         if (protocol.equalsIgnoreCase("http") ||
             protocol.equalsIgnoreCase("https")) {
@@ -110,9 +128,12 @@ public class JavaScriptBuilderElementBuilder {
     /**
      * The default name of the object instantiated by the client
      * JavaScript.
+     * <p>
+     * Default is "fod"
      * @param objName the object name to use
      * @return this builder
      */
+    @DefaultValue(Constants.DEFAULT_OBJECT_NAME)
     public JavaScriptBuilderElementBuilder setObjectName(String objName) {
         Pattern pattern = Pattern.compile("[a-zA-Z_$][0-9a-zA-Z_$]*");
         Matcher match = pattern.matcher(objName);
@@ -136,9 +157,12 @@ public class JavaScriptBuilderElementBuilder {
     /**
      * Set whether the client JavaScript stores results of client side
      * processing in cookies.
+     * <p>
+     * Default is true
      * @param enableCookies should enable cookies?
      * @return this builder
      */
+    @DefaultValue(booleanValue = ENABLE_COOKIES)
     public JavaScriptBuilderElementBuilder setEnableCookies(
         boolean enableCookies) {
         this.enableCookies = enableCookies;
