@@ -712,10 +712,6 @@ public class DataUpdateServiceTests {
             }
         });
 
-        LogbackHelper.intentionalErrorConfig();
-        TestLogger tempLogger = new TestLogger("test", LoggerFactory.getLogger("temp"));
-        DataUpdateService tempDataUpdate = new DataUpdateServiceDefault(
-                tempLogger,httpClient,fileWrapperFactory,futureFactory);
         // Configure a ManualResetEvent to be set when processing
         // is complete.
         final Semaphore completeFlag = new Semaphore(1);
@@ -750,10 +746,15 @@ public class DataUpdateServiceTests {
             when(engine.getDataFileMetaData(anyString())).thenReturn(file);
 
             realLogger.info("This test deliberately causes errors");
+            // change logback set up so that any errors are logged as intentional from here
+            LogbackHelper.intentionalErrorConfig();
+
             dataUpdate.registerDataFile(file);
             // Wait until processing is complete.
             boolean completed = completeFlag.tryAcquire(1, TimeUnit.SECONDS);
-            //LogbackHelper.defaultConfig();
+
+            // reset the logback config to log errors in red as usual
+            LogbackHelper.defaultConfig();
 
             // Assert
             assertTrue("The 'checkForUpdateComplete' " +
@@ -1261,11 +1262,16 @@ public class DataUpdateServiceTests {
             }
         });
 
+        // don't highlight errors in Red
+        LogbackHelper.intentionalErrorConfig();
         // Act
         dataUpdate.registerDataFile(file);
 
         // Wait until processing is complete.
         boolean completed = completeFlag.tryAcquire(1, TimeUnit.SECONDS);
+
+        // reset error highlighting
+        LogbackHelper.intentionalErrorConfig();
 
         // Assert
         assertTrue("The 'checkForUpdateComplete' " +
