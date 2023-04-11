@@ -1,8 +1,8 @@
 [
   {
     "Image": "windows-latest",
-    "Name": "Windows_Java_8",
-    "JavaSDKEnvVar": "JAVA_HOME_8_X64"
+    "Name": "Windows_Java_17",
+    "JavaSDKEnvVar": "JAVA_HOME_17_X64"
   },
   {
     "Image": "windows-latest",
