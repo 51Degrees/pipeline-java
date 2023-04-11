@@ -12,7 +12,7 @@ Write-Host "Setting up $JavaSDKEnvVar"
 [Environment]::SetEnvironmentVariable('JAVA_HOME', [Environment]::GetEnvironmentVariable($JavaSDKEnvVar))
 
 # Add the Java binary directory to the system PATH
-$env:PATH += Join-Path ([Environment]::GetEnvironmentVariable("JAVA_HOME")) "bin;"
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
 
 # Verify that the correct version of Java is being used
 java -version
