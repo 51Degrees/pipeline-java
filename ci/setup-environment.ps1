@@ -4,7 +4,10 @@ param(
 )
 Write-Host "Setting up $JavaSDKEnvVar"
 # Set the JAVA_HOME environment variable
-$env:JAVA_HOME = ${env:$JavaSDKEnvVar}
+
+[Environment]::SetEnvironmentVariable('JAVA_HOME', $JavaSDKEnvVar)
+
+Write-Host $env:JAVA_HOME
 
 # Add the Java binary directory to the system PATH
 $env:Path += ";" + "$env:JAVA_HOME\bin"
