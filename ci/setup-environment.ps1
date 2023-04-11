@@ -6,10 +6,13 @@ param(
 
 Write-Host "Setting up $JavaSDKEnvVar"
 
-Write-Host $env:JAVA_HOME
+Write-Host $currentPath
 
-(Get-Command java).Path
+# Set the JAVA_HOME environment variable
+[Environment]::SetEnvironmentVariable('JAVA_HOME', [Environment]::GetEnvironmentVariable($JavaSDKEnvVar))
 
+# Add the Java binary directory to the system PATH
+$env:PATH += Join-Path ([Environment]::GetEnvironmentVariable("JAVA_HOME")) "bin;"
 
 # Verify that the correct version of Java is being used
 java -version
