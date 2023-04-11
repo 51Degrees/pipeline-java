@@ -1,13 +1,13 @@
 [
   {
-    "Image": "ubuntu-20.04",
-    "Name": "Ubuntu20_Java_8",
-    "JavaSDKEnvVar": "JAVA_HOME_8_X64"
-  },
-  {
     "Image": "macos-latest",
     "Name": "MacOS_Java_11",
     "JavaSDKEnvVar": "JAVA_HOME_11_X64"
+  },
+    {
+    "Image": "macos-latest",
+    "Name": "MacOS_Java_8",
+    "JavaSDKEnvVar": "JAVA_HOME_8_X64"
   }
   
 ]
