@@ -5,7 +5,7 @@ param(
 Write-Host "Setting up $JavaSDKEnvVar"
 # Set the JAVA_HOME environment variable
 
-[Environment]::SetEnvironmentVariable('JAVA_HOME', $JavaSDKEnvVar)
+[Environment]::SetEnvironmentVariable('JAVA_HOME', [Environment]::GetEnviromentVariable($JavaSDKEnvVar))
 
 Write-Host $env:JAVA_HOME
 
