@@ -12,7 +12,7 @@ Write-Host "Setting up $JavaSDKEnvVar"
 # Add the Java binary directory to the system PATH
 $env:Path = "$env:JAVA_HOME/bin:$env:Path"
 
-sudo ln -sf $env:JAVA_HOME/bin/java /usr/bin/java
+#sudo ln -sf $env:JAVA_HOME/bin/java /usr/bin/java
 
 # Verify that the correct version of Java is being used
 java -version
