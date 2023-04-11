@@ -6,7 +6,7 @@ param(
 
 Write-Host "Setting up $JavaSDKEnvVar"
 
-Write-Host $env:GITHUB_PATH
+Write-Host $env:JAVA_HOME
 
 # Verify that the correct version of Java is being used
 java -version
