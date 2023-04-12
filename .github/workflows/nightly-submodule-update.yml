@@ -2,12 +2,15 @@ name: Nigthly Submodule Update
 
 on:
   workflow_dispatch:
+  schedule:
+    # * is a special character in YAML so quote this string
+    - cron:  '0 23 * * *'
 
 jobs:   
 
   call-workflow-nightly-submodule-update:
     uses: 51Degrees/common-ci/.github/workflows/nightly-submodule-update.yml@main
     with:
-      repo-name: "actions-testing"
+      repo-name: "common-ci"
     secrets: 
       token: ${{ secrets.ACCESS_TOKEN }}
