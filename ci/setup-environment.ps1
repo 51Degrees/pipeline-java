@@ -13,8 +13,7 @@ Write-Host "Setting up $JavaSDKEnvVar"
 $env:Path = "$env:JAVA_HOME/bin;$env:Path"
 
 if( $env:RUNNER_OS -eq "Linux" ){
-
-    sudo ln -sf $env:JAVA_HOME/bin/java /usr/bin/java
+  sudo ln -sf $env:JAVA_HOME/bin/java /usr/bin/java
 }
 
 # Verify that the correct version of Java is being used
