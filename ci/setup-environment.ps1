@@ -6,14 +6,16 @@ param(
 
 Write-Host "Setting up $JavaSDKEnvVar"
 
-Write-Host $currentPath
-
 # Set the JAVA_HOME environment variable
 [Environment]::SetEnvironmentVariable('JAVA_HOME', [Environment]::GetEnvironmentVariable($JavaSDKEnvVar))
 
 # Add the Java binary directory to the system PATH
-$env:PATH += Join-Path ([Environment]::GetEnvironmentVariable("JAVA_HOME")) "bin;"
+$env:Path = "$env:JAVA_HOME/bin;$env:Path"
 
+if( $env:RUNNER_OS -eq "Linux" ){
+
+    sudo ln -sf $env:JAVA_HOME/bin/java /usr/bin/java
+}
 
 # Verify that the correct version of Java is being used
 java -version
