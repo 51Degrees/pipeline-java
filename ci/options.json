@@ -23,7 +23,7 @@
   {
     "Image": "ubuntu-20.04",
     "Name": "Ubuntu20_Java_11",
-    "JavaSDKEnvVar": "JAVA_HOME_11_X64
+    "JavaSDKEnvVar": "JAVA_HOME_11_X64"
   },
   {
     "Image": "macos-latest",
@@ -38,7 +38,7 @@
   {
     "Image": "ubuntu-20.04",
     "Name": "Ubuntu20_Java_17",
-    "JavaSDKEnvVar": "JAVA_HOME_17_X64
+    "JavaSDKEnvVar": "JAVA_HOME_17_X64"
   },
   {
     "Image": "macos-latest",
