@@ -1,21 +1,11 @@
-
 param(
     [Parameter(Mandatory=$true)]
-    [string]$JavaSDKEnvVar
+    [string]$RepoName,
+    [Parameter(Mandatory=$true)]
+    [string]$JavaSDKEnvVar,
+    [string]$ProjectDir = "."
 )
 
-Write-Host "Setting up $JavaSDKEnvVar"
+./java/setup-enviroment.ps1 -RepoName "pipeline-java-test" -ProjectDir $ProjectDir -JavaSDKEnvVar $JavaSDKEnvVar
 
-# Set the JAVA_HOME environment variable
-[Environment]::SetEnvironmentVariable('JAVA_HOME', [Environment]::GetEnvironmentVariable($JavaSDKEnvVar))
-
-# Add the Java binary directory to the system PATH
-$env:Path = "$env:JAVA_HOME/bin;$env:Path"
-
-if( $env:RUNNER_OS -eq "Linux" ){
-
-    sudo ln -sf $env:JAVA_HOME/bin/java /usr/bin/java
-}
-
-# Verify that the correct version of Java is being used
-java -version
+exit $LASTEXITCODE
