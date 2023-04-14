@@ -69,7 +69,7 @@
         <slf4j-api.version>1.7.33</slf4j-api.version>
         <logback-classic.version>1.2.10</logback-classic.version>
         <mockito-core.version>4.3.1</mockito-core.version>
-        <org.json.version>20211205</org.json.version>
+        <org.json.version>20230227</org.json.version>
         <reflections8.version>0.11.7</reflections8.version>
         <commons-text.version>1.10.0</commons-text.version>
 
