@@ -1,0 +1,8 @@
+# This format gives an 'AssemblySemVer' of x.y.z for main, and x.y.z-SNAPSHOT for develop
+# where the value of z in develop is always one increment ahead of main.
+assembly-versioning-format: '{Major}.{Minor}.{Patch}{PreReleaseLabelWithDash}'
+branches:
+  develop:
+    tag: 'SNAPSHOT'
+    increment: Patch
+    regex: ^gh-refact$
