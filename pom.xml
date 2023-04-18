@@ -27,7 +27,7 @@
 
     <groupId>com.51degrees</groupId>
     <artifactId>pipeline</artifactId>
-    <version>4.4.12</version>
+    <version>4.4.12-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>51Degrees :: Pipeline</name>
@@ -91,10 +91,11 @@
         <maven-project-info-reports-plugin.version>2.6</maven-project-info-reports-plugin.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
 
+        <ossrh.baseurl>https://oss.sonatype.org</ossrh.baseurl>
         <snapshot-repository.id>ossrh</snapshot-repository.id>
+        <snapshot-repository.url>${ossrh.baseurl}/content/repositories/snapshots/</snapshot-repository.url>
         <publishrepository.id>ossrh</publishrepository.id>
-        <publishrepository.baseurl>https://oss.sonatype.org</publishrepository.baseurl>
-        <publishrepository.url>${publishrepository.url}/service/local/staging/deploy/maven2/</publishrepository.url>
+        <publishrepository.url>${ossrh.baseurl}/service/local/staging/deploy/maven2/</publishrepository.url>
         <fetchrepository.id>central</fetchrepository.id>
         <fetchrepository.url>https://repo1.maven.org/maven2</fetchrepository.url>
 
@@ -336,6 +337,10 @@
             <id>${publishrepository.id}</id>
             <url>${publishrepository.url}</url>
         </repository>
+        <snapshotRepository>
+            <id>${snapshot-repository.id}</id>
+            <url>${snapshot-repository.url}</url>
+        </snapshotRepository>
         <site>
             <id>local</id>
             <url>file:///${maven.multiModuleProjectDirectory}/site/</url>
@@ -349,35 +354,22 @@
             <releases>
                 <enabled>true</enabled>
             </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>${snapshot-repository.id}</id>
+            <url>${snapshot-repository.url}</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
         </repository>
     </repositories>
 
-    <profiles>
-        <profile>
-            <id>snapshot</id>
-            <activation>
-                <property>
-                    <name>SNAPSHOT</name>
-                </property>
-            </activation>
-            <repositories>
-                <repository>
-                    <id>${snapshotrepository.id}</id>
-                    <url>${snapshotrepository.url}</url>
-                    <snapshots>
-                        <enabled>true</enabled>
-                        <updatePolicy>always</updatePolicy>
-                    </snapshots>
-                </repository>
-            </repositories>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>${snapshotrepository.id}</id>
-                    <url>${snapshotrepository.url}</url>
-                </snapshotRepository>
-            </distributionManagement>
-        </profile>
-    </profiles>
     <licenses>
         <license>
             <name>European Union Public License 1.2</name>
