@@ -54,7 +54,6 @@
         <module>pipeline.engines.fiftyone</module>
         <module>pipeline.javascriptbuilder</module>
         <module>pipeline.jsonbuilder</module>
-        <module>pipeline.developer-examples</module>
         <module>pipeline.web.packages</module>
         <module>pipeline.aggregate</module>
     </modules>
@@ -94,7 +93,8 @@
 
         <snapshot-repository.id>ossrh</snapshot-repository.id>
         <publishrepository.id>ossrh</publishrepository.id>
-        <publishrepository.url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</publishrepository.url>
+        <publishrepository.baseurl>https://oss.sonatype.org</publishrepository.baseurl>
+        <publishrepository.url>${publishrepository.url}/service/local/staging/deploy/maven2/</publishrepository.url>
         <fetchrepository.id>central</fetchrepository.id>
         <fetchrepository.url>https://repo1.maven.org/maven2</fetchrepository.url>
 
@@ -182,6 +182,16 @@
         </pluginManagement>
 
         <plugins>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.13</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>${publishrepository.id}</serverId>
+                    <nexusUrl>${publishrepository.baseurl}</nexusUrl>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
