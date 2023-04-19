@@ -4,6 +4,8 @@
   - Java does not have 'GetDataTypeFromElement' - see pipeline-specification/features/access-to-results.md
   - Evidence is not immutable. (This was added in the spring 2023 re-write to prevent additional complexity that would be 
     required to handle mutable evidence in some scenarios)
+  - [JR] It would be beneficial to make evidence and ElementData equivalent, and to provide a general accessor that can 
+    return a value from weherever it can be found in the flow data
 - Builders 
   - Side-by-side generic class hierarchies of elements and builders creates a very confusing picture.
   - Default values are not defined in a consistent location. Mostly, this is done in builders. In some cases, doing this 
@@ -18,6 +20,7 @@
 - Usage sharing
   - Java usage sharing code does not generate a snippet on startup containing the static parts of each usage message. This 
     has already been implemented for C# and Node.
+  - [JR] Java streams XML over the HTTP connection using XML writer, hard to send an invariant component
 - Data update
   - Check uses last modified date from the file system. Should use 'published date' from the data file if available. last 
     modified date should be the fall back.
@@ -41,7 +44,8 @@
 - Web integration
   - The spec is intentionally vague on exactly how this is implemented. However, it may be that the current implementation is
     focusing too much on reproducing how the C# web integration works, rather than working in a way that is in line with how 
-    Java web filters are intended to be used.    
+    Java web filters are intended to be used. 
+  - [JR] does not allow configuration of JSON or JS endpoints   
 - Device detection
   - [Device detection on premise](https://github.com/51Degrees/specifications/blob/main/device-detection-specification/pipeline-elements/device-detection-on-premise.md#element-data) - 
     mentions additional complexity in the match metric accessors in Java and .NET intended to cope with having separate engines 
