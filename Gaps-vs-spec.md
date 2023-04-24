@@ -1,11 +1,21 @@
 - Flow data changes
-  - Cancellation token - This was added to the spec in the spring 2023 re-write.
+  - Cancellation token - This was added to the spec in the spring 2023 re-write.  
+  - Stop mechanism - This is marked as obsolete and intended to be replaced by the cancellation token. However, it is 
+    currently the only way to allow customers to prevent default elements from running, and the cancellation token 
+    doesn't help with that. 
+    For example, a customer was using the server side Apple component and found the overhead from the json + javascript
+    elements was significant. These elements were automatically added by the web integration.
+    Since they didn't need that functionality, the workaround was to create a custom element that set the 'Stop' flag 
+    and configure it to be added at the end but before the json+javascript engines.
+    The spec requires that the elements added by the web integration are optional, which would solve this in a different
+    way and allow the removal of the stop mechanism.
   - Get property value directly from flow data by string name - This was removed from spec during the spring 2023 re-write.
   - Java does not have 'GetDataTypeFromElement' - see pipeline-specification/features/access-to-results.md
   - Evidence is not immutable. (This was added in the spring 2023 re-write to prevent additional complexity that would be 
     required to handle mutable evidence in some scenarios)
   - [JR] It would be beneficial to make evidence and ElementData equivalent, and to provide a general accessor that can 
-    return a value from weherever it can be found in the flow data
+    return a value from weherever it can be found in the flow data 
+    (see [here](https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/evidence.md#adding-evidence-values))
 - Builders 
   - Side-by-side generic class hierarchies of elements and builders creates a very confusing picture.
   - Default values are not defined in a consistent location. Mostly, this is done in builders. In some cases, doing this 
