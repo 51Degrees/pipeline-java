@@ -13,9 +13,10 @@
   - Java does not have 'GetDataTypeFromElement' - see pipeline-specification/features/access-to-results.md
   - Evidence is not immutable. (This was added in the spring 2023 re-write to prevent additional complexity that would be 
     required to handle mutable evidence in some scenarios)
-  - [JR] It would be beneficial to make evidence and ElementData equivalent, and to provide a general accessor that can 
-    return a value from weherever it can be found in the flow data 
-    (see [here](https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/evidence.md#adding-evidence-values))
+    - [JR] It would be beneficial to make evidence and ElementData equivalent, and to provide a general accessor that can 
+      return a value from weherever it can be found in the flow data 
+      (see [here](https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/evidence.md#adding-evidence-values))
+    - SequenceElement writes to evidence so this would need to change if immutable evidence was implemented.
 - Builders 
   - Side-by-side generic class hierarchies of elements and builders creates a very confusing picture.
   - Default values are not defined in a consistent location. Mostly, this is done in builders. In some cases, doing this 
