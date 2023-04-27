@@ -1,8 +1,11 @@
 param(
     [string]$ProjectDir = ".",
-    [string]$Name
+    [string]$Name,
+    [string]$Version
 )
 
-./java/build-project.ps1 -RepoName "pipeline-java-test" -ProjectDir $ProjectDir -Name $Name
+Write-Output "JAVA_HOME :$ENV:JAVA_HOME"
+
+./java/build-project.ps1 -RepoName "pipeline-java-test" -ProjectDir $ProjectDir -Name $Name -Version $Version
 
 exit $LASTEXITCODE

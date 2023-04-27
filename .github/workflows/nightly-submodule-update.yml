@@ -1,16 +1,16 @@
-name: Nigthly Submodule Update
+name: Nightly Submodule Update
 
 on:
   workflow_dispatch:
   schedule:
     # * is a special character in YAML so quote this string
-    - cron:  '0 23 * * *'
+    - cron:  '0 0 * * *'
 
-jobs:   
-
-  call-workflow-nightly-submodule-update:
+jobs:
+  # Run the common workflow on each pull request
+  Nightly_Submodule_Update:
     uses: 51Degrees/common-ci/.github/workflows/nightly-submodule-update.yml@main
     with:
-      repo-name: "common-ci"
+      repo-name: ${{ github.event.repository.name }}
     secrets: 
       token: ${{ secrets.ACCESS_TOKEN }}
