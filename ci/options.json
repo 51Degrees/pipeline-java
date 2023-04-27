@@ -3,7 +3,7 @@
     "Image": "ubuntu-20.04",
     "Name": "Ubuntu_Java_11",
     "JavaSDKEnvVar": "JAVA_HOME_11_X64",
-    "RunPerformance": true,
+    "RunPerformance": false,
     "PackageRequirement" : true
   }
 ]
