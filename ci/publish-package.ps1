@@ -1,11 +1,13 @@
-param (
+
+param(
     [Parameter(Mandatory=$true)]
-    [hashtable]$Options
+    [string]$MavenSettings,
+    [Parameter(Mandatory=$true)]
+    $Version
+
 )
 
-$Version = $Options.Version
-
-./java/build-package-maven.ps1 -RepoName "pipeline-java-test" -Version $Version
+./java/publish-package-maven.ps1 -RepoName "pipeline-java-test" -MavenSettings $MavenSettings -Version $Version
 
 
 exit $LASTEXITCODE

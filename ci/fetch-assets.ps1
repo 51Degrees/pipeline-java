@@ -1,1 +1,1 @@
-Write-Host "No assets to fetch for this repo"
+Write-Output "No assets needed"
