@@ -24,12 +24,11 @@ jobs:
           
       # Setup git to use the correct access token
       - name: Configure Git
-        env:
-          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN  }}
+        shell: pwsh
+        working-directory: ${{ github.workspace }}/common/
         run: |
-          git config --global url.https://${{ secrets.ACCESS_TOKEN }}@github.com/.insteadOf https://github.com/
-          git config --global user.email "CI@51Degrees.com"
-          git config --global user.name "51DCI"
+          . ${{ github.workspace }}/common/steps/configure-git.ps1 -GitHubToken ${{ secrets.ACCESS_TOKEN }}
+          
       # Clone this repository
       - name: Clone Repo
         shell: pwsh
@@ -70,4 +69,4 @@ jobs:
       pull-request-id: ${{ matrix.id }}
     secrets: 
       token: ${{ secrets.ACCESS_TOKEN }}
-      asset-keys: '{ "DeviceDetection": "${{ secrets.DEVICE_DETECTION_KEY }}"}'
+      asset-keys: '{ "DeviceDetection": "${{ secrets.DEVICE_DETECTION_KEY }}" , "TestResourceKey": "${{ secrets.SUPER_RESOURCE_KEY}}" }'
