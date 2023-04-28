@@ -214,6 +214,7 @@
                 <configuration>
                     <serverId>${publishrepository.id}</serverId>
                     <nexusUrl>${publishrepository.baseurl}</nexusUrl>
+                    <altStagingDirectory>${user.home}/.m2</altStagingDirectory>
                 </configuration>
             </plugin>
             <plugin>
@@ -235,6 +236,7 @@
                 <configuration>
                     <useSystemClassLoader>false</useSystemClassLoader>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    
                     <systemPropertyVariables>
                         <!-- this tells all tests run via surefire to pick their logback config up from the root -->
                         <!-- fwiw does not affect those run via main() which need to find their config by other means -->
