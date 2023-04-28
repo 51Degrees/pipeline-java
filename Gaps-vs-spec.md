@@ -28,6 +28,8 @@
     [reference implementation notes](https://github.com/51Degrees/specifications/blob/main/pipeline-specification/reference-implementation-notes.md#builders). 
     Suggest either marking it and related base classes obsolete or spending some effort to investigate how the downsides 
     could be mitigated. 
+  - There is no support in the pipeline or builders for relative paths in general. Device detection engine supports 
+    relative paths to a limited extent using shared logic in the native code. 
 - Usage sharing
   - Java usage sharing code does not generate a snippet on startup containing the static parts of each usage message. This 
     has already been implemented for C# and Node.
@@ -61,5 +63,7 @@
   - [Device detection on premise](https://github.com/51Degrees/specifications/blob/main/device-detection-specification/pipeline-elements/device-detection-on-premise.md#element-data) - 
     mentions additional complexity in the match metric accessors in Java and .NET intended to cope with having separate engines 
     for each component. This is no longer needed and could be removed.
-
+  - Comments in examples talk about the lite file having 'reduced accuracy' and/or 'smaller training data set' and the like. This isn't true, all v4 files use the same training data and detection graph.
+- Other
+  - JsonBuilderElement does not implement the 'SetProperties' option to allow the user to configure which properties are included in the JSON.
 
