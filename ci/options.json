@@ -4,6 +4,6 @@
     "Name": "Ubuntu_Java_11",
     "JavaSDKEnvVar": "JAVA_HOME_11_X64",
     "RunPerformance": false,
-    "PackageRequirement" : true
+    "PackageRequirement" : false
   }
 ]
