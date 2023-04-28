@@ -146,6 +146,7 @@ public class ShareUsageOverheadTests {
         });
 
         double msOverheadPerCall = (end - start) / iterations;
+        System.out.println("ShareUsageOverhead_SingleEvidence: " + msOverheadPerCall + "ms per call");
         assumeTrue(msOverheadPerCall < 0.1,
                 "Pipeline with share usage overhead per Process call was " +
                         msOverheadPerCall + "ms. Maximum permitted is 0.1ms");
@@ -181,6 +182,7 @@ public class ShareUsageOverheadTests {
         });
 
         double msOverheadPerCall = ((double)end - (double)start) / (double)iterations;
+        System.out.println("ShareUsageOverhead_HundredEvidence: " + msOverheadPerCall + "ms per call");
         assumeTrue(msOverheadPerCall < 10,
                 "Pipeline with share usage overhead per Process call was " +
                         msOverheadPerCall + "ms. Maximum permitted is 10ms");
