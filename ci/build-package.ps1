@@ -12,11 +12,13 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$CodeSigningCertAlias,
     [Parameter(Mandatory=$true)]
-    [string]$CodeSigningCertPassword
+    [string]$CodeSigningCertPassword,
+    [Parameter(Mandatory=$true)]
+    [string]$MavenSettings
 )
 
 
-./java/build-package.ps1 -RepoName "pipeline-java-test" -ProjectDir $ProjectDir -Name $Name -Version $Version -JavaGpgKeyPassphrase $JavaGpgKeyPassphrase -CodeSigningCert $CodeSigningCert -JavaPGP $JavaPGP -CodeSigningCertAlias $CodeSigningCertAlias -CodeSigningCertPassword $CodeSigningCertPassword 
+./java/build-package.ps1 -RepoName "pipeline-java-test" -ProjectDir $ProjectDir -Name $Name -Version $Version -JavaGpgKeyPassphrase $JavaGpgKeyPassphrase -CodeSigningCert $CodeSigningCert -JavaPGP $JavaPGP -CodeSigningCertAlias $CodeSigningCertAlias -CodeSigningCertPassword $CodeSigningCertPassword -MavenSettings $MavenSettings
 
 
 exit $LASTEXITCODE
