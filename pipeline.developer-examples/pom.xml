@@ -62,6 +62,21 @@
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+    
+    <build>
+    <pluginManagement>
+        <plugins>
+        <plugin>
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <version>${nexus-staging-plugin.version}</version>
+            <configuration>
+            <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
+            </configuration>
+        </plugin>
+        </plugins>
+    </pluginManagement>
+    </build>
 
     <dependencyManagement>
         <dependencies>
