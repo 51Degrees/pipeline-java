@@ -1,0 +1,16 @@
+[
+    {
+      "Image": "windows-latest",
+      "Name": "Windows"
+
+    },
+    {
+      "Image": "ubuntu-20.04",
+      "Name": "Ubuntu20"
+
+    },
+    {
+      "Image": "macos-latest",
+      "Name": "MacOS"
+    }
+  ]
