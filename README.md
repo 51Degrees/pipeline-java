@@ -30,7 +30,7 @@ but additional caution should be applied.
 
 Packages can be found on Maven under the group [com.51degrees](https://mvnrepository.com/artifact/com.51degrees).
 
-Alternatively clone this git repository and in the root run `mvn install` to build and install the packages locally.
+Alternatively clone this git repository and in the root run `mvn install` to build and install the packages locally. 
 
 ## Tests
 
