@@ -32,6 +32,7 @@ import java.util.List;
 /**
  * Service used by {@link AspectEngine}s to report the reason for a property
  * not being present in the results.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/properties.md#missing-properties">Specification</a>
  */
 public interface MissingPropertyService extends PipelineService {
 

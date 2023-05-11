@@ -33,7 +33,7 @@ import org.slf4j.Logger;
 
 /**
  * Sequence element establishes session and sequence evidence in the pipeline.
- * If a session id is already in the evidence then the sequence is incremented.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/pipeline-elements/sequence-element.md">Specification</a>
  */
 public class SequenceElement 
     extends FlowElementBase<ElementData, ElementPropertyMetaData> {

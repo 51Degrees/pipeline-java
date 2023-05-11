@@ -27,6 +27,7 @@ import fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElement
 
 /**
  * Data containing the result of a {@link JavaScriptBuilderElement}s processing.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/pipeline-elements/javascript-builder.md#element-data">Specification</a>
  */
 public interface JavaScriptBuilderData extends ElementData {
     /**

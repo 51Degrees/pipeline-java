@@ -30,10 +30,9 @@ import fiftyone.pipeline.core.flowelements.FlowElement;
 import java.util.List;
 
 /**
- * Basic implementation of the {@link AspectPropertyMetaData} interface. Implements
- * public getters for all items.
- *
+ * Basic implementation of the {@link AspectPropertyMetaData} interface.
  * Values are set on construction. Instances are immutable.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/properties.md#aspect-property-metadata">Specification</a>
  */
 public class AspectPropertyMetaDataDefault
     extends ElementPropertyMetaDataDefault implements AspectPropertyMetaData {

@@ -33,18 +33,8 @@ import fiftyone.pipeline.engines.services.DataUpdateService;
 import java.util.concurrent.ExecutorService;
 
 /**
- * AspectEngines are a subset of {@link FlowElement}s which follow a certain
- * defined structure. They have defined inputs, outputs and other common
- * methods/properties. They use certain pieces of evidence contained within the
- * {@link FlowData} (e.g. User-Agent) to determine the properties of an Aspect
- * (e.g. hardware device). By defining an AspectEngine, 51Degrees FlowElements
- * can easily share common functionality through base classes and convention.
- *
- * Third parties can also benefit by extending {@link AspectEngineBase} to make
- * use of its generic methods.
- *
- * A major defining feature of an AspectEngine is that it uses a data file which
- * will be kept up to date by the {@link DataUpdateService}.
+ * AspectEngines are a subset of {@link FlowElement}s 
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/conceptual-overview.md#aspect-engine">Specification</a>
  * @param <TData> the type of aspect data that the flow element will write to
  * @param <TProperty> the type of meta data that the flow element will supply
  *                    about the properties it populates.

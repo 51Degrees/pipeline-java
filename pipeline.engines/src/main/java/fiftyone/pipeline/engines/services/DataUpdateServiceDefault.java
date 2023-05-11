@@ -60,6 +60,7 @@ import static org.apache.commons.lang3.BooleanUtils.isFalse;
 
 /**
  * Default singleton implementation of the {@link DataUpdateService}.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/data-updates.md">Specification</a>
  */
 public class DataUpdateServiceDefault implements DataUpdateService {
 

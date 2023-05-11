@@ -26,6 +26,7 @@ import java.io.Closeable;
 
 /**
  * Meta data relating to a profile within the data set.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/data-model-specification/README.md#profile">Specification</a>
  */
 public interface ProfileMetaData extends Closeable {
 

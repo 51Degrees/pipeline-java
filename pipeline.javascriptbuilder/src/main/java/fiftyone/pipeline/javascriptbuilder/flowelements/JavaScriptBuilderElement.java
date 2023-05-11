@@ -54,6 +54,7 @@ import static fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_OBJECT_NAME
 /**
  * JavaScript Builder Element generates a JavaScript include to be run on the
  * client device.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/pipeline-elements/javascript-builder.md">Specification</a>
  */
 public class JavaScriptBuilderElement
     extends FlowElementBase<JavaScriptBuilderData, ElementPropertyMetaData> {

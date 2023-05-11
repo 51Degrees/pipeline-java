@@ -28,6 +28,7 @@ import fiftyone.pipeline.core.flowelements.Pipeline;
 /**
  * Represents property values that have be determined by a specific
  * {@link FlowElement} based on the supplied evidence.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/conceptual-overview.md#element-data">Specification</a>
  */
 public interface ElementData extends Data {
 

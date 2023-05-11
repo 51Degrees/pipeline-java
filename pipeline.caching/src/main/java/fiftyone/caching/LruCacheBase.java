@@ -29,35 +29,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Many of the entities used by the detector are requested repeatably.
- * The cache improves memory usage and reduces strain on the garbage collector
- * by storing previously requested entities for a short period of time to avoid
- * the need to re-fetch them from the underlying storage mechanism.
+ * This is a Least Recently Used (LRU) cache with multiple linked lists
+ * in place of the usual single linked list.
  *
- * The Least Recently Used (LRU) cache is used. LRU cache keeps track of what
- * was used when in order to discard the least recently used items first.
- * Every time a cache item is used the "age" of the item used is updated.
- *
- * This implementation supports concurrency by using multiple linked lists
- * in place of a single linked list in the original implementation.
  * The linked list to use is assigned at random and stored in the cached
  * item. This will generate an even set of results across the different
  * linked lists. The approach reduces the probability of the same linked
  * list being locked when used in a environments with a high degree of
  * concurrency. If the feature is not required then the constructor should be
- * provided with a concurrency value of 1.
- *
- * Use for User-Agent caching.
- * For a vast majority of the real life environments a constant stream of unique
- * User-Agents is a fairly rare event. Usually the same User-Agent can be
- * encountered multiple times within a fairly short period of time as the user
- * is making a subsequent request. Caching frequently occurring User-Agents
- * improved detection speed considerably.
- *
- * Some devices are also more popular than others and while the User-Agents for
- * such devices may differ, the combination of components used would be very
- * similar. Therefore internal caching is also used to take advantage of the
- * more frequently occurring entities.
+ * provided with a concurrency value of 1 so that a single linked list
+ * is used.
+ * 
+ * Although this cache is written to be very generic, the primary use-case
+ * is to provide a result cache for Aspect Engines in the Pipeline API.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/caching.md#cache-implementation">Specification</a>
+ * 
  * @param <K> key for the cache items
  * @param <V> value for the cache items
  */

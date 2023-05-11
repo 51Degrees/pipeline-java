@@ -35,9 +35,7 @@ import java.util.Map;
  * The Pipeline groups together {@link FlowElement}s and is a factory for
  * {@link FlowData} which serves as the evidence, results, and a means to access
  * the Pipeline's processing capabilities.
- *
- * A {@link FlowData} is linked to the Pipeline which created it, and cannot
- * function without it.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/conceptual-overview.md#pipeline">Specification</a>
  */
 public interface Pipeline extends AutoCloseable {
 

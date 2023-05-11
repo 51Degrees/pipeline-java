@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 
 /**
  * Used to store configuration values relating to lazy loading.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/advanced-features/lazy-loading.md">Specification</a>
  */
 public class LazyLoadingConfiguration {
     private final int propertyTimeoutMillis;

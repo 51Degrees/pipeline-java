@@ -31,6 +31,7 @@ import java.util.List;
 /**
  * This class contains the automatic update configuration parameters that can be
  * supplied to an engine for a particular data file that the engine uses.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/data-updates.md">Specification</a>
  */
 public class DataFileConfigurationDefault implements DataFileConfiguration {
     private String identifier = "Default";

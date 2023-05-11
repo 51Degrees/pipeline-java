@@ -33,14 +33,9 @@ import java.util.List;
 /**
  * A component that processes a {@link FlowData} (by examining its evidence, or
  * by examining data processed by other FlowElements). It MAY contribute to the
- * {@link FlowData} by adding its own data, and if it does,
- * {@link #getElementDataKey()} MUST be non-null.
- *
- * This class is primarily of use to creators of FlowElements, end users of
- * {@link Pipeline}s are unlikely to use this interface in its raw form.
- *
- * The type parameter indicates the type of the data structure created by this
- * element
+ * {@link FlowData} by adding its own data.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/conceptual-overview.md#flow-element">Specification</a>
+ * 
  * @param <TData> the type of element data that the flow element will write to
  * @param <TProperty> the type of meta data that the flow element will supply
  *                    about the properties it populates

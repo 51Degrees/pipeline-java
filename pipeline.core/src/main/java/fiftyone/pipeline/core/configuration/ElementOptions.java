@@ -37,6 +37,7 @@ import java.util.Map;
 
 /**
  * Configuration object that describes how to build a {@link FlowElement}.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/pipeline-configuration.md#flow-elements">Specification</a>
  */
 @XmlRootElement(name = "Element")
 public class ElementOptions {

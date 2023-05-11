@@ -28,15 +28,8 @@ import fiftyone.pipeline.core.flowelements.FlowElement;
 import java.util.List;
 
 /**
- * Defines a property that can be returned by a {@link FlowElement}. This is
- * stored in the element itself, so if a property is not included for some reason
- * (e.g. not in a data file, or excluded from config) then the engine still has
- * knowledge of its existence.
- *
- * An ElementPropertyMetaData is a property of an Element of a request. E.g.
- * ‘HardwareModel’ is a property of the ‘Device’ aspect. They define meta-data
- * such as property name, data type, the data file types the property is present
- * in and a flag indicating if the property is disabled.
+ * Defines details of a property that can be returned by a {@link FlowElement}. 
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/properties.md#property-metadata">Specification</a>
  */
 public interface ElementPropertyMetaData {
 

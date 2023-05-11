@@ -27,9 +27,8 @@ import fiftyone.pipeline.core.flowelements.FlowElement;
 import java.util.Map;
 
 /**
- * Evidence used by a {@link FlowElement} when processing. Items of evidence
- * should be added via the {@link FlowData#addEvidence(String, Object)} and
- * {@link FlowData#addEvidence(Map)} methods.
+ * Evidence used by a {@link FlowElement} when processing.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/evidence.md">Specification</a>
  */
 public interface Evidence extends Data {
 }

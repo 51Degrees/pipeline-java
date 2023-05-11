@@ -33,10 +33,7 @@ import java.util.Map;
 /**
  * A closeable structure to contain the inputs and outputs of {@link Pipeline}
  * processing.
- *
- * The {@link Pipeline} that creates FlowData must not be disposed of until the
- * FlowData instance is finished with. Calling a FlowData method which then
- * calls its creator will throw a runtime error.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/conceptual-overview.md#flow-data">Specification</a>
  */
 public interface FlowData extends AutoCloseable {
 

@@ -28,6 +28,7 @@ import fiftyone.pipeline.jsonbuilder.flowelements.JsonBuilderElement;
 
 /**
  * Data containing the result of a {@link JsonBuilderElement}s processing.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/pipeline-elements/json-builder.md#element-data">Specification</a>
  */
 public interface JsonBuilderData extends ElementData {
 

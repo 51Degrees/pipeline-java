@@ -29,6 +29,7 @@ import java.io.Closeable;
 /**
  * 51Degrees specific meta data. This adds meta data properties which are
  * available in 51Degrees Engines.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/data-model-specification/README.md#property">Specification</a>
  */
 public interface FiftyOneAspectPropertyMetaData
     extends AspectPropertyMetaData, Closeable {

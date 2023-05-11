@@ -47,11 +47,12 @@ import static fiftyone.pipeline.util.Types.getPrimitiveTypeMap;
 
 /**
  * The PipelineBuilder follows the fluent builder pattern. It is used to
- * construct instances of the {@link Pipeline}. {@link FlowElement}s can be
- * added individually to be run in series, or as an array to be run in parallel.
-
+ * construct instances of the {@link Pipeline}. 
+ * 
  * A PipelineBuilder is intended to be used once only and once {@link #build()}
  * has been called it cannot be used further.
+ * 
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/conceptual-overview.md#pipeline-builder">Specification</a>
  */
 @SuppressWarnings("rawtypes")
 public class PipelineBuilder

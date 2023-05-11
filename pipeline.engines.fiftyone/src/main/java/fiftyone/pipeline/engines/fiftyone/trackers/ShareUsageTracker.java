@@ -32,6 +32,7 @@ import java.util.Date;
 /**
  * A tracker used by share usage to attempt to avoid repeatedly sending data
  * relating to the same user session.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/pipeline-elements/usage-sharing-element.md#session-tracking">Specification</a>
  */
 public class ShareUsageTracker extends TrackerBase<Date> {
 

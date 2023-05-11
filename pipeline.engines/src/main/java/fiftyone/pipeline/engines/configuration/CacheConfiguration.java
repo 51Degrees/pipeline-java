@@ -28,6 +28,7 @@ import fiftyone.caching.LruPutCache;
 /**
  * Contains everything needed to build a cache.
  * Currently, a {@link CacheBuilder} and an integer size parameter.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/caching.md">Specification</a>
  */
 public class CacheConfiguration {
 
