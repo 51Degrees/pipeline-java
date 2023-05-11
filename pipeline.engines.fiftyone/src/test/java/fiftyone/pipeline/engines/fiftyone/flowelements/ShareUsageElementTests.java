@@ -203,7 +203,7 @@ public class ShareUsageElementTests {
             tracker);
         shareUsageElement.addPipeline(pipeline);
         connector= new TestConnector();
-        shareUsageElement.connector = connector;
+        shareUsageElement.dataUploader = connector;
     }
 
     @Test
@@ -286,7 +286,7 @@ public class ShareUsageElementTests {
                 new ArrayList<>());
 
         shareUsageElement.httpClient = new TestHttpClient();
-        shareUsageElement.connector = null;
+        shareUsageElement.dataUploader = null;
 
         Map<String, Object> evidenceData = new HashMap<>();
         evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");
@@ -539,7 +539,7 @@ public class ShareUsageElementTests {
                 new ArrayList<>(),
                 new ArrayList<>());
 
-        ((TestConnector)shareUsageElement.connector).setResponseCode(500);
+        ((TestConnector)shareUsageElement.dataUploader).setResponseCode(500);
         Map<String, Object> evidenceData = new HashMap<>();
         evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");
         FlowData data = pipeline.createFlowData();
@@ -812,7 +812,7 @@ public class ShareUsageElementTests {
                 new ArrayList<>());
 
         // each send fails
-        ((TestConnector)shareUsageElement.connector).setResponseCode(500);
+        ((TestConnector)shareUsageElement.dataUploader).setResponseCode(500);
 
         Map<String, Object> evidenceData = new HashMap<>();
         evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");
@@ -854,7 +854,7 @@ public class ShareUsageElementTests {
                 new ArrayList<>());
 
         // add delay to the response so queue grows
-        ((TestConnector)shareUsageElement.connector).setResponseDelay(3000);
+        ((TestConnector)shareUsageElement.dataUploader).setResponseDelay(3000);
 
         Map<String, Object> evidenceData = new HashMap<>();
         evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");

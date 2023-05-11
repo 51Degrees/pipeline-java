@@ -23,6 +23,7 @@
 package fiftyone.pipeline.engines.fiftyone.flowelements;
 
 import fiftyone.pipeline.annotations.ElementBuilder;
+import fiftyone.pipeline.engines.services.DataUploader;
 import fiftyone.pipeline.engines.services.HttpClient;
 import java.io.IOException;
 import java.util.Objects;
@@ -37,6 +38,7 @@ import org.slf4j.Logger;
 public class ShareUsageBuilder extends ShareUsageBuilderBase<ShareUsageElement> {
 
     private final HttpClient httpClient;
+    private final DataUploader dataUploader;
 
     /**
      * Constructor
@@ -47,6 +49,7 @@ public class ShareUsageBuilder extends ShareUsageBuilderBase<ShareUsageElement> 
             ILoggerFactory loggerFactory) {
         super(loggerFactory);
         httpClient = null;
+        this.dataUploader = null;
     }
     /**
      * Constructor
@@ -58,6 +61,20 @@ public class ShareUsageBuilder extends ShareUsageBuilderBase<ShareUsageElement> 
             ILoggerFactory loggerFactory, Logger logger) {
         super(loggerFactory, logger);
         httpClient = null;
+        this.dataUploader = null;
+    }
+
+    /**
+     * Constructor
+     * @param loggerFactory the {@link ILoggerFactory} to use when creating
+     *                      loggers for a {@link ShareUsageElement}
+     * @param dataUploader a {@link DataUploader} to use for this {@link ShareUsageElement}
+     */
+    public ShareUsageBuilder(
+            ILoggerFactory loggerFactory, DataUploader dataUploader) {
+        super(loggerFactory);
+        httpClient = null;
+        this.dataUploader = dataUploader;
     }
 
     /**
@@ -74,6 +91,7 @@ public class ShareUsageBuilder extends ShareUsageBuilderBase<ShareUsageElement> 
             HttpClient httpClient) {
         super(loggerFactory);
         this.httpClient = httpClient;
+        this.dataUploader = null;
     }
 
     /**
@@ -92,6 +110,7 @@ public class ShareUsageBuilder extends ShareUsageBuilderBase<ShareUsageElement> 
         HttpClient httpClient) {
         super(loggerFactory, logger);
         this.httpClient = httpClient;
+        this.dataUploader = null;
     }
 
     @Override
@@ -113,6 +132,8 @@ public class ShareUsageBuilder extends ShareUsageBuilderBase<ShareUsageElement> 
             null);
         if (Objects.nonNull(this.httpClient)) {
             sue.httpClient = httpClient;
+        } else if (Objects.nonNull(dataUploader)){
+            sue.dataUploader = dataUploader;
         }
         return sue;
     }

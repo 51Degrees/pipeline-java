@@ -56,12 +56,13 @@ import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.SHARE_US
  * then serialised to an XML file and sent to the specified URL.
  */
 public class ShareUsageElement extends ShareUsageBase {
-    protected HttpClient httpClient;
-    protected Map<String, String> headers;
-    protected DataUploader connector;
-    protected XMLOutputFactory xmlOutputFactory;
     // max time to wait to send data
     protected int httpSendTimeout = SHARE_USAGE_DEFAULT_HTTP_POST_TIMEOUT; // milliseconds
+    protected Map<String, String> headers = new HashMap<>();
+    protected HttpClient httpClient; // old style HttpClient
+    protected DataUploader dataUploader = new DataUploaderHttp(shareUsageUrl, headers, httpSendTimeout);
+
+    protected XMLOutputFactory xmlOutputFactory;
 
     /**
      * Constructor
@@ -327,11 +328,9 @@ public class ShareUsageElement extends ShareUsageBase {
                 sessionCookieName,
                 tracker);
 
-        headers = new HashMap<>();
         headers.put("Content-Type", "text/xml; charset=utf-8");
+        // assume default GZIP connection
         headers.put("Content-Encoding", "gzip");
-
-        connector = new DataUploaderHttp(shareUsageUrl, headers, httpSendTimeout);
 
         xmlOutputFactory = XMLOutputFactory.newInstance();
         if (xmlOutputFactory.isPropertySupported("escapeCharacters")) {
@@ -381,13 +380,13 @@ public class ShareUsageElement extends ShareUsageBase {
             return;
         }
         // get an output stream to send the usage
-        try (OutputStream os = connector.getOutputStream()) {
+        try (OutputStream os = dataUploader.getOutputStream()) {
             // encode to the stream
             streamXml(allData, os);
         }
 
         // check for completion
-        int code = connector.getResponseCode();
+        int code = dataUploader.getResponseCode();
         if (code != 200) {
             throw new Exception(String.format("Share Usage response code was %d ", code));
         }
