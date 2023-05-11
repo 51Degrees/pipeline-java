@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * Default implementation of the {@link Evidence} interface.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/evidence.md">Specification</a>
  */
 class EvidenceDefault extends DataBase implements Evidence {
 

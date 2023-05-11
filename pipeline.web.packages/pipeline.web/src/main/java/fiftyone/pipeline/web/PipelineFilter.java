@@ -46,6 +46,7 @@ import static fiftyone.pipeline.web.Constants.DEFAULT_CONFIG_FILE;
 /**
  * Servlet filter used to intercept HTTP requests and process them using the
  * 51Degrees Pipeline.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/web-integration.md">Specification</a>
  */
 public class PipelineFilter implements Filter {
     private Pipeline pipeline;

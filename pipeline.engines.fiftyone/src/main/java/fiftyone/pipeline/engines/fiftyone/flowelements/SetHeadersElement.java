@@ -50,8 +50,8 @@ import static fiftyone.pipeline.engines.fiftyone.data.SetHeadersData.*;
 //! [class]
 //! [constructor]
 /**
- * SetHeadersElement which constructs the headers to be set in the response
- * from the 'SetHeader' properties available.
+ * SetHeadersElement constructs the header values to be set in the HTTP response.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/pipeline-elements/set-headers-element.md">Specification</a>
  */
 public class SetHeadersElement
 	extends FlowElementBase<SetHeadersData, ElementPropertyMetaData> {

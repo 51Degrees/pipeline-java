@@ -46,6 +46,7 @@ import java.util.concurrent.TimeUnit;
  * Base class for {@link AspectEngine}s to extend. This implements the data
  * update service and missing property service along with everything
  * already implemented by {@link FlowElementBase}.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/conceptual-overview.md#aspect-engine">Specification</a>
  */
 public abstract class AspectEngineBase<
     TData extends AspectData,

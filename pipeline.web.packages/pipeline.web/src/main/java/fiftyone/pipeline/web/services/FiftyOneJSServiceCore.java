@@ -33,6 +33,7 @@ import static fiftyone.pipeline.web.Constants.CORE_JSON_NAME;
 
 /**
  * Service that provides the 51Degrees javascript when requested.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/web-integration.md#client-side-features">Specification</a>
  */
 public interface FiftyOneJSServiceCore {
 

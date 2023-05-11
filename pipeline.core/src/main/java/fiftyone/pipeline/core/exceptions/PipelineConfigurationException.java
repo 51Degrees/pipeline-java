@@ -27,6 +27,7 @@ import fiftyone.pipeline.core.flowelements.PipelineBuilder;
 /**
  * Exception that is thrown when the configuration options provided to
  * {@link PipelineBuilder} are invalid.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/exception-handling.md#pipeline-configuration-exception">Specification</a>
  */
 public class PipelineConfigurationException extends RuntimeException {
 

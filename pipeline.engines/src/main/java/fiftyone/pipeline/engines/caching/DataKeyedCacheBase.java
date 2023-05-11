@@ -34,6 +34,7 @@ import java.io.IOException;
  * Abstract base class for caches that use {@link FlowData} as the key.
  * Internally, the cache actually uses a {@link DataKey} instance derived from
  * {@link FlowData}.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/caching.md">Specification</a>
  * @param <V> the type of data to store in the cache
  */
 public abstract class DataKeyedCacheBase<V> implements DataKeyedCache<V> {

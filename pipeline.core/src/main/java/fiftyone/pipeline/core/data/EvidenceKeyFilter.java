@@ -24,8 +24,7 @@ package fiftyone.pipeline.core.data;
 
 /**
  * Represents an object that filters evidence key names based on some criteria.
- * For example, a filter that only included evidence items relating to HTTP
- * headers might use key.startsWith("header.").
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/advertize-accepted-evidence.md">Specification</a>
  */
 public interface EvidenceKeyFilter {
 

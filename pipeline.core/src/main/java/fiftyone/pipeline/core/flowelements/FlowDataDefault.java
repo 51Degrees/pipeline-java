@@ -40,6 +40,7 @@ import static fiftyone.pipeline.util.Check.getNotNull;
  * Default implementation of the {@link FlowData} interface. This class is
  * package private, and should only be created by the
  * {@link FlowDataFactoryDefault} class.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/conceptual-overview.md#flow-data">Specification</a>
  */
 class FlowDataDefault implements FlowData {
 

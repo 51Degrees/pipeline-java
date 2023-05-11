@@ -29,6 +29,7 @@ import java.util.List;
 
 /**
  * Default implementation of the {@link ElementPropertyMetaData} interface.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/properties.md#property-metadata">Specification</a>
  */
 @SuppressWarnings("rawtypes")
 public class ElementPropertyMetaDataDefault implements ElementPropertyMetaData {

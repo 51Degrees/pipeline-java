@@ -49,11 +49,8 @@ import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.SHARE_US
 import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.SHARE_USAGE_MAX_EVIDENCE_LENGTH;
 
 /**
- * Flow element that sends usage data to 51Degrees for analysis. The type and
- * quantity of data being sent can be customised using the options on the
- * constructor.
- * By default, data is queued until there are at least 50 items in memory. It is
- * then serialised to an XML file and sent to the specified URL.
+ * Flow element that sends usage data to 51Degrees for analysis. 
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/pipeline-elements/usage-sharing-element.md">Specification</a>
  */
 public class ShareUsageElement extends ShareUsageBase {
     // max time to wait to send data

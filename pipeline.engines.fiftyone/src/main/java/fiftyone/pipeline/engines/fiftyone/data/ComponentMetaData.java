@@ -26,6 +26,7 @@ import java.io.Closeable;
 
 /**
  * Meta data relating to a component of an Engine's results e.g. Hardware.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/data-model-specification/README.md#component">Specification</a>
  */
 public interface ComponentMetaData extends Closeable {
 

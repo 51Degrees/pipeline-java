@@ -43,10 +43,7 @@ package fiftyone.pipeline.engines.data;
 
 /**
  * Abstract base class for {@link AspectData} which overrides the
- * {@link AspectData#get(String)} method to add null checks and uses the
- * {@link MissingPropertyService} to determine the reason for a value not being
- * present. For example, if the user has excluded the property at the
- * configuration stage.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/conceptual-overview.md#aspect-engine">Specification</a>
  */
 public abstract class AspectDataBase extends ElementDataBase implements AspectData {
 

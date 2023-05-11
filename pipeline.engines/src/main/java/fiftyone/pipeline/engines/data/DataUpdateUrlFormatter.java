@@ -26,6 +26,7 @@ package fiftyone.pipeline.engines.data;
  * Interface defining a URL formatter which is used by the
  * {@link AspectEngineDataFile#getFormattedUrl()} method to get the data update
  * URL.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/data-updates.md#update-polling">Specification</a>
  */
 public interface DataUpdateUrlFormatter {
     /**

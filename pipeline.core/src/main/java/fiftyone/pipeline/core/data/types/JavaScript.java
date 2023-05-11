@@ -25,9 +25,8 @@ package fiftyone.pipeline.core.data.types;
 import fiftyone.pipeline.core.data.ElementData;
 
 /**
- * JavaScript type which can be returned as a value by an {@link ElementData}.
- * A value being of type JavaScript indicates that it is intended to be run on a
- * client browser.
+ * A string containing JavaScript intended to be run on a client browser.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/properties.md#the-javascript-type">Specification</a>
  */
 public class JavaScript implements Comparable<String> {
 

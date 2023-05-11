@@ -27,8 +27,7 @@ import fiftyone.pipeline.engines.services.MissingPropertyReason;
 /**
  * A property missing exception is thrown by the missing property service if an
  * attempt is made to access a property that does not exist in the FlowData.
- * The exception holds the name of the property, and a message containing the
- * reason it could not be found.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/exception-handling.md#property-missing-exception">Specification</a>
  */
 public class PropertyMissingException extends RuntimeException {
 

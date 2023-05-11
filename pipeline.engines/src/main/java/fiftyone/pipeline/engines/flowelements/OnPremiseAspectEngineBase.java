@@ -40,6 +40,7 @@ import java.util.List;
 
 /**
  * Base class for on-premise aspect engines.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/conceptual-overview.md#on-premise-engines">Specification</a>
  * @param <TData> the type of aspect data that the flow element will write to
  * @param <TProperty> the type of meta data that the flow element will supply
  *                    about the properties it populates.

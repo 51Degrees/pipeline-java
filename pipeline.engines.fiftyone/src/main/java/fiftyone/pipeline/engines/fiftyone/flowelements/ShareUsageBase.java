@@ -51,6 +51,7 @@ import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.LOST_DAT
 /**
  * Abstract base class for ShareUsage elements. Contains common functionality
  * such as filtering the evidence and building the XML records.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/pipeline-elements/usage-sharing-element.md">Specification</a>
  */
 public abstract class ShareUsageBase
     extends FlowElementBase<ElementData, ElementPropertyMetaData> {

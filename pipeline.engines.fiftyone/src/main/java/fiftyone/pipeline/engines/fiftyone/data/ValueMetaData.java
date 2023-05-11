@@ -26,6 +26,7 @@ import java.io.Closeable;
 
 /**
  * Meta data relating to a specific value within a data set.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/data-model-specification/README.md#value">Specification</a>
  */
 public interface ValueMetaData extends Closeable {
     /**

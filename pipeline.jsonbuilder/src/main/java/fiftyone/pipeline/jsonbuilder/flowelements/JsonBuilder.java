@@ -28,8 +28,8 @@ import fiftyone.pipeline.jsonbuilder.data.JsonBuilderData;
 
 /**
  * The JsonBuilderElement takes accessible properties and adds the property
- * key:values to the Json object. The element will also add any errors which
- * have been recorded in the FlowData.
+ * key:values to the Json object.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/pipeline-elements/json-builder.md">Specification</a>
  */
 public interface JsonBuilder
     extends FlowElement<JsonBuilderData, ElementPropertyMetaData> {
