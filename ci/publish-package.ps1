@@ -7,7 +7,7 @@ param(
 
 )
 
-./java/publish-package-maven.ps1 -RepoName "pipeline-java-test" -MavenSettings $MavenSettings -Version $Version
+./java/publish-package-maven.ps1 -RepoName "pipeline-java" -MavenSettings $MavenSettings -Version $Version
 
 
 exit $LASTEXITCODE

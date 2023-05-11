@@ -5,7 +5,7 @@ param(
 )
 
 
-$RepoName = "pipeline-java-test"
+$RepoName = "pipeline-java"
 
 ./java/run-performance-tests.ps1 -RepoName $RepoName -ProjectDir $ProjectDir -Name $Name -TestName "ShareUsageOverheadTests"
 
@@ -20,10 +20,6 @@ try{
     
     $PerfResultsFile = [IO.Path]::Combine($RepoPath, "test-results", "performance-summary", "fiftyone.pipeline.engines.fiftyone.performance.ShareUsageOverheadTests-output.txt")
     $outputFile = [IO.Path]::Combine($RepoPath, "test-results", "performance-summary","results_$Name.json")
-
-    $profileNum = 0
-    $profiles = @{}
-    $currentThreadNum = 1
 
     Get-Content $PerfResultsFile | ForEach-Object {
         if($_ -match "ShareUsageOverhead_SingleEvidence: ([\d.]+)ms per call") {

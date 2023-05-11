@@ -6,6 +6,6 @@ param(
     [string]$ProjectDir = "."
 )
 
-./java/setup-enviroment.ps1 -RepoName "pipeline-java-test" -ProjectDir $ProjectDir -JavaSDKEnvVar $JavaSDKEnvVar
+./java/setup-enviroment.ps1 -RepoName "pipeline-java" -ProjectDir $ProjectDir -JavaSDKEnvVar $JavaSDKEnvVar
 
 exit $LASTEXITCODE

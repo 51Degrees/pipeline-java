@@ -18,7 +18,7 @@ param(
 )
 
 
-./java/build-package.ps1 -RepoName "pipeline-java-test" -ProjectDir $ProjectDir -Name $Name -Version $Version -JavaGpgKeyPassphrase $JavaGpgKeyPassphrase -CodeSigningCert $CodeSigningCert -JavaPGP $JavaPGP -CodeSigningCertAlias $CodeSigningCertAlias -CodeSigningCertPassword $CodeSigningCertPassword -MavenSettings $MavenSettings
+./java/build-package.ps1 -RepoName "pipeline-java" -ProjectDir $ProjectDir -Name $Name -Version $Version -JavaGpgKeyPassphrase $JavaGpgKeyPassphrase -CodeSigningCert $CodeSigningCert -JavaPGP $JavaPGP -CodeSigningCertAlias $CodeSigningCertAlias -CodeSigningCertPassword $CodeSigningCertPassword -MavenSettings $MavenSettings
 
 
 exit $LASTEXITCODE
