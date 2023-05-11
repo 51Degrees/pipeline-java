@@ -31,7 +31,7 @@ import fiftyone.caching.LruPutCache;
  */
 public class CacheConfiguration {
 
-    private static final int defaultSize = 1000;
+    public static final int defaultSize = 1000;
 
     private final CacheBuilder builder;
 
@@ -53,7 +53,7 @@ public class CacheConfiguration {
      * @param size maximum size of the cache
      */
     public CacheConfiguration(int size) {
-        this(new LruPutCache.Builder(), defaultSize);
+        this(new LruPutCache.Builder(), size);
     }
 
     /**

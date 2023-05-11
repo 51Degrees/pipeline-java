@@ -23,12 +23,14 @@
 package fiftyone.pipeline.cloudrequestengine.flowelements;
 
 
+import fiftyone.pipeline.annotations.DefaultValue;
 import fiftyone.pipeline.annotations.ElementBuilder;
 import fiftyone.pipeline.cloudrequestengine.data.CloudRequestData;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.core.flowelements.FlowElement;
+import fiftyone.pipeline.engines.configuration.CacheConfiguration;
 import fiftyone.pipeline.engines.flowelements.AspectEngineBuilderBase;
 import fiftyone.pipeline.engines.services.HttpClient;
 import fiftyone.pipeline.engines.services.HttpClientDefault;
@@ -53,7 +55,7 @@ public class CloudRequestEngineBuilder extends
     private String resourceKey = null;
     private String licenseKey = null;
     private String cloudRequestOrigin = null;
-    private int timeout = 100000;
+    private int timeoutMillis = Constants.DEFAULT_TIMEOUT_MILLIS;
     
     // Function to get environment variable value. This enable testable code.
     private Function<String, String> getEnvVar = (name) -> {
@@ -105,7 +107,7 @@ public class CloudRequestEngineBuilder extends
             licenseKey,
             propertiesEndpoint,
             evidenceKeysEndpoint,
-            timeout,
+                timeoutMillis,
             cloudRequestOrigin);
     }
     
@@ -120,9 +122,12 @@ public class CloudRequestEngineBuilder extends
     /**
      * The root endpoint which the CloudRequestsEngine will query. This will set
      * the data, properties and evidence keys endpoints.
+     * <p>
+     * By default, "https://cloud.51degrees.com/api/v4"
      * @param uri root endpoint
      * @return this builder
      */
+    @DefaultValue(Constants.END_POINT_DEFAULT)
     public CloudRequestEngineBuilder setEndpoint(String uri) {
         if (uri.endsWith("/") == false) {
             uri += '/';
@@ -136,9 +141,12 @@ public class CloudRequestEngineBuilder extends
 
     /**
      * The endpoint the CloudRequestEngine will query to get a processing result.
+     * <p>
+     * By default, this is the endpoint value suffixed with the resourcekey and ".json"
      * @param uri data endpoint
      * @return this builder
      */
+    @DefaultValue(Constants.END_POINT_DEFAULT + "{resourcekey}.json")
     public CloudRequestEngineBuilder setDataEndpoint(String uri) {
         dataEndpoint = uri;
         return this;
@@ -147,9 +155,12 @@ public class CloudRequestEngineBuilder extends
     /**
      * The endpoint the cloudRequestEngine will query to get the available
      * properties.
+     * <p>
+     * By default, this is the endpoint value suffixed with "accessibleproperties"
      * @param uri properties endpoint
      * @return this builder
      */
+    @DefaultValue(Constants.END_POINT_DEFAULT + "accessibleproperties")
     public CloudRequestEngineBuilder setPropertiesEndpoint(String uri) {
         propertiesEndpoint = uri;
         return this;
@@ -158,9 +169,12 @@ public class CloudRequestEngineBuilder extends
     /**
      * The endpoint the cloudRequestEngine will query to get the required
      * evidence keys.
+     * <p>
+     * By default, this is the endpoint value suffixed with "evidencekeys"
      * @param uri evidence keys endpoint
      * @return this builder
      */
+    @DefaultValue(Constants.END_POINT_DEFAULT + "evidencekeys")
     public CloudRequestEngineBuilder setEvidenceKeysEndpoint(String uri) {
         evidenceKeysEndpoint = uri;
         return this;
@@ -168,9 +182,12 @@ public class CloudRequestEngineBuilder extends
 
     /**
      * The resource key to query the endpoint with.
+     * <p>
+     * No default, a value must be supplied
      * @param resourceKey resource key
      * @return this builder
      */
+    @DefaultValue("No default - a resource key must be supplied")
     public CloudRequestEngineBuilder setResourceKey(String resourceKey) {
         this.resourceKey = resourceKey;
         return this;
@@ -178,9 +195,12 @@ public class CloudRequestEngineBuilder extends
 
     /**
      * The license key to query the endpoint with.
+     * <p>
+     * There is no default
      * @param licenseKey license key
      * @return this builder
      */
+    @DefaultValue("No default")
     public CloudRequestEngineBuilder setLicenseKey(String licenseKey) {
         this.licenseKey = licenseKey;
         return this;
@@ -188,11 +208,14 @@ public class CloudRequestEngineBuilder extends
 
     /**
      * Timeout in seconds for the request to the endpoint.
+     * <p>
+     * Default value is 100 seconds
      * @param timeout in seconds
      * @return this builder
      */
+    @DefaultValue(intValue = Constants.DEFAULT_TIMEOUT_MILLIS / 1000)
     public CloudRequestEngineBuilder setTimeOutSeconds(int timeout) {
-        this.timeout = timeout;
+        this.timeoutMillis = timeout * 1000;
         return this;
     }
 
@@ -204,9 +227,12 @@ public class CloudRequestEngineBuilder extends
      * resource key.
      * For more detail, see the 'Request Headers' section in the 
      * <a href="https://cloud.51degrees.com/api-docs/index.html">cloud documentation</a>.
+     * <p>
+     * There is no default value
      * @param cloudRequestOrigin The value to use for the Origin header.
      * @return this builder
      */
+    @DefaultValue("None")
     public CloudRequestEngineBuilder setCloudRequestOrigin(String cloudRequestOrigin) {
         this.cloudRequestOrigin = cloudRequestOrigin;
         return this;
@@ -230,5 +256,22 @@ public class CloudRequestEngineBuilder extends
                 flowData,
                 (CloudRequestEngine) engine);
         }
+    }
+
+
+    /**
+     * Configure the size of a {@link fiftyone.caching.LruPutCache} cache to use.
+     * <p>
+     * Default is that there is no cache unless one is configured using this method
+     * or by using {@link AspectEngineBuilderBase#setCache(CacheConfiguration)} - or
+     * if it is set in a pipelineBuilder e.g.
+     * {@link fiftyone.pipeline.engines.flowelements.PrePackagedPipelineBuilderBase#useResultsCache()}
+     * @param size the size of the cache
+     * @return this builder
+     */
+    @DefaultValue("No cache")
+    public CloudRequestEngineBuilder setCacheSize(int size) {
+        this.cacheConfig = new CacheConfiguration(size);
+        return this;
     }
 }

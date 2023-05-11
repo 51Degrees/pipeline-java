@@ -27,6 +27,13 @@ public class Constants {
     public static final String DEFAULT_SESSION_COOKIE_NAME = "JSESSIONID";
     public static final int DATA_UPDATE_POLLING_DEFAULT = 30 * 60;
     public static final int DATA_UPDATE_RANDOMISATION_DEFAULT = 10 * 60;
+    public static final boolean DEFAULT_AUTOUPDATE_ENABLED = true;
+    public static final boolean DEFAULT_WATCHER_ENABLED = true;
+    public static final boolean DEFAULT_DECOMPRESS = true;
+    public static final boolean DEFAULT_VERIFY_MD5 = true;
+    public static final boolean DEFAULT_VERIFY_IF_MODIFIED_SINCE = true;
+    public static final boolean DEFAULT_UPDATE_ON_STARTUP = false;
+
     public enum PerformanceProfiles {
         LowMemory,
         MaxPerformance,

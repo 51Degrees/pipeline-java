@@ -46,8 +46,6 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.internal.matchers.LessOrEqual;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.slf4j.ILoggerFactory;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -69,7 +67,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static fiftyone.pipeline.engines.services.DataUpdateService.AutoUpdateStatus.AUTO_UPDATE_HTTPS_ERR;
 import static fiftyone.pipeline.engines.services.DataUpdateService.AutoUpdateStatus.AUTO_UPDATE_NOT_NEEDED;
 import static org.junit.Assert.*;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.*;
 
 @SuppressWarnings("unchecked")
@@ -107,6 +105,7 @@ public class DataUpdateServiceTests {
 
     @Before
     public void Init() throws IOException {
+        // done this way to be able to set log level programmatically
         realLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(this.getClass());
         realLogger.setLevel(Level.INFO);
         logger = new TestLogger("test", realLogger);
@@ -338,12 +337,9 @@ public class DataUpdateServiceTests {
 
     @Test
     public void DataUpdateService_UpdateFromWatcher() throws IOException, InterruptedException {
-        if (System.getProperty("os.name").contains("Mac OS X")) {
-            assumeTrue(
-                "File watchers are not well implemented in OS X, " +
-                    "so don't run this unit test as it is unlikely to pass.",
-                false);
-        }
+        assumeFalse("File watchers are not well implemented in OS X, " +
+                        "so don't run this unit test as it is unlikely to pass.",
+                System.getProperty("os.name").contains("Mac OS X"));
 
         // Arrange
         OnPremiseAspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine = mock(OnPremiseAspectEngine.class);
@@ -715,6 +711,7 @@ public class DataUpdateServiceTests {
                 throw new Exception(errorText);
             }
         });
+
         // Configure a ManualResetEvent to be set when processing
         // is complete.
         final Semaphore completeFlag = new Semaphore(1);
@@ -748,10 +745,16 @@ public class DataUpdateServiceTests {
             file.setConfiguration(config);
             when(engine.getDataFileMetaData(anyString())).thenReturn(file);
 
-            // Act
+            realLogger.info("This test deliberately causes errors");
+            // change logback set up so that any errors are logged as intentional from here
+            LogbackHelper.intentionalErrorConfig();
+
             dataUpdate.registerDataFile(file);
             // Wait until processing is complete.
             boolean completed = completeFlag.tryAcquire(1, TimeUnit.SECONDS);
+
+            // reset the logback config to log errors in red as usual
+            LogbackHelper.defaultConfig();
 
             // Assert
             assertTrue("The 'checkForUpdateComplete' " +
@@ -1259,11 +1262,16 @@ public class DataUpdateServiceTests {
             }
         });
 
+        // don't highlight errors in Red
+        LogbackHelper.intentionalErrorConfig();
         // Act
         dataUpdate.registerDataFile(file);
 
         // Wait until processing is complete.
         boolean completed = completeFlag.tryAcquire(1, TimeUnit.SECONDS);
+
+        // reset error highlighting
+        LogbackHelper.intentionalErrorConfig();
 
         // Assert
         assertTrue("The 'checkForUpdateComplete' " +

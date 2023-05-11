@@ -30,7 +30,7 @@
                 <MinimumEntriesPerMessage>50</MinimumEntriesPerMessage>
                 <RepeatEvidenceIntervalMinutes>10</RepeatEvidenceIntervalMinutes>
                 <TrackSession>false</TrackSession>
-                <SessionCookieName></SessionCookieName>
+                <SessionCookieName>ignoredIfTrackSessionFalse</SessionCookieName>
                 <IncludedQueryStringParameters>parameter1,parameter2</IncludedQueryStringParameters>
                 <BlockedHttpHeader>mySecretHeader</BlockedHttpHeader>
                 <IgnoreFlowDataEvidenceFilter>evidenceKey:evidenceValue</IgnoreFlowDataEvidenceFilter>

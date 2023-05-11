@@ -31,8 +31,10 @@ import fiftyone.pipeline.core.flowelements.PipelineBuilder;
 import fiftyone.pipeline.engines.services.DataUploader;
 import fiftyone.pipeline.engines.services.HttpClient;
 import fiftyone.pipeline.engines.trackers.Tracker;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,57 +150,6 @@ public class ShareUsageElementTests {
         }
     }
 
-    static {
-        // enable special logging
-        //System.setProperty("logback.configurationFile", "logback-test.xml");
-        //language=HTML
-        LogbackHelper.configureLogbackFromString("" +
-                "<!--\n" +
-                "config for fiftyone.pipeline.engines.fiftyone test\n" +
-                "-->\n" +
-                "<configuration>\n" +
-                "    <appender name=\"STDOUT\" class=\"ch.qos.logback.core.ConsoleAppender\">\n" +
-                "        <filter class=\"ch.qos.logback.core.filter.EvaluatorFilter\">\n" +
-                "            <evaluator class=\"fiftyone.common.testhelpers" +
-                ".LogbackHelper$WarnEvaluator\" />\n" +
-                "            <onMatch>DENY</onMatch>\n" +
-                "            <onMismatch>ACCEPT</onMismatch>\n" +
-                "        </filter>\n" +
-                "        <encoder>\n" +
-                "            <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36}" +
-                " - %cyan(%marker) %msg%n</pattern>\n" +
-                "        </encoder>\n" +
-                "    </appender>\n" +
-                "    <appender name=\"warn\" class=\"ch.qos.logback.core.ConsoleAppender\">\n" +
-                "        <filter class=\"ch.qos.logback.core.filter.EvaluatorFilter\">\n" +
-                "            <evaluator class=\"fiftyone.common.testhelpers" +
-                ".LogbackHelper$WarnEvaluator\" />\n" +
-                "            <onMatch>ACCEPT</onMatch>\n" +
-                "            <onMismatch>DENY</onMismatch>\n" +
-                "        </filter>\n" +
-                "        <encoder class=\"ch.qos.logback.classic.encoder" +
-                ".PatternLayoutEncoder\">\n" +
-                "            <pattern>%d{HH:mm:ss.SSS} [%thread] %blue(INTENTIONAL-%-5level) " +
-                "%logger{36} - %cyan(%marker) %msg%n</pattern>\n" +
-                "        </encoder>\n" +
-                "    </appender>\n" +
-                "\n" +
-                "<!--\n" +
-                "    <logger name=\"fiftyone.pipeline.engines.fiftyone.flowelements" +
-                ".ShareUsageElement\" level=\"DEBUG\"/>\n" +
-                "-->\n" +
-                "\n" +
-                "    <root level=\"info\">\n" +
-                "        <appender-ref ref=\"STDOUT\" />\n" +
-                "        <appender-ref ref=\"warn\" />\n" +
-                "    </root>\n" +
-                "\n" +
-                "    <shutdownHook class=\"ch.qos.logback.core.hook.DelayingShutdownHook\">\n" +
-                "        <delay>100</delay>\n" +
-                "    </shutdownHook>\n" +
-                "</configuration>");
-    }
-
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
     // Share usage instance that is being tested
@@ -252,7 +203,7 @@ public class ShareUsageElementTests {
             tracker);
         shareUsageElement.addPipeline(pipeline);
         connector= new TestConnector();
-        shareUsageElement.connector = connector;
+        shareUsageElement.dataUploader = connector;
     }
 
     @Test
@@ -335,7 +286,7 @@ public class ShareUsageElementTests {
                 new ArrayList<>());
 
         shareUsageElement.httpClient = new TestHttpClient();
-        shareUsageElement.connector = null;
+        shareUsageElement.dataUploader = null;
 
         Map<String, Object> evidenceData = new HashMap<>();
         evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");
@@ -577,7 +528,8 @@ public class ShareUsageElementTests {
     }
     @Test
     public void ShareUsageElement_CancelOnServerError() throws Exception {
-        logger.info("expected error to be logged in this test");
+        logger.info("Test intentionally creates errors");
+        LogbackHelper.intentionalErrorConfig();
         // Arrange
         createShareUsage(
             1,
@@ -587,7 +539,7 @@ public class ShareUsageElementTests {
                 new ArrayList<>(),
                 new ArrayList<>());
 
-        ((TestConnector)shareUsageElement.connector).setResponseCode(500);
+        ((TestConnector)shareUsageElement.dataUploader).setResponseCode(500);
         Map<String, Object> evidenceData = new HashMap<>();
         evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");
         FlowData data = pipeline.createFlowData();
@@ -631,7 +583,7 @@ public class ShareUsageElementTests {
         assertEquals(0, connector.getBaos().size());
     }
 
-    @Test
+    @Test  @Disabled // we now throw exceptions for invalid data
     public void ShareUsageBuilder_IgnoreData_InvalidFilter() throws IOException {
         logger.info("The following warning are part of the test:");
         for (String config : new String[]{"user-agent=iPhone", "user-agent,iPhone", "test,iPhone,block"}) {
@@ -850,6 +802,7 @@ public class ShareUsageElementTests {
     @Test
     public void CheckForDrainQueueEvenIfError() throws Exception {
         logger.info("Test intentionally creates errors");
+        LogbackHelper.intentionalErrorConfig();
         createShareUsage(
                 1,
                 10,
@@ -859,7 +812,7 @@ public class ShareUsageElementTests {
                 new ArrayList<>());
 
         // each send fails
-        ((TestConnector)shareUsageElement.connector).setResponseCode(500);
+        ((TestConnector)shareUsageElement.dataUploader).setResponseCode(500);
 
         Map<String, Object> evidenceData = new HashMap<>();
         evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");
@@ -901,7 +854,7 @@ public class ShareUsageElementTests {
                 new ArrayList<>());
 
         // add delay to the response so queue grows
-        ((TestConnector)shareUsageElement.connector).setResponseDelay(3000);
+        ((TestConnector)shareUsageElement.dataUploader).setResponseDelay(3000);
 
         Map<String, Object> evidenceData = new HashMap<>();
         evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");

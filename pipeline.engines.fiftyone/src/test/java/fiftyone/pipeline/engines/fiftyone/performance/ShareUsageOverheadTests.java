@@ -32,10 +32,12 @@ import fiftyone.pipeline.engines.fiftyone.flowelements.ShareUsageElement;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 import fiftyone.pipeline.engines.services.HttpClient;
 import fiftyone.pipeline.engines.testhelpers.flowelements.EmptyEngineBuilder;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -43,25 +45,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ShareUsageOverheadTests {
-
+    static Logger logger = LoggerFactory.getLogger("testLogger");
     private Pipeline pipeline;
-    private Pipeline baselinePipeline;
-    private AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine;
 
     @SuppressWarnings("unchecked")
     @BeforeEach
     public void Initialise() throws Exception {
-        ILoggerFactory loggerFactory = mock(ILoggerFactory.class);
-        Logger logger = mock(Logger.class);
-        when(logger.isDebugEnabled()).thenReturn(false);
-        when(loggerFactory.getLogger(anyString())).thenReturn(logger);
 
         HttpClient httpClient = mock(HttpClient.class);
         HttpURLConnection connection = mock(HttpURLConnection.class);
@@ -72,9 +66,11 @@ public class ShareUsageOverheadTests {
         when(connection.getResponseCode()).thenReturn(200);
         when(connection.getResponseMessage()).thenReturn("");
 
-        engine = new EmptyEngineBuilder(loggerFactory)
-            .setProcessCost(0)
-            .build();
+        ILoggerFactory loggerFactory = LoggerFactory.getILoggerFactory();
+        AspectEngine<? extends AspectData, ? extends AspectPropertyMetaData> engine =
+                new EmptyEngineBuilder(loggerFactory)
+                .setProcessCost(0)
+                .build();
 
         ShareUsageElement shareUsage =
             new ShareUsageBuilder(loggerFactory)
@@ -84,50 +80,19 @@ public class ShareUsageOverheadTests {
             .addFlowElement(engine)
             .addFlowElement(shareUsage)
             .build();
-        baselinePipeline = (new PipelineBuilder(loggerFactory)
-            .addFlowElement(engine)
-            .build());
-    }
-
-    private double getTime(int iterations, int headers, Pipeline pipeline) {
-        List<FlowData> data = new ArrayList<>();
-        for (int i = 0; i < iterations; i++) {
-            FlowData flowData = pipeline.createFlowData();
-            for (int j = 0; j < headers; j++) {
-                flowData.addEvidence("header." + Integer.toString(j), j);
-            }
-            flowData.addEvidence("header.user-agent", "Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7B405");
-            data.add(flowData);
-        }
-        long start = System.currentTimeMillis();
-        for (FlowData entry : data) {
-            entry.process();
-        }
-        long end = System.currentTimeMillis();
-        
-        // It is not efficient to use try-with-resources
-        // in this scenario, so loop through and perform
-        // manual close on each FlowData
-        data.forEach((f) -> { 
-            try {
-                f.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-
-        return ((double)end - (double)start) / (double)iterations;
     }
 
     @Test
     public void ShareUsageOverhead_SingleEvidence() {
-        int iterations = 10000;
+        int iterations = 10_000;
+        double maxOverheadPerCall = 0.1;
         List<FlowData> data = new ArrayList<>();
         for (int i = 0; i < iterations; i++) {
             FlowData flowData = pipeline.createFlowData();
             flowData.addEvidence("header.user-agent", "Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7B405");
             data.add(flowData);
         }
+
         long start = System.currentTimeMillis();
         for (FlowData entry : data) {
             entry.process();
@@ -145,21 +110,24 @@ public class ShareUsageOverheadTests {
             }
         });
 
-        double msOverheadPerCall = (end - start) / iterations;
-        System.out.println("ShareUsageOverhead_SingleEvidence: " + msOverheadPerCall + "ms per call");
-        assumeTrue(msOverheadPerCall < 0.1,
+        double msOverheadPerCall = (double)(end - start) / iterations;
+		System.out.println("ShareUsageOverhead_SingleEvidence: " + msOverheadPerCall + "ms per call");
+        logger.info("Overhead was {} millis", msOverheadPerCall);
+        Assertions.assertTrue(msOverheadPerCall < maxOverheadPerCall,
                 "Pipeline with share usage overhead per Process call was " +
-                        msOverheadPerCall + "ms. Maximum permitted is 0.1ms");
+                        msOverheadPerCall + "ms. Maximum permitted is " + maxOverheadPerCall);
     }
 
     @Test
-    public void ShareUsageOverhead_HundredEvidence() {
-        int iterations = 1000;
+    public void ShareUsageOverhead_ThousandEvidence() {
+        int iterations = 1_000;
+        int evidenceCount = 1_000;
+        int maxOverheadPerCallMillis = 10;
         List<FlowData> data = new ArrayList<>();
         for (int i = 0; i < iterations; i++) {
             FlowData flowData = pipeline.createFlowData();
-            for (int j = 0; j < 100; j++) {
-                flowData.addEvidence("header." + Integer.toString(j), j);
+            for (int j = 0; j < evidenceCount; j++) {
+                flowData.addEvidence("header." + j, j);
             }
             flowData.addEvidence("header.user-agent", "Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7B405");
             data.add(flowData);
@@ -181,10 +149,11 @@ public class ShareUsageOverheadTests {
             }
         });
 
-        double msOverheadPerCall = ((double)end - (double)start) / (double)iterations;
-        System.out.println("ShareUsageOverhead_HundredEvidence: " + msOverheadPerCall + "ms per call");
-        assumeTrue(msOverheadPerCall < 10,
+        double msOverheadPerCall = (double)(end - start) / iterations;
+		System.out.println("ShareUsageOverhead_HundredEvidence: " + msOverheadPerCall + "ms per call");
+        logger.info("Overhead was {} millis", msOverheadPerCall);
+        Assertions.assertTrue(msOverheadPerCall < maxOverheadPerCallMillis,
                 "Pipeline with share usage overhead per Process call was " +
-                        msOverheadPerCall + "ms. Maximum permitted is 10ms");
+                msOverheadPerCall + "ms. Maximum permitted is " + maxOverheadPerCallMillis);
     }
 }

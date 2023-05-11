@@ -23,19 +23,16 @@
 package pipeline.developerexamples.usagesharing;
 
 import fiftyone.pipeline.core.configuration.PipelineOptions;
-import fiftyone.pipeline.core.data.FlowData;
+import fiftyone.pipeline.core.configuration.PipelineOptionsFactory;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.flowelements.PipelineBuilder;
-import fiftyone.pipeline.engines.fiftyone.flowelements.ShareUsageElement;
-import fiftyone.pipeline.engines.fiftyone.flowelements.ShareUsageBuilder;
 import fiftyone.pipeline.engines.services.HttpClient;
 import fiftyone.pipeline.engines.services.HttpClientDefault;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.LoggerFactory;
 
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.Unmarshaller;
 import java.io.File;
+import java.util.Objects;
 
 /**
  * @example usagesharing/Main.java
@@ -87,11 +84,9 @@ public class Main {
             System.out.println();
 
             // Create the configuration object from an XML file
-            File file = new File(getClass().getClassLoader().getResource("51d.xml").getFile());
-            JAXBContext jaxbContext = JAXBContext.newInstance(PipelineOptions.class);
-            Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
-            // Bind the configuration to a pipeline options instance
-            PipelineOptions options = (PipelineOptions)unmarshaller.unmarshal(file);
+            PipelineOptions options = PipelineOptionsFactory.getOptionsFromFile(
+                    new File(Objects.requireNonNull(getClass().getClassLoader().
+                            getResource("51d.xml")).getFile()));
 
             // Build a new Pipeline from the configuration.
             Pipeline pipeline = new PipelineBuilder()

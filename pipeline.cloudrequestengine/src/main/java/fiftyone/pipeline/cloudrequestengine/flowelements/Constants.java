@@ -28,5 +28,6 @@ public class Constants {
 		"https://cloud.51degrees.com/api/v4";
 	// Environment variable name to set end point
 	public static final String FOD_CLOUD_API_URL = "FOD_CLOUD_API_URL";
+	public static final int DEFAULT_TIMEOUT_MILLIS = 100000;
 	
 }

@@ -44,8 +44,10 @@ public class EmptyEngine
     private long processCost = 0;
     private Exception exception = null;
     private List<AspectPropertyMetaData> properties = null;
-    private EvidenceKeyFilterWhitelist evidnceWhitelist =
+    private EvidenceKeyFilterWhitelist evidenceWhitelist =
         new EvidenceKeyFilterWhitelist(Arrays.asList("test.value"));
+
+    private final TypedKey<EmptyEngineData> typedKey = new TypedKeyDefault<>(getElementDataKey(), EmptyEngineData.class);
 
     public EmptyEngine(
         Logger logger,
@@ -58,6 +60,10 @@ public class EmptyEngine
         );
     }
 
+
+    public long getProcessCost() {
+        return processCost;
+    }
     public void setProcessCost(long milliseconds) {
         processCost = milliseconds;
     }
@@ -78,12 +84,12 @@ public class EmptyEngine
 
     @Override
     public TypedKey<EmptyEngineData> getTypedDataKey() {
-        return new TypedKeyDefault<>(getElementDataKey(), EmptyEngineData.class);
+        return typedKey;
     }
 
     @Override
     public EvidenceKeyFilter getEvidenceKeyFilter() {
-        return evidnceWhitelist;
+        return evidenceWhitelist;
     }
 
     @Override

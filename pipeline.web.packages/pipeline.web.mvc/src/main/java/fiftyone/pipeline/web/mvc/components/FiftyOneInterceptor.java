@@ -38,13 +38,15 @@ import fiftyone.pipeline.web.mvc.services.UACHService;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
-import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Unmarshaller;
+import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
+
 import java.io.File;
 
 import static fiftyone.pipeline.web.Constants.CORE_JS_NAME;

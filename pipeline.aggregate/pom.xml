@@ -38,7 +38,7 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>pipeline.web.mvc</artifactId>
+            <artifactId>pipeline.web</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

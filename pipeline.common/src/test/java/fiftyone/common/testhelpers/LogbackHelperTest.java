@@ -1,6 +1,6 @@
 /*
  * This Original Work is copyright of 51 Degrees Mobile Experts Limited.
- * Copyright 2022 51 Degrees Mobile Experts Limited, Davidson House,
+ * Copyright 2023 51 Degrees Mobile Experts Limited, Davidson House,
  * Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
  *
  * This Original Work is licensed under the European Union Public Licence
@@ -20,24 +20,27 @@
  *   such notice(s) shall fulfill the requirements of that article.
  */
 
-package fiftyone.pipeline.javascriptbuilder;
+package fiftyone.common.testhelpers;
 
-public class Constants {
-    public static final String EVIDENCE_HOST_KEY = 
-            fiftyone.pipeline.core.Constants.EVIDENCE_HTTPHEADER_PREFIX +
-            fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR +
-            "Host";
-    
-    public static final String EVIDENCE_OBJECT_NAME_SUFFIX =
-            "fod-js-object-name";
-    
-    public static final String EVIDENCE_OBJECT_NAME = 
-             fiftyone.pipeline.core.Constants.EVIDENCE_QUERY_PREFIX +
-             fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR +
-            EVIDENCE_OBJECT_NAME_SUFFIX;
-    
-    public static final String DEFAULT_PROTOCOL = "https";
-    
-    public static final String TEMPLATE = "/fiftyone/pipeline/javascriptbuilder/templates/JavaScriptResource.mustache";
-    public static final String DEFAULT_OBJECT_NAME = "fod";
+import org.junit.Ignore;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class LogbackHelperTest {
+    Logger logger = LoggerFactory.getLogger(this.getClass());
+    @Test @Ignore
+    // this test is ignored so as not to print red error messages, you have
+    // to run it "manually" to see that it works
+    public void testIntentional() {
+        LogbackHelper.defaultConfig();
+        logger.warn("Warning");
+        logger.error("Error");
+        LogbackHelper.intentionalErrorConfig();
+        logger.warn("Warning");
+        logger.error("Error");
+        LogbackHelper.defaultConfig();
+        logger.warn("Warning");
+        logger.error("Error");
+    }
 }
