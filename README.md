@@ -6,7 +6,10 @@
 
 ## Introduction
 This repository contains all the projects required to build the Java implementation of the 51Degrees Pipeline API.
-Individual engines (For example, device detection) may be in separate repositories.
+
+The [specification](https://github.com/51Degrees/specifications/blob/main/pipeline-specification/README.md)
+is also available on GitHub and is recommended reading if you wish to understand
+the concepts and design of this API.
 
 Reference documentation for the Java implementation can be found on the
 [Java API documentation](https://51degrees.com/pipeline-java/index.html) page.
