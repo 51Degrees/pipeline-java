@@ -111,6 +111,7 @@ public class ShareUsageOverheadTests {
         });
 
         double msOverheadPerCall = (double)(end - start) / iterations;
+		System.out.println("ShareUsageOverhead_SingleEvidence: " + msOverheadPerCall + "ms per call");
         logger.info("Overhead was {} millis", msOverheadPerCall);
         Assertions.assertTrue(msOverheadPerCall < maxOverheadPerCall,
                 "Pipeline with share usage overhead per Process call was " +
@@ -149,6 +150,7 @@ public class ShareUsageOverheadTests {
         });
 
         double msOverheadPerCall = (double)(end - start) / iterations;
+		System.out.println("ShareUsageOverhead_HundredEvidence: " + msOverheadPerCall + "ms per call");
         logger.info("Overhead was {} millis", msOverheadPerCall);
         Assertions.assertTrue(msOverheadPerCall < maxOverheadPerCallMillis,
                 "Pipeline with share usage overhead per Process call was " +

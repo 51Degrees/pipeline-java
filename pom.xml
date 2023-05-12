@@ -56,6 +56,7 @@
         <module>pipeline.jsonbuilder</module>
         <module>pipeline.web.packages</module>
         <module>pipeline.aggregate</module>
+        <module>pipeline.developer-examples</module>
     </modules>
 
     <properties>
@@ -68,7 +69,7 @@
         <slf4j-api.version>1.7.33</slf4j-api.version>
         <logback-classic.version>1.2.10</logback-classic.version>
         <mockito-core.version>4.3.1</mockito-core.version>
-        <org.json.version>20230227</org.json.version>
+        <org.json.version>20211205</org.json.version>
         <reflections8.version>0.11.7</reflections8.version>
         <commons-text.version>1.10.0</commons-text.version>
 
@@ -76,11 +77,10 @@
         <jaxb-runtime.version>3.0.2</jaxb-runtime.version>
         <jaxb-impl.version>3.0.2</jaxb-impl.version>
 
-        <mustache-compiler.version>0.9.10</mustache-compiler.version>
+        <mustache-compiler.version>0.8.18</mustache-compiler.version>
         <graal-js-scriptengine.version>22.0.0.2</graal-js-scriptengine.version>
         <graal-js.version>22.0.0.2</graal-js.version>
 
-        <spring-webmvc.version>5.2.22.RELEASE</spring-webmvc.version>
         <maven-compiler-plugin.version>3.9.0</maven-compiler-plugin.version>
         <exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
         <nexus-staging-maven-plugin.version>1.6.13</nexus-staging-maven-plugin.version>
@@ -213,7 +213,8 @@
                 <extensions>true</extensions>
                 <configuration>
                     <serverId>${publishrepository.id}</serverId>
-                    <nexusUrl>${publishrepository.baseurl}</nexusUrl>
+                    <nexusUrl>${ossrh.baseurl}</nexusUrl>
+                    <altStagingDirectory>${user.home}/.m2</altStagingDirectory>
                 </configuration>
             </plugin>
             <plugin>
@@ -234,6 +235,8 @@
                 <version>${maven-surefire-plugin.version}</version>
                 <configuration>
                     <useSystemClassLoader>false</useSystemClassLoader>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    
                     <systemPropertyVariables>
                         <!-- this tells all tests run via surefire to pick their logback config up from the root -->
                         <!-- fwiw does not affect those run via main() which need to find their config by other means -->

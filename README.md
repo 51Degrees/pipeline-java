@@ -21,7 +21,7 @@ the JDK versions that we currently test against. The software may run fine again
 but additional caution should be applied.
 
 ## Contents
-
+ 
 - pipeline.common - Some shared library classes.
 - pipeline.caching - 51Degrees' caching interfaces and high-performance LRU implementation.
 - pipeline.core - The core software that comprises the Pipeline API. 
@@ -33,7 +33,7 @@ but additional caution should be applied.
 
 Packages can be found on Maven under the group [com.51degrees](https://mvnrepository.com/artifact/com.51degrees).
 
-Alternatively clone this git repository and in the root run `mvn install` to build and install the packages locally.
+Alternatively clone this git repository and in the root run `mvn install` to build and install the packages locally. 
 
 ## Tests
 
