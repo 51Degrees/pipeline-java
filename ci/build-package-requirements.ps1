@@ -4,7 +4,7 @@ param(
     [string]$Name
 )
 
-./java/build-package-requirements.ps1 -RepoName "pipeline-java" -ProjectDir $ProjectDir -Name $Name 
+Write-Output "No PreBuild needed"
 
 
 exit $LASTEXITCODE
