@@ -1,11 +1,12 @@
 
 param(
     [string]$ProjectDir = ".",
-    [string]$Name
+    [string]$Name,
+    [Parameter(Mandatory=$true)]
+    [string]$RepoName
 )
 
 
-$RepoName = "pipeline-java"
 
 ./java/run-performance-tests.ps1 -RepoName $RepoName -ProjectDir $ProjectDir -Name $Name -TestName "ShareUsageOverheadTests"
 
