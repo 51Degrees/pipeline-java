@@ -1,24 +1,17 @@
 
 param(
+    [Parameter(Mandatory=$true)]
+    [string]$RepoName,
     [string]$ProjectDir = ".",
     [string]$Name,
+    [Parameter(Mandatory=$true)]
     [string]$Version,
     [Parameter(Mandatory=$true)]
-    [string]$JavaGpgKeyPassphrase,
-    [Parameter(Mandatory=$true)]
-    [string]$CodeSigningCert,
-    [Parameter(Mandatory=$true)]
-    [string]$JavaPGP,
-    [Parameter(Mandatory=$true)]
-    [string]$CodeSigningCertAlias,
-    [Parameter(Mandatory=$true)]
-    [string]$CodeSigningCertPassword,
-    [Parameter(Mandatory=$true)]
-    [string]$MavenSettings
+    [Hashtable]$Keys
 )
 
 
-./java/build-package.ps1 -RepoName "pipeline-java" -ProjectDir $ProjectDir -Name $Name -Version $Version -JavaGpgKeyPassphrase $JavaGpgKeyPassphrase -CodeSigningCert $CodeSigningCert -JavaPGP $JavaPGP -CodeSigningCertAlias $CodeSigningCertAlias -CodeSigningCertPassword $CodeSigningCertPassword -MavenSettings $MavenSettings
+./java/build-package.ps1 -RepoName $RepoName -ProjectDir $ProjectDir -Name $Name -Version $Version -ExtraArgs "-DskipNativeBuild=true" -JavaGpgKeyPassphrase $Keys['JavaGpgKeyPassphrase'] -CodeSigningCert $Keys['CodeSigningCert'] -JavaPGP $Keys['JavaPGP'] -CodeSigningCertAlias $Keys['CodeSigningCertAlias'] -CodeSigningCertPassword $Keys['CodeSigningCertPassword'] -MavenSettings $Keys['MavenSettings'] 
 
 
 exit $LASTEXITCODE
