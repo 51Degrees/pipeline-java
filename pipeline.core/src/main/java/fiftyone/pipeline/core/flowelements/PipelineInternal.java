@@ -29,6 +29,7 @@ import fiftyone.pipeline.core.exceptions.PipelineDataException;
 /**
  * Internal interface for a pipeline.
  * Allows {@link FlowData} to call the pipeline's process method.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/conceptual-overview.md#pipeline">Specification</a>
  */
 public interface PipelineInternal extends Pipeline {
 

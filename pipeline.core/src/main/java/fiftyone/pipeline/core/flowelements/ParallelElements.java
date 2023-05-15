@@ -32,6 +32,7 @@ import java.util.concurrent.*;
 
 /**
  * ParallelElements executes it's child {@link FlowElement} objects in parallel.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/advanced-features/parallel-processing.md">Specification</a>
  */
 @SuppressWarnings("rawtypes")
 class ParallelElements

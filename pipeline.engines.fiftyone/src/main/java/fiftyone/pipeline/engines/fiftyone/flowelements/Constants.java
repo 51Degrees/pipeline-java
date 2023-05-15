@@ -58,8 +58,14 @@ public class Constants {
         fiftyone.pipeline.core.Constants.EVIDENCE_QUERY_PREFIX +
             fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR +
             EVIDENCE_SEQUENCE_SUFIX;
+    public static final int SHARE_USAGE_DEFAULT_REPEAT_EVIDENCE_MINUTES = 20;
+    public static final double SHARE_USAGE_DEFAULT_SHARE_PERCENTAGE = 1.0;
 
     /**
+     * The minimum number of entries to be sent when sharing data
+     */
+    static final int SHARE_USAGE_DEFAULT_MIN_ENTRIES_PER_MESSAGE = 50;
+     /**
      * The default maximum size of the usage data queue which is stored before
      * sending to the remote service.
      */

@@ -33,7 +33,8 @@ import static fiftyone.pipeline.engines.fiftyone.flowelements.SetHeadersElement.
 import java.util.Map;
 
 /**
- * Service to set UACH request headers in the response
+ * Service to set HTTP headers in the response
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/web-integration.md#setting-response-headers">Specification</a>
  */
 public interface UACHServiceCore {
 

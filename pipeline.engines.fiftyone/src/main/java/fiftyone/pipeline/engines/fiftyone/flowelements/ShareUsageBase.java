@@ -51,6 +51,7 @@ import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.LOST_DAT
 /**
  * Abstract base class for ShareUsage elements. Contains common functionality
  * such as filtering the evidence and building the XML records.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/pipeline-elements/usage-sharing-element.md">Specification</a>
  */
 public abstract class ShareUsageBase
     extends FlowElementBase<ElementData, ElementPropertyMetaData> {
@@ -163,7 +164,7 @@ public abstract class ShareUsageBase
      * evidence from a request matches that in the tracker but this interval has
      * elapsed then the tracker will track it as new evidence.
      */
-    private final long interval;
+    private final long intervalMillis;
 
     /**
      * The approximate proportion of requests to be shared.
@@ -401,9 +402,7 @@ public abstract class ShareUsageBase
         this.takeTimeout = takeTimeout;
         this.sharePercentage = sharePercentage;
         this.minEntriesPerMessage = minimumEntriesPerMessage;
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.MINUTE, 20);
-        this.interval = calendar.getTimeInMillis();
+        this.intervalMillis = (long) repeatEvidenceIntervalMinutes * 60 * 1000;
         this.shareUsageUrl = shareUsageUrl;
 
         // Some data is going to stay the same on all requests so we can
@@ -432,7 +431,7 @@ public abstract class ShareUsageBase
                 1000);
             this.tracker = new ShareUsageTracker(
                 cacheConfiguration,
-                interval,
+                    intervalMillis,
                 new EvidenceKeyFilterShareUsage(
                     blockedHttpHeaders, includedQueryStringParameters, trackSession, sessionCookieName));
         }

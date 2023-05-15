@@ -39,8 +39,7 @@ import java.util.List;
  * any errors that may be thrown, and calls the abstract
  * {@link #processInternal(FlowData)} method to do the actual processing.
  * <p>
- * This class is primarily of use to creators of FlowElement subclasses, end
- * users of {@link Pipeline}s are unlikely to use this class in its raw form.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/conceptual-overview.md#flow-element">Specification</a>
  *
  * @param <TData>     the type of element data that the flow element will write to
  *                    {@link FlowData}

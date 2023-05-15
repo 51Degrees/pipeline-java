@@ -38,6 +38,7 @@ import static fiftyone.pipeline.core.Constants.*;
  * {@link HttpServletRequest} ready for it to be processed by the Pipeline.
  * The Pipeline's {@link EvidenceKeyFilter} is used to determine what should be
  * collected from the request.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/web-integration.md#populating-evidence">Specification</a>
  */
 public interface WebRequestEvidenceServiceCore {
 

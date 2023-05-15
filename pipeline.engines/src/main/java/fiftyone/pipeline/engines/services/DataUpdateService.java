@@ -33,10 +33,7 @@ import java.io.Closeable;
 
 /**
  * The data update service keeps {@link AspectEngine}’s data files up to date.
- * Some engines use data files in their processing, which need to be kept up to
- * date. The data update service is designed so that no user input is required,
- * the data files will all be downloaded and updated automatically for engines
- * that register themselves with the service.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/data-updates.md">Specification</a>
  */
 public interface DataUpdateService extends Closeable, PipelineService {
 

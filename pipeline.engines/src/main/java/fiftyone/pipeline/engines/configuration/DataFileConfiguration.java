@@ -29,7 +29,8 @@ import java.util.List;
 
 /**
  * Interface representing the configuration parameters controlling the automatic
- * update checks for a specific data file.
+ * update checks for a specific data file. * 
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/data-updates.md">Specification</a>
  */
 public interface DataFileConfiguration {
 

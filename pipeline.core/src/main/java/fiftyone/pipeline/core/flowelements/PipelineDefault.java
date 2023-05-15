@@ -37,8 +37,9 @@ import java.util.stream.Collectors;
 
 /**
  * A pipeline is used to create {@link FlowData} instances which then
- * automatically use the pipeline when their {@link FlowData#process()} method
+ * use that pipeline when their {@link FlowData#process()} method
  * is called.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/conceptual-overview.md#pipeline">Specification</a>
  */
 @SuppressWarnings("rawtypes")
 class PipelineDefault implements PipelineInternal {

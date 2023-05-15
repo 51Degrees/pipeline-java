@@ -38,6 +38,7 @@ import java.util.List;
 /**
  * Abstract base class for all Pipeline builders. The default implementation is
  * {@link PipelineBuilder}.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/conceptual-overview.md#pipeline-builder">Specification</a>
  * @param <T> the builder type
  */
 

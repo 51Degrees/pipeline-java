@@ -51,9 +51,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Base class for 51Degrees cloud aspect engines.
- * Contains functionality for getting property meta-data and exposing
- * that information to callers.
+ * Base class for 51Degrees Cloud Aspect Engines
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/pipeline-elements/cloud-aspect-engine.md">Specification</a>
  */
 public abstract class CloudAspectEngineBase<TData extends AspectData>
     extends AspectEngineBase<TData, AspectPropertyMetaData>

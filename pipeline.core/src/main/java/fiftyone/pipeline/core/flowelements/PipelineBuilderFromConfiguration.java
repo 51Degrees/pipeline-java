@@ -27,6 +27,7 @@ import fiftyone.pipeline.core.configuration.PipelineOptions;
 /**
  * Pipeline builders implementing this interface are capable of building a
  * {@link Pipeline} based on a supplied {@link PipelineOptions} instance.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/pipeline-configuration.md">Specification</a>
  */
 public interface PipelineBuilderFromConfiguration {
 

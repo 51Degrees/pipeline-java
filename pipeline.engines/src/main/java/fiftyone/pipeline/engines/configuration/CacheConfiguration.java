@@ -28,10 +28,11 @@ import fiftyone.caching.LruPutCache;
 /**
  * Contains everything needed to build a cache.
  * Currently, a {@link CacheBuilder} and an integer size parameter.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/caching.md">Specification</a>
  */
 public class CacheConfiguration {
 
-    private static final int defaultSize = 1000;
+    public static final int defaultSize = 1000;
 
     private final CacheBuilder builder;
 
@@ -53,7 +54,7 @@ public class CacheConfiguration {
      * @param size maximum size of the cache
      */
     public CacheConfiguration(int size) {
-        this(new LruPutCache.Builder(), defaultSize);
+        this(new LruPutCache.Builder(), size);
     }
 
     /**

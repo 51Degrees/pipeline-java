@@ -31,6 +31,7 @@ import java.util.List;
 /**
  * This class contains the automatic update configuration parameters that can be
  * supplied to an engine for a particular data file that the engine uses.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/data-updates.md">Specification</a>
  */
 public class DataFileConfigurationDefault implements DataFileConfiguration {
     private String identifier = "Default";
@@ -38,17 +39,17 @@ public class DataFileConfigurationDefault implements DataFileConfiguration {
     private boolean createTempDataCopy;
     private byte[] data;
     private String dataUpdateUrl;
-    private boolean autoUpdatesEnabled = true;
+    private boolean autoUpdatesEnabled = Constants.DEFAULT_AUTOUPDATE_ENABLED;
     private List<String> licenseKeys;
     private WatchKey watchKey;
-    private boolean watcherEnabled = true;
+    private boolean watcherEnabled = Constants.DEFAULT_WATCHER_ENABLED;
     private int pollingIntervalSeconds = Constants.DATA_UPDATE_POLLING_DEFAULT;
     private int maxRandomization = Constants.DATA_UPDATE_RANDOMISATION_DEFAULT;
     private DataUpdateUrlFormatter urlFormatter = null;
-    private boolean decompress = true;
-    private boolean verifyMd5 = true;
-    private boolean verifyIfModifiedSince = true;
-    private boolean updateOnStartup = false;
+    private boolean decompress = Constants.DEFAULT_DECOMPRESS;
+    private boolean verifyMd5 = Constants.DEFAULT_VERIFY_MD5;
+    private boolean verifyIfModifiedSince = Constants.DEFAULT_VERIFY_IF_MODIFIED_SINCE;
+    private boolean updateOnStartup = Constants.DEFAULT_UPDATE_ON_STARTUP;
 
     @Override
     public String getIdentifier() {

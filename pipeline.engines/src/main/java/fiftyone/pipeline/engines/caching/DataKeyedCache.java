@@ -27,6 +27,7 @@ import fiftyone.pipeline.core.data.FlowData;
 
 /**
  * Represents a put cache where the key is a {@link FlowData} instance.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/caching.md">Specification</a>
  * @param <V> the type of data to store in the cache associated with the
  *           {@link FlowData} key
  */

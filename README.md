@@ -6,7 +6,10 @@
 
 ## Introduction
 This repository contains all the projects required to build the Java implementation of the 51Degrees Pipeline API.
-Individual engines (For example, device detection) may be in separate repositories.
+
+The [specification](https://github.com/51Degrees/specifications/blob/main/pipeline-specification/README.md)
+is also available on GitHub and is recommended reading if you wish to understand
+the concepts and design of this API.
 
 Reference documentation for the Java implementation can be found on the
 [Java API documentation](https://51degrees.com/pipeline-java/index.html) page.
@@ -18,7 +21,7 @@ the JDK versions that we currently test against. The software may run fine again
 but additional caution should be applied.
 
 ## Contents
-
+ 
 - pipeline.common - Some shared library classes.
 - pipeline.caching - 51Degrees' caching interfaces and high-performance LRU implementation.
 - pipeline.core - The core software that comprises the Pipeline API. 
@@ -30,7 +33,7 @@ but additional caution should be applied.
 
 Packages can be found on Maven under the group [com.51degrees](https://mvnrepository.com/artifact/com.51degrees).
 
-Alternatively clone this git repository and in the root run `mvn install` to build and install the packages locally.
+Alternatively clone this git repository and in the root run `mvn install` to build and install the packages locally. 
 
 ## Tests
 

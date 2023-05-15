@@ -28,8 +28,8 @@ import java.util.Map;
 import fiftyone.pipeline.core.exceptions.PipelineDataException;
 
 /**
- * Exception that can be thrown when the available data does not match that
- * which is expected.
+ * Exception that can be thrown by the Cloud Engines
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/exception-handling.md#cloud-request-exception">Specification</a>
  */
 public class CloudRequestException extends PipelineDataException {
     /**

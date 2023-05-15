@@ -36,6 +36,7 @@ import static fiftyone.pipeline.util.StringManipulation.stringJoin;
 
 /**
  * Default implementation of the {@link MissingPropertyService} interface.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/properties.md#missing-properties">Specification</a>
  */
 public class MissingPropertyServiceDefault implements MissingPropertyService {
     /**

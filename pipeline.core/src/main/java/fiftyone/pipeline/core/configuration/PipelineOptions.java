@@ -38,8 +38,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Configuration object that describes how to build a  {@link Pipeline}using a
+ * Configuration object that describes how to build a {@link Pipeline} using a
  * {@link PipelineBuilder}.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/pipeline-configuration.md#pipelines">Specification</a>
  */
 @XmlRootElement(name = "PipelineOptions")
 public class PipelineOptions {

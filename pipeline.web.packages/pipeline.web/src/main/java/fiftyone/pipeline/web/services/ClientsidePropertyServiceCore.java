@@ -52,6 +52,7 @@ import static fiftyone.pipeline.util.StringManipulation.stringJoin;
  * to the pipeline on subsequent requests. This enables more detailed
  * information to be supplied to the application. (e.g. iPhone model for device
  * detection).
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/features/web-integration.md#client-side-features">Specification</a>
  */
 public interface ClientsidePropertyServiceCore {
 

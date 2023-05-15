@@ -32,6 +32,7 @@ import java.util.List;
 /**
  * Aspect engine interface which processes data internally using a data file and
  * populates the results.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/conceptual-overview.md#on-premise-engines">Specification</a>
  * @param <TData> the type of aspect data that the flow element will write to
  * @param <TProperty> the type of meta data that the flow element will supply
  *                    about the properties it populates.

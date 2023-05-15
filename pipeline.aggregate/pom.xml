@@ -27,7 +27,7 @@
     <parent>
         <artifactId>pipeline</artifactId>
         <groupId>com.51degrees</groupId>
-        <version>4.4.12</version>
+        <version>4.4.13-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -38,7 +38,7 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>pipeline.web.mvc</artifactId>
+            <artifactId>pipeline.web</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

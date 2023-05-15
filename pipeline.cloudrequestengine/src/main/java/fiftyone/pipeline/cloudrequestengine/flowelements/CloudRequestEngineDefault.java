@@ -54,10 +54,8 @@ import static fiftyone.pipeline.cloudrequestengine.Constants.Messages.*;
 import static fiftyone.pipeline.util.StringManipulation.stringJoin;
 
 /**
- * Engine that makes requests to the 51Degrees cloud service based on the
- * details passed at creation and the evidence in the FlowData instance. The
- * unprocessed JSON response is stored in the FlowData for other engines to make
- * use of.
+ * Engine that makes requests to the 51Degrees cloud service.
+ * @see <a href="https://github.com/51Degrees/specifications/blob/main/pipeline-specification/pipeline-elements/cloud-request-engine.md">Specification</a>
  */
 public class CloudRequestEngineDefault
     extends AspectEngineBase<CloudRequestData, AspectPropertyMetaData>

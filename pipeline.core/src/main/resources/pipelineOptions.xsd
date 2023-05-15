@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:annotation>
+    <xs:documentation>This is an XML schema for 51Degrees pipeline options</xs:documentation>
+  </xs:annotation>
+  <xs:element name="PipelineOptions" type="PipelineOptionsType"/>
+  <xs:complexType name="BuildParametersType">
+    <xs:sequence minOccurs="1" maxOccurs="unbounded">
+      <xs:any processContents="skip"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ElementType">
+    <xs:choice>
+      <xs:sequence>
+        <xs:element name="BuilderName"/>
+        <xs:element type="BuildParametersType" name="BuildParameters" minOccurs="0"/>
+      </xs:sequence>
+      <xs:sequence>
+        <xs:element type="BuildParametersType" name="BuildParameters" />
+        <xs:element name="BuilderName" />
+      </xs:sequence>
+    </xs:choice>
+  </xs:complexType>
+  <xs:complexType name="ElementsType">
+    <xs:sequence>
+      <xs:element type="ElementType" name="Element" maxOccurs="unbounded" minOccurs="1"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="PipelineOptionsType">
+    <xs:choice>
+      <xs:sequence>
+        <xs:element type="BuildParametersType" name="BuildParameters" />
+        <xs:element type="ElementsType" name="Elements" />
+      </xs:sequence>
+      <xs:sequence>
+        <xs:element type="ElementsType" name="Elements" />
+        <xs:element type="BuildParametersType" name="BuildParameters" minOccurs="0"/>
+      </xs:sequence>
+    </xs:choice>
+  </xs:complexType>
+</xs:schema>
