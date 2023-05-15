@@ -1,10 +1,12 @@
 
 param (
     [Parameter(Mandatory=$true)]
-    [string]$VariableName
+    [string]$VariableName,
+    [Parameter(Mandatory=$true)]
+    [string]$RepoName
 )
 
-./java/get-next-package-version.ps1 -RepoName "pipeline-java" -VariableName $VariableName
+./java/get-next-package-version.ps1 -RepoName $RepoName -VariableName $VariableName
 
 
 exit $LASTEXITCODE
