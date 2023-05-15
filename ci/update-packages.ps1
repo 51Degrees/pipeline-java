@@ -1,10 +1,12 @@
 
 param(
     [string]$ProjectDir = ".",
-    [string]$Name
+    [string]$Name,
+    [Parameter(Mandatory=$true)]
+    [string]$RepoName
 )
 
-./java/run-update-dependencies.ps1 -RepoName "pipeline-java" -ProjectDir $ProjectDir -Name $Name
+./java/run-update-dependencies.ps1 -RepoName $RepoName -ProjectDir $ProjectDir -Name $Name
 
 exit $LASTEXITCODE
 
