@@ -1,0 +1,4 @@
+<map id="fiftyone.pipeline.web.services.FlowDataProviderCore.Default" name="fiftyone.pipeline.web.services.FlowDataProviderCore.Default">
+<area shape="rect" id="node1" title="Default implementation of the FlowDataProviderCore service." alt="" coords="5,95,225,136"/>
+<area shape="rect" id="node2" href="$interfacefiftyone_1_1pipeline_1_1web_1_1services_1_1_flow_data_provider_core.html" title="Provider to be injected into controllers to get the pre&#45;processed FlowData for the request being serv..." alt="" coords="5,5,225,47"/>
+</map>

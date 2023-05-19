@@ -1,0 +1,5 @@
+<map id="fiftyone.pipeline.core.data.FlowData" name="fiftyone.pipeline.core.data.FlowData">
+<area shape="rect" id="node1" title="A closeable structure to contain the inputs and outputs of Pipeline processing." alt="" coords="35,80,231,121"/>
+<area shape="rect" id="node3" title="Default implementation of the FlowData interface." alt="" coords="5,169,260,211"/>
+<area shape="rect" id="node2" title=" " alt="" coords="75,5,191,32"/>
+</map>

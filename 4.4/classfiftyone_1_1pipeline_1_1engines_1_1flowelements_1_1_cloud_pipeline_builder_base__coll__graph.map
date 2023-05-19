@@ -1,0 +1,12 @@
+<map id="fiftyone.pipeline.engines.flowelements.CloudPipelineBuilderBase&lt; TBuilder extends CloudPipelineBuilderBase&lt; TBuilder &gt;" name="fiftyone.pipeline.engines.flowelements.CloudPipelineBuilderBase&lt; TBuilder extends CloudPipelineBuilderBase&lt; TBuilder &gt;">
+<area shape="rect" id="node1" title="Base class for pipeline builders that will produce a pipeline with specific flow elements." alt="" coords="2076,159,2355,230"/>
+<area shape="rect" id="node2" href="$classfiftyone_1_1pipeline_1_1engines_1_1flowelements_1_1_pre_packaged_pipeline_builder_base.html" title=" " alt="" coords="1748,167,2027,223"/>
+<area shape="rect" id="node3" href="$classfiftyone_1_1pipeline_1_1engines_1_1flowelements_1_1_pre_packaged_pipeline_builder_base.html" title="Base class for pipeline builders that will produce a pipeline with specific flow elements." alt="" coords="1280,159,1611,230"/>
+<area shape="rect" id="node4" href="$classfiftyone_1_1pipeline_1_1core_1_1flowelements_1_1_pipeline_builder_base.html" title="Abstract base class for all Pipeline builders." alt="" coords="1071,159,1231,230"/>
+<area shape="rect" id="node5" title=" " alt="" coords="320,151,613,193"/>
+<area shape="rect" id="node10" href="$classfiftyone_1_1pipeline_1_1core_1_1flowelements_1_1_pipeline_builder_base.html" title="Abstract base class for all Pipeline builders." alt="" coords="755,167,1009,223"/>
+<area shape="rect" id="node6" title=" " alt="" coords="5,221,51,248"/>
+<area shape="rect" id="node8" title=" " alt="" coords="337,275,596,317"/>
+<area shape="rect" id="node7" title=" " alt="" coords="433,5,500,32"/>
+<area shape="rect" id="node9" title=" " alt="" coords="408,220,525,247"/>
+</map>

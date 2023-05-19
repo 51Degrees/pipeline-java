@@ -1,0 +1,4 @@
+<map id="fiftyone.pipeline.core.flowelements.FlowDataFactoryDefault" name="fiftyone.pipeline.core.flowelements.FlowDataFactoryDefault">
+<area shape="rect" id="node1" title="Default implementation of the FlowDataFactory interface." alt="" coords="7,95,261,136"/>
+<area shape="rect" id="node2" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1factories_1_1_flow_data_factory.html" title="Factory class used to create a FlowData instance for a Pipeline." alt="" coords="5,5,263,47"/>
+</map>

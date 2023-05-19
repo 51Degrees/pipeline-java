@@ -1,0 +1,8 @@
+<map id="fiftyone.pipeline.jsonbuilder.flowelements.JsonBuilderDataInternal" name="fiftyone.pipeline.jsonbuilder.flowelements.JsonBuilderDataInternal">
+<area shape="rect" id="node1" title="[class]" alt="" coords="811,39,1109,80"/>
+<area shape="rect" id="node2" href="$classfiftyone_1_1pipeline_1_1core_1_1data_1_1_element_data_base.html" title="Base implementation of ElementData." alt="" coords="545,5,741,47"/>
+<area shape="rect" id="node3" href="$classfiftyone_1_1pipeline_1_1core_1_1data_1_1_data_base.html" title="This implementation of Data stores data values as key/value pairs in a Map where the key is a string ..." alt="" coords="280,5,476,47"/>
+<area shape="rect" id="node4" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_data.html" title="Represents a collection of property values." alt="" coords="5,46,232,73"/>
+<area shape="rect" id="node5" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_element_data.html" title="Represents property values that have be determined by a specific FlowElement based on the supplied ev..." alt="" coords="280,71,476,112"/>
+<area shape="rect" id="node6" href="$interfacefiftyone_1_1pipeline_1_1jsonbuilder_1_1data_1_1_json_builder_data.html" title="Data containing the result of a JsonBuilderElements processing." alt="" coords="524,71,763,112"/>
+</map>

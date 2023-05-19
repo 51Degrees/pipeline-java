@@ -1,0 +1,5 @@
+<map id="fiftyone.pipeline.engines.services.DataUpdateService" name="fiftyone.pipeline.engines.services.DataUpdateService">
+<area shape="rect" id="node1" title="The data update service keeps AspectEngine’s data files up to date." alt="" coords="16,95,260,136"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,13,92,39"/>
+<area shape="rect" id="node3" href="$interfacefiftyone_1_1pipeline_1_1core_1_1services_1_1_pipeline_service.html" title="Service interface used by PipelineBuilder to hand out services to elements which required them." alt="" coords="117,5,338,47"/>
+</map>

@@ -1,0 +1,4 @@
+<map id="fiftyone.pipeline.core.exceptions.EngineRefreshException" name="fiftyone.pipeline.core.exceptions.EngineRefreshException">
+<area shape="rect" id="node1" title="Exception that can be thrown when an on&#45;premise aspect engine fails to reload from one or more of it&#39;..." alt="" coords="5,80,244,121"/>
+<area shape="rect" id="node2" title=" " alt="" coords="54,5,195,32"/>
+</map>

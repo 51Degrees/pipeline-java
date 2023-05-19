@@ -1,0 +1,4 @@
+<map id="fiftyone.pipeline.core.data.FlowError.Default" name="fiftyone.pipeline.core.data.FlowError.Default">
+<area shape="rect" id="node1" title="Default class for FlowError." alt="" coords="5,95,201,136"/>
+<area shape="rect" id="node2" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_flow_error.html" title="An error that occurred during the processing of an element." alt="" coords="5,5,201,47"/>
+</map>

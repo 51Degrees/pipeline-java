@@ -1,0 +1,5 @@
+<map id="fiftyone.pipeline.core.typed.TypedKey&lt; T &gt;" name="fiftyone.pipeline.core.typed.TypedKey&lt; T &gt;">
+<area shape="rect" id="node1" title="Holds a name and a type to allow for type safe operations on named values." alt="" coords="5,39,209,80"/>
+<area shape="rect" id="node2" href="$classfiftyone_1_1pipeline_1_1core_1_1typed_1_1_typed_key_default.html" title="Default implementation of TypedKey." alt="" coords="331,5,589,47"/>
+<area shape="rect" id="node3" href="$interfacefiftyone_1_1pipeline_1_1core_1_1typed_1_1_typed_key.html" title=" " alt="" coords="358,71,562,112"/>
+</map>

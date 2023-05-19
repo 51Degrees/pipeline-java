@@ -1,0 +1,11 @@
+var classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1flowelements_1_1_fifty_one_on_premise_aspect_engine_builder_base =
+[
+    [ "FiftyOneOnPremiseAspectEngineBuilderBase", "classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1flowelements_1_1_fifty_one_on_premise_aspect_engine_builder_base.html#a9187ab7ebb8d128f83766abbca431eff", null ],
+    [ "FiftyOneOnPremiseAspectEngineBuilderBase", "classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1flowelements_1_1_fifty_one_on_premise_aspect_engine_builder_base.html#a918b79709cb6151ad202cea337c75729", null ],
+    [ "FiftyOneOnPremiseAspectEngineBuilderBase", "classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1flowelements_1_1_fifty_one_on_premise_aspect_engine_builder_base.html#a53dee966c26eb30dd684b1b9fae42518", null ],
+    [ "getDefaultDataDownloadType", "classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1flowelements_1_1_fifty_one_on_premise_aspect_engine_builder_base.html#a04bede5138c31e6f524ab3e12737c120", null ],
+    [ "newAspectEngineDataFile", "classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1flowelements_1_1_fifty_one_on_premise_aspect_engine_builder_base.html#ad8d4c4c3e13aa951dc3f5c115268e285", null ],
+    [ "setConcurrency", "classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1flowelements_1_1_fifty_one_on_premise_aspect_engine_builder_base.html#ae711cfd70e6421f2ee8485240d0dccb0", null ],
+    [ "setDefaultDataDownloadType", "classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1flowelements_1_1_fifty_one_on_premise_aspect_engine_builder_base.html#a5614aa3e2596891173d1223272a367e8", null ],
+    [ "DATA_UPDATE_URL", "classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1flowelements_1_1_fifty_one_on_premise_aspect_engine_builder_base.html#a6213621e172bc71d90d0b208816e2226", null ]
+];

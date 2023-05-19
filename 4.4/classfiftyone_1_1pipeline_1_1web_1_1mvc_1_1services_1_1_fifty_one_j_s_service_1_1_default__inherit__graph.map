@@ -1,0 +1,6 @@
+<map id="fiftyone.pipeline.web.mvc.services.FiftyOneJSService.Default" name="fiftyone.pipeline.web.mvc.services.FiftyOneJSService.Default">
+<area shape="rect" id="node1" title=" " alt="" coords="573,39,825,80"/>
+<area shape="rect" id="node2" href="$classfiftyone_1_1pipeline_1_1web_1_1services_1_1_fifty_one_j_s_service_core_1_1_default.html" title="Default implementation of the FiftyOneJSServiceCore service." alt="" coords="289,5,509,47"/>
+<area shape="rect" id="node3" href="$interfacefiftyone_1_1pipeline_1_1web_1_1services_1_1_fifty_one_j_s_service_core.html" title="Service that provides the 51Degrees javascript when requested." alt="" coords="5,39,225,80"/>
+<area shape="rect" id="node4" href="$interfacefiftyone_1_1pipeline_1_1web_1_1mvc_1_1services_1_1_fifty_one_j_s_service.html" title="Spring framework service for the FiftyOneJSServiceCore." alt="" coords="273,71,525,112"/>
+</map>

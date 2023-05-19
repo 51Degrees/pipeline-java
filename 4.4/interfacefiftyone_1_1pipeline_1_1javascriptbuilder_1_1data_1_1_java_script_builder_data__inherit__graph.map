@@ -1,0 +1,6 @@
+<map id="fiftyone.pipeline.javascriptbuilder.data.JavaScriptBuilderData" name="fiftyone.pipeline.javascriptbuilder.data.JavaScriptBuilderData">
+<area shape="rect" id="node1" title="Data containing the result of a JavaScriptBuilderElements processing." alt="" coords="35,169,311,211"/>
+<area shape="rect" id="node4" href="$classfiftyone_1_1pipeline_1_1javascriptbuilder_1_1flowelements_1_1_java_script_builder_data_internal.html" title="[class]" alt="" coords="5,259,340,300"/>
+<area shape="rect" id="node2" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_element_data.html" title="Represents property values that have be determined by a specific FlowElement based on the supplied ev..." alt="" coords="75,80,271,121"/>
+<area shape="rect" id="node3" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_data.html" title="Represents a collection of property values." alt="" coords="59,5,286,32"/>
+</map>

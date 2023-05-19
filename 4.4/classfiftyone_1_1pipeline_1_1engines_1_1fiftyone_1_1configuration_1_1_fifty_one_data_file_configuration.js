@@ -1,0 +1,4 @@
+var classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1configuration_1_1_fifty_one_data_file_configuration =
+[
+    [ "getUrlFormatter", "classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1configuration_1_1_fifty_one_data_file_configuration.html#ad261c544faeb5cd91c8ee8f7533a607c", null ]
+];

@@ -1,0 +1,7 @@
+<map id="fiftyone.pipeline.engines.data.AspectEngineDataFile" name="fiftyone.pipeline.engines.data.AspectEngineDataFile">
+<area shape="rect" id="node1" title="Interface for the details of a data file used by an Aspect engine." alt="" coords="140,39,359,80"/>
+<area shape="rect" id="node3" href="$classfiftyone_1_1pipeline_1_1engines_1_1data_1_1_aspect_engine_data_file_default.html" title="Default implementation of the AspectEngineDataFile interface." alt="" coords="433,5,652,47"/>
+<area shape="rect" id="node5" href="$interfacefiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1data_1_1_fifty_one_data_file.html" title="51Degrees specific data file." alt="" coords="407,71,679,112"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,46,92,73"/>
+<area shape="rect" id="node4" href="$classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1data_1_1_fifty_one_data_file_default.html" title="Default implementation of the FiftyOneDataFile interface." alt="" coords="727,39,999,80"/>
+</map>

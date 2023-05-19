@@ -1,0 +1,6 @@
+<map id="fiftyone.pipeline.web.services.PipelineResultServiceCore.Default" name="fiftyone.pipeline.web.services.PipelineResultServiceCore.Default">
+<area shape="rect" id="node1" title="Default implementation of the PipelineResultServiceCore service." alt="" coords="531,37,776,79"/>
+<area shape="rect" id="node2" href="$interfacefiftyone_1_1pipeline_1_1web_1_1services_1_1_pipeline_result_service_core.html" title="Service used to process web requests through the Pipeline." alt="" coords="188,5,408,47"/>
+<area shape="rect" id="node3" href="$interfacefiftyone_1_1pipeline_1_1core_1_1flowelements_1_1_pipeline.html" title="The Pipeline groups together FlowElements and is a factory for FlowData which serves as the evidence,..." alt="" coords="171,71,425,112"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,78,121,105"/>
+</map>

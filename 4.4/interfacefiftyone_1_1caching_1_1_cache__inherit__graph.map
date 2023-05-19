@@ -1,0 +1,23 @@
+<map id="fiftyone.caching.Cache&lt; K, V &gt;" name="fiftyone.caching.Cache&lt; K, V &gt;">
+<area shape="rect" id="node1" title="Base cache interface which declares only the get method and the types of key and value stored in the ..." alt="" coords="141,132,311,173"/>
+<area shape="rect" id="node3" href="$interfacefiftyone_1_1caching_1_1_loading_cache.html" title="Extension of general cache contract to provide for getting a value with a particular value loaded." alt="" coords="457,20,626,61"/>
+<area shape="rect" id="node5" href="$classfiftyone_1_1caching_1_1_lru_cache_base.html" title="This is a Least Recently Used (LRU) cache with multiple linked lists in place of the usual single lin..." alt="" coords="456,85,627,127"/>
+<area shape="rect" id="node7" href="$interfacefiftyone_1_1caching_1_1_put_cache.html" title="A cache that supports a thread safe put method for inserting to cache." alt="" coords="472,157,611,199"/>
+<area shape="rect" id="node20" href="$interfacefiftyone_1_1caching_1_1_cache.html" title=" " alt="" coords="457,299,626,340"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,139,92,166"/>
+<area shape="rect" id="node4" href="$classfiftyone_1_1caching_1_1_lru_loading_cache.html" title="Uses the LruCacheBase to implement the LoadingCache interface." alt="" coords="871,19,1060,60"/>
+<area shape="rect" id="node6" href="$classfiftyone_1_1caching_1_1_lru_put_cache.html" title="Uses the LruCacheBase to implement the PutCache interface." alt="" coords="886,84,1045,125"/>
+<area shape="rect" id="node8" href="$interfacefiftyone_1_1pipeline_1_1engines_1_1caching_1_1_data_keyed_cache.html" title="Represents a put cache where the key is a FlowData instance." alt="" coords="844,150,1087,206"/>
+<area shape="rect" id="node18" href="$interfacefiftyone_1_1caching_1_1_put_cache.html" title=" " alt="" coords="860,230,1071,286"/>
+<area shape="rect" id="node19" href="$interfacefiftyone_1_1caching_1_1_put_cache.html" title=" " alt="" coords="870,311,1061,352"/>
+<area shape="rect" id="node9" href="$classfiftyone_1_1pipeline_1_1engines_1_1caching_1_1_data_keyed_cache_base.html" title="Abstract base class for caches that use FlowData as the key." alt="" coords="1277,103,1481,159"/>
+<area shape="rect" id="node16" href="$interfacefiftyone_1_1pipeline_1_1engines_1_1caching_1_1_data_keyed_cache.html" title=" " alt="" coords="1255,199,1503,240"/>
+<area shape="rect" id="node10" href="$classfiftyone_1_1pipeline_1_1engines_1_1trackers_1_1_tracker_base.html" title="The abstract base class for trackers." alt="" coords="1737,22,1884,78"/>
+<area shape="rect" id="node13" href="$classfiftyone_1_1pipeline_1_1engines_1_1caching_1_1_data_keyed_cache_base.html" title=" " alt="" coords="1691,103,1931,144"/>
+<area shape="rect" id="node14" href="$classfiftyone_1_1pipeline_1_1engines_1_1caching_1_1_data_keyed_cache_base.html" title=" " alt="" coords="1671,168,1951,209"/>
+<area shape="rect" id="node11" href="$classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1trackers_1_1_share_usage_tracker.html" title="A tracker used by share usage to attempt to avoid repeatedly sending data relating to the same user s..." alt="" coords="2078,5,2293,76"/>
+<area shape="rect" id="node12" href="$classfiftyone_1_1pipeline_1_1engines_1_1trackers_1_1_tracker_base.html" title=" " alt="" coords="2064,100,2307,141"/>
+<area shape="rect" id="node15" href="$classfiftyone_1_1pipeline_1_1engines_1_1caching_1_1_flow_cache_default.html" title="Default implementation of FlowCache using the DataKeyedCacheBase." alt="" coords="2065,180,2305,221"/>
+<area shape="rect" id="node17" href="$interfacefiftyone_1_1pipeline_1_1engines_1_1caching_1_1_flow_cache.html" title="Used to cache results from individual flow elements in the pipeline." alt="" coords="1691,233,1931,275"/>
+<area shape="rect" id="node21" href="$classfiftyone_1_1caching_1_1_no_cache.html" title=" " alt="" coords="872,376,1059,417"/>
+</map>

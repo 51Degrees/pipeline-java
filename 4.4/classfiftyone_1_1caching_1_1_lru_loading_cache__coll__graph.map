@@ -1,0 +1,10 @@
+<map id="fiftyone.caching.LruLoadingCache&lt; K, V &gt;" name="fiftyone.caching.LruLoadingCache&lt; K, V &gt;">
+<area shape="rect" id="node1" title="Uses the LruCacheBase to implement the LoadingCache interface." alt="" coords="723,39,923,80"/>
+<area shape="rect" id="node2" href="$classfiftyone_1_1caching_1_1_lru_cache_base.html" title="This is a Least Recently Used (LRU) cache with multiple linked lists in place of the usual single lin..." alt="" coords="492,71,663,112"/>
+<area shape="rect" id="node3" href="$interfacefiftyone_1_1caching_1_1_cache.html" title="Base cache interface which declares only the get method and the types of key and value stored in the ..." alt="" coords="182,12,319,53"/>
+<area shape="rect" id="node8" href="$interfacefiftyone_1_1caching_1_1_loading_cache.html" title="Extension of general cache contract to provide for getting a value with a particular value loaded." alt="" coords="493,5,662,47"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,62,92,89"/>
+<area shape="rect" id="node5" title="A linked list used in the LruCache implementation." alt="" coords="141,219,360,260"/>
+<area shape="rect" id="node6" title="An item stored in the cache along with references to the next and previous items." alt="" coords="481,241,673,283"/>
+<area shape="rect" id="node7" title=" " alt="" coords="213,129,289,155"/>
+</map>

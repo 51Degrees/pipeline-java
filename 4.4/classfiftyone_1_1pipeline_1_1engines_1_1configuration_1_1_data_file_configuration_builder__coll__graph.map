@@ -1,0 +1,6 @@
+<map id="fiftyone.pipeline.engines.configuration.DataFileConfigurationBuilder" name="fiftyone.pipeline.engines.configuration.DataFileConfigurationBuilder">
+<area shape="rect" id="node1" title="Builder class for DataFileConfiguration instances." alt="" coords="1303,27,1577,69"/>
+<area shape="rect" id="node2" href="$classfiftyone_1_1pipeline_1_1engines_1_1configuration_1_1_data_file_configuration_builder_base.html" title=" " alt="" coords="979,13,1253,83"/>
+<area shape="rect" id="node3" href="$classfiftyone_1_1pipeline_1_1engines_1_1configuration_1_1_data_file_configuration_builder_base.html" title="Builder class that is used to create instances of DataFileConfiguration objects." alt="" coords="381,5,720,91"/>
+<area shape="rect" id="node4" href="$interfacefiftyone_1_1pipeline_1_1engines_1_1configuration_1_1_data_file_configuration.html" title="Interface representing the configuration parameters controlling the automatic update checks for a spe..." alt="" coords="5,27,280,69"/>
+</map>

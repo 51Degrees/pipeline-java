@@ -1,0 +1,7 @@
+<map id="fiftyone.caching.CacheBuilder" name="fiftyone.caching.CacheBuilder">
+<area shape="rect" id="node1" title="Builder interface used to build caches." alt="" coords="5,46,220,73"/>
+<area shape="rect" id="node2" href="$interfacefiftyone_1_1caching_1_1_loading_cache_builder.html" title="Provides a method to build caches that implement LoadingCache." alt="" coords="273,5,453,47"/>
+<area shape="rect" id="node4" href="$interfacefiftyone_1_1caching_1_1_put_cache_builder.html" title=" " alt="" coords="268,71,459,112"/>
+<area shape="rect" id="node3" href="$classfiftyone_1_1caching_1_1_lru_loading_cache_1_1_builder.html" title="Implementation of CacheBuilder for LruLoadingCache caches." alt="" coords="512,5,712,47"/>
+<area shape="rect" id="node5" href="$classfiftyone_1_1caching_1_1_lru_put_cache_1_1_builder.html" title="Implementation of CacheBuilder for LruPutCache caches." alt="" coords="507,71,717,112"/>
+</map>

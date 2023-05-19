@@ -1,0 +1,4 @@
+<map id="fiftyone.pipeline.web.services.WebRequestEvidenceServiceCore.Default" name="fiftyone.pipeline.web.services.WebRequestEvidenceServiceCore.Default">
+<area shape="rect" id="node1" title="Default implementation of the WebRequestEvidenceServiceCore service." alt="" coords="5,95,297,136"/>
+<area shape="rect" id="node2" href="$interfacefiftyone_1_1pipeline_1_1web_1_1services_1_1_web_request_evidence_service_core.html" title="Service used to populate the Evidence from a HttpServletRequest ready for it to be processed by the P..." alt="" coords="31,5,271,47"/>
+</map>

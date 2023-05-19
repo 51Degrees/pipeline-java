@@ -1,0 +1,4 @@
+<map id="fiftyone.pipeline.engines.data.DataUpdateUrlFormatter" name="fiftyone.pipeline.engines.data.DataUpdateUrlFormatter">
+<area shape="rect" id="node1" title="Interface defining a URL formatter which is used by the AspectEngineDataFile#getFormattedUrl() method..." alt="" coords="32,5,251,47"/>
+<area shape="rect" id="node2" href="$classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1data_1_1_fifty_one_url_formatter.html" title=" " alt="" coords="5,95,277,136"/>
+</map>

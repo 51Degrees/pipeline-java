@@ -1,0 +1,4 @@
+<map id="fiftyone.pipeline.core.data.Evidence" name="fiftyone.pipeline.core.data.Evidence">
+<area shape="rect" id="node1" title="Evidence used by a FlowElement when processing." alt="" coords="21,80,217,121"/>
+<area shape="rect" id="node2" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_data.html" title="Represents a collection of property values." alt="" coords="5,5,232,32"/>
+</map>

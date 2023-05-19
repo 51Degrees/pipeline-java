@@ -1,0 +1,12 @@
+<map id="fiftyone.pipeline.engines.fiftyone.flowelements.FiftyOnePipelineBuilder" name="fiftyone.pipeline.engines.fiftyone.flowelements.FiftyOnePipelineBuilder">
+<area shape="rect" id="node1" title="Pipeline builder class that allows the 51Degrees share usage element to be enabled/disabled." alt="" coords="1824,165,2155,206"/>
+<area shape="rect" id="node2" href="$classfiftyone_1_1pipeline_1_1core_1_1flowelements_1_1_pipeline_builder.html" title="The PipelineBuilder follows the fluent builder pattern." alt="" coords="1520,165,1775,206"/>
+<area shape="rect" id="node3" href="$classfiftyone_1_1pipeline_1_1core_1_1flowelements_1_1_pipeline_builder_base.html" title=" " alt="" coords="1191,115,1471,157"/>
+<area shape="rect" id="node4" href="$classfiftyone_1_1pipeline_1_1core_1_1flowelements_1_1_pipeline_builder_base.html" title="Abstract base class for all Pipeline builders." alt="" coords="755,108,1009,164"/>
+<area shape="rect" id="node5" title=" " alt="" coords="320,14,613,55"/>
+<area shape="rect" id="node6" title=" " alt="" coords="5,55,51,81"/>
+<area shape="rect" id="node8" title=" " alt="" coords="337,79,596,121"/>
+<area shape="rect" id="node7" title=" " alt="" coords="433,145,500,172"/>
+<area shape="rect" id="node9" title=" " alt="" coords="408,196,525,223"/>
+<area shape="rect" id="node10" href="$interfacefiftyone_1_1pipeline_1_1core_1_1flowelements_1_1_pipeline_builder_from_configuration.html" title="Pipeline builders implementing this interface are capable of building a Pipeline based on a supplied ..." alt="" coords="1203,181,1458,222"/>
+</map>

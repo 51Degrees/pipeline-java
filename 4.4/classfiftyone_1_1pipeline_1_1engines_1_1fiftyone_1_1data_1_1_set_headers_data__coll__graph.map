@@ -1,0 +1,8 @@
+<map id="fiftyone.pipeline.engines.fiftyone.data.SetHeadersData" name="fiftyone.pipeline.engines.fiftyone.data.SetHeadersData">
+<area shape="rect" id="node1" title="[class] [constructor]" alt="" coords="77,276,349,317"/>
+<area shape="rect" id="node2" href="$classfiftyone_1_1pipeline_1_1core_1_1data_1_1_element_data_base.html" title="Base implementation of ElementData." alt="" coords="115,185,311,227"/>
+<area shape="rect" id="node3" href="$classfiftyone_1_1pipeline_1_1core_1_1data_1_1_data_base.html" title="This implementation of Data stores data values as key/value pairs in a Map where the key is a string ..." alt="" coords="225,95,421,136"/>
+<area shape="rect" id="node4" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_data.html" title="Represents a collection of property values." alt="" coords="15,5,242,32"/>
+<area shape="rect" id="node6" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_element_data.html" title="Represents property values that have be determined by a specific FlowElement based on the supplied ev..." alt="" coords="5,95,201,136"/>
+<area shape="rect" id="node5" title=" " alt="" coords="290,5,357,32"/>
+</map>

@@ -1,0 +1,6 @@
+<map id="fiftyone.pipeline.core.flowelements.FlowElementBase&lt; TData extends ElementData, TProperty extends ElementPropertyMetaData &gt;.DataFactorySimple&lt; T extends ElementData &gt;" name="fiftyone.pipeline.core.flowelements.FlowElementBase&lt; TData extends ElementData, TProperty extends ElementPropertyMetaData &gt;.DataFactorySimple&lt; T extends ElementData &gt;">
+<area shape="rect" id="node1" title="FlowElement.DataFactory implementation which should be used temporarily with a single ElementData ins..." alt="" coords="5,185,347,271"/>
+<area shape="rect" id="node2" title=" " alt="" coords="85,89,224,115"/>
+<area shape="rect" id="node3" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_element_data.html" title="Represents property values that have be determined by a specific FlowElement based on the supplied ev..." alt="" coords="249,81,445,123"/>
+<area shape="rect" id="node4" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_data.html" title="Represents a collection of property values." alt="" coords="233,5,460,32"/>
+</map>

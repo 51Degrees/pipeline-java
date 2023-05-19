@@ -1,0 +1,6 @@
+<map id="fiftyone.pipeline.web.mvc.components.FiftyOneInterceptor" name="fiftyone.pipeline.web.mvc.components.FiftyOneInterceptor">
+<area shape="rect" id="node1" title="The 51Degrees middleware component." alt="" coords="5,185,284,227"/>
+<area shape="rect" id="node2" title=" " alt="" coords="26,89,221,115"/>
+<area shape="rect" id="node3" href="$interfacefiftyone_1_1pipeline_1_1core_1_1flowelements_1_1_pipeline.html" title="The Pipeline groups together FlowElements and is a factory for FlowData which serves as the evidence,..." alt="" coords="245,81,500,123"/>
+<area shape="rect" id="node4" title=" " alt="" coords="315,5,431,32"/>
+</map>

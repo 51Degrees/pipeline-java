@@ -1,0 +1,5 @@
+<map id="fiftyone.pipeline.core.exceptions.PipelineDataException" name="fiftyone.pipeline.core.exceptions.PipelineDataException">
+<area shape="rect" id="node1" title="Exception that can be thrown when the available data does not match that which is expected." alt="" coords="17,80,256,121"/>
+<area shape="rect" id="node3" href="$classfiftyone_1_1pipeline_1_1cloudrequestengine_1_1_cloud_request_exception.html" title="Exception that can be thrown by the Cloud Engines." alt="" coords="5,169,268,211"/>
+<area shape="rect" id="node2" title=" " alt="" coords="66,5,207,32"/>
+</map>

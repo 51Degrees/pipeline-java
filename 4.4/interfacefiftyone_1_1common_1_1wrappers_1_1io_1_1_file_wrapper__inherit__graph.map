@@ -1,0 +1,5 @@
+<map id="fiftyone.common.wrappers.io.FileWrapper" name="fiftyone.common.wrappers.io.FileWrapper">
+<area shape="rect" id="node1" title="Interface for a data file." alt="" coords="5,39,221,80"/>
+<area shape="rect" id="node2" href="$classfiftyone_1_1common_1_1wrappers_1_1io_1_1_file_wrapper_default.html" title="Default implementation of FileWrapper using basic file operations." alt="" coords="269,5,485,47"/>
+<area shape="rect" id="node3" href="$classfiftyone_1_1common_1_1wrappers_1_1io_1_1_file_wrapper_memory.html" title="In memory implementation of the FileWrapperFactory." alt="" coords="269,71,485,112"/>
+</map>

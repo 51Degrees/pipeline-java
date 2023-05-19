@@ -1,0 +1,8 @@
+<map id="fiftyone.pipeline.engines.caching.FlowCache" name="fiftyone.pipeline.engines.caching.FlowCache">
+<area shape="rect" id="node1" title="Used to cache results from individual flow elements in the pipeline." alt="" coords="9,457,249,499"/>
+<area shape="rect" id="node2" href="$interfacefiftyone_1_1pipeline_1_1engines_1_1caching_1_1_data_keyed_cache.html" title=" " alt="" coords="5,367,253,408"/>
+<area shape="rect" id="node3" href="$interfacefiftyone_1_1pipeline_1_1engines_1_1caching_1_1_data_keyed_cache.html" title="Represents a put cache where the key is a FlowData instance." alt="" coords="9,263,249,304"/>
+<area shape="rect" id="node4" href="$interfacefiftyone_1_1caching_1_1_put_cache.html" title="A cache that supports a thread safe put method for inserting to cache." alt="" coords="33,172,225,213"/>
+<area shape="rect" id="node5" href="$interfacefiftyone_1_1caching_1_1_cache.html" title="Base cache interface which declares only the get method and the types of key and value stored in the ..." alt="" coords="61,81,198,123"/>
+<area shape="rect" id="node6" title=" " alt="" coords="86,5,173,32"/>
+</map>

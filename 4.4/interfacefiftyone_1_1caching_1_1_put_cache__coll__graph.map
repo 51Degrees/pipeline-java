@@ -1,0 +1,5 @@
+<map id="fiftyone.caching.PutCache&lt; K, V &gt;" name="fiftyone.caching.PutCache&lt; K, V &gt;">
+<area shape="rect" id="node1" title="A cache that supports a thread safe put method for inserting to cache." alt="" coords="5,169,196,211"/>
+<area shape="rect" id="node2" href="$interfacefiftyone_1_1caching_1_1_cache.html" title="Base cache interface which declares only the get method and the types of key and value stored in the ..." alt="" coords="32,80,169,121"/>
+<area shape="rect" id="node3" title=" " alt="" coords="57,5,144,32"/>
+</map>

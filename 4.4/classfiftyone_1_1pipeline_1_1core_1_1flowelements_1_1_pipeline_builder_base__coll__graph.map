@@ -1,0 +1,8 @@
+<map id="fiftyone.pipeline.core.flowelements.PipelineBuilderBase&lt; T extends PipelineBuilderBase &gt;" name="fiftyone.pipeline.core.flowelements.PipelineBuilderBase&lt; T extends PipelineBuilderBase &gt;">
+<area shape="rect" id="node1" title="Abstract base class for all Pipeline builders." alt="" coords="755,109,1009,165"/>
+<area shape="rect" id="node2" title=" " alt="" coords="320,15,613,57"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,56,51,83"/>
+<area shape="rect" id="node5" title=" " alt="" coords="337,81,596,122"/>
+<area shape="rect" id="node4" title=" " alt="" coords="433,147,500,173"/>
+<area shape="rect" id="node6" title=" " alt="" coords="408,197,525,224"/>
+</map>

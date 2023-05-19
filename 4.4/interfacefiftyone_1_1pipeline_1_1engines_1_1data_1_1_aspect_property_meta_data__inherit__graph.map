@@ -1,0 +1,7 @@
+<map id="fiftyone.pipeline.engines.data.AspectPropertyMetaData" name="fiftyone.pipeline.engines.data.AspectPropertyMetaData">
+<area shape="rect" id="node1" title="Holds details about a property that can be returned by an AspectEngine." alt="" coords="249,39,468,80"/>
+<area shape="rect" id="node3" href="$classfiftyone_1_1pipeline_1_1engines_1_1data_1_1_aspect_property_meta_data_default.html" title="Basic implementation of the AspectPropertyMetaData interface." alt="" coords="535,5,769,47"/>
+<area shape="rect" id="node5" href="$interfacefiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1data_1_1_fifty_one_aspect_property_meta_data.html" title="51Degrees specific meta data." alt="" coords="516,71,788,112"/>
+<area shape="rect" id="node2" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_element_property_meta_data.html" title="Defines details of a property that can be returned by a FlowElement." alt="" coords="5,39,201,80"/>
+<area shape="rect" id="node4" href="$classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1data_1_1_fifty_one_aspect_property_meta_data_default.html" title=" " alt="" coords="836,39,1123,80"/>
+</map>

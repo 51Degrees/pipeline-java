@@ -1,0 +1,4 @@
+<map id="fiftyone.common.wrappers.io.FileWrapperFactory" name="fiftyone.common.wrappers.io.FileWrapperFactory">
+<area shape="rect" id="node1" title="Factory interface for FileWrappers." alt="" coords="5,5,221,47"/>
+<area shape="rect" id="node2" href="$classfiftyone_1_1common_1_1wrappers_1_1io_1_1_file_wrapper_factory_default.html" title="Default implementation of the FileWrapperFactory interface." alt="" coords="5,95,221,136"/>
+</map>

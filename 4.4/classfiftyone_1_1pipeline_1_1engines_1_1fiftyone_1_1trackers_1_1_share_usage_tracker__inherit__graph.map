@@ -1,0 +1,10 @@
+<map id="fiftyone.pipeline.engines.fiftyone.trackers.ShareUsageTracker" name="fiftyone.pipeline.engines.fiftyone.trackers.ShareUsageTracker">
+<area shape="rect" id="node1" title="A tracker used by share usage to attempt to avoid repeatedly sending data relating to the same user s..." alt="" coords="1293,50,1588,91"/>
+<area shape="rect" id="node2" href="$classfiftyone_1_1pipeline_1_1engines_1_1trackers_1_1_tracker_base.html" title="The abstract base class for trackers." alt="" coords="1076,43,1245,99"/>
+<area shape="rect" id="node3" href="$classfiftyone_1_1pipeline_1_1engines_1_1caching_1_1_data_keyed_cache_base.html" title="Abstract base class for caches that use FlowData as the key." alt="" coords="805,5,1008,61"/>
+<area shape="rect" id="node4" href="$interfacefiftyone_1_1pipeline_1_1engines_1_1caching_1_1_data_keyed_cache.html" title="Represents a put cache where the key is a FlowData instance." alt="" coords="565,5,737,61"/>
+<area shape="rect" id="node5" href="$interfacefiftyone_1_1caching_1_1_put_cache.html" title="A cache that supports a thread safe put method for inserting to cache." alt="" coords="325,13,517,54"/>
+<area shape="rect" id="node6" href="$interfacefiftyone_1_1caching_1_1_cache.html" title="Base cache interface which declares only the get method and the types of key and value stored in the ..." alt="" coords="140,13,277,54"/>
+<area shape="rect" id="node7" title=" " alt="" coords="5,20,92,47"/>
+<area shape="rect" id="node8" href="$interfacefiftyone_1_1pipeline_1_1engines_1_1trackers_1_1_tracker.html" title="Represents a &#39;tracker&#39;." alt="" coords="785,86,1028,127"/>
+</map>

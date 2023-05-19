@@ -1,0 +1,10 @@
+<map id="fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElement" name="fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElement">
+<area shape="rect" id="node1" title="[class]" alt="" coords="1772,73,2107,115"/>
+<area shape="rect" id="node2" href="$classfiftyone_1_1pipeline_1_1core_1_1flowelements_1_1_flow_element_base.html" title="Provides a base class from which authors may create new FlowElements." alt="" coords="1428,59,1723,129"/>
+<area shape="rect" id="node3" href="$interfacefiftyone_1_1pipeline_1_1core_1_1flowelements_1_1_flow_element.html" title=" " alt="" coords="1124,73,1379,115"/>
+<area shape="rect" id="node4" href="$interfacefiftyone_1_1pipeline_1_1core_1_1flowelements_1_1_flow_element.html" title="A component that processes a FlowData (by examining its evidence, or by examining data processed by o..." alt="" coords="593,66,931,122"/>
+<area shape="rect" id="node5" title=" " alt="" coords="321,81,437,107"/>
+<area shape="rect" id="node6" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_element_data.html" title="Represents property values that have be determined by a specific FlowElement based on the supplied ev..." alt="" coords="281,5,477,47"/>
+<area shape="rect" id="node7" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_data.html" title="Represents a collection of property values." alt="" coords="5,13,232,39"/>
+<area shape="rect" id="node8" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_element_property_meta_data.html" title="Defines details of a property that can be returned by a FlowElement." alt="" coords="281,141,477,183"/>
+</map>

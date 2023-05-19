@@ -1,0 +1,8 @@
+<map id="fiftyone.pipeline.engines.fiftyone.data.CloseableIterable&lt; T &gt;" name="fiftyone.pipeline.engines.fiftyone.data.CloseableIterable&lt; T &gt;">
+<area shape="rect" id="node1" title="An iterable class which also implements auto&#45;closable." alt="" coords="169,53,441,94"/>
+<area shape="rect" id="node4" href="$classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1data_1_1_closeable_iterable_default.html" title="Default implementation of CloseableIterable." alt="" coords="489,5,756,61"/>
+<area shape="rect" id="node5" href="$classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1data_1_1_collection_iterable_base.html" title=" " alt="" coords="497,85,749,141"/>
+<area shape="rect" id="node2" title=" " alt="" coords="8,35,119,61"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,85,121,112"/>
+<area shape="rect" id="node6" href="$classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1data_1_1_collection_iterable_cached_base.html" title=" " alt="" coords="804,78,1035,149"/>
+</map>

@@ -1,0 +1,6 @@
+<map id="fiftyone.pipeline.web.services.PipelineResultServiceCore" name="fiftyone.pipeline.web.services.PipelineResultServiceCore">
+<area shape="rect" id="node1" title="Service used to process web requests through the Pipeline." alt="" coords="5,39,225,80"/>
+<area shape="rect" id="node2" href="$interfacefiftyone_1_1pipeline_1_1web_1_1mvc_1_1services_1_1_pipeline_result_service.html" title="Spring framework service for the PipelineResultServiceCore." alt="" coords="273,5,525,47"/>
+<area shape="rect" id="node4" href="$classfiftyone_1_1pipeline_1_1web_1_1services_1_1_pipeline_result_service_core_1_1_default.html" title="Default implementation of the PipelineResultServiceCore service." alt="" coords="277,71,522,112"/>
+<area shape="rect" id="node3" href="$classfiftyone_1_1pipeline_1_1web_1_1mvc_1_1services_1_1_pipeline_result_service_1_1_default.html" title=" " alt="" coords="573,39,825,80"/>
+</map>

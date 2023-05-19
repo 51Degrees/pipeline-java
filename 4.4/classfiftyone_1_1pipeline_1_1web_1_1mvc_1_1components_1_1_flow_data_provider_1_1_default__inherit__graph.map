@@ -1,0 +1,6 @@
+<map id="fiftyone.pipeline.web.mvc.components.FlowDataProvider.Default" name="fiftyone.pipeline.web.mvc.components.FlowDataProvider.Default">
+<area shape="rect" id="node1" title=" " alt="" coords="600,39,879,80"/>
+<area shape="rect" id="node2" href="$classfiftyone_1_1pipeline_1_1web_1_1services_1_1_flow_data_provider_core_1_1_default.html" title="Default implementation of the FlowDataProviderCore service." alt="" coords="303,5,523,47"/>
+<area shape="rect" id="node3" href="$interfacefiftyone_1_1pipeline_1_1web_1_1services_1_1_flow_data_provider_core.html" title="Provider to be injected into controllers to get the pre&#45;processed FlowData for the request being serv..." alt="" coords="5,39,225,80"/>
+<area shape="rect" id="node4" href="$interfacefiftyone_1_1pipeline_1_1web_1_1mvc_1_1components_1_1_flow_data_provider.html" title="Spring framework component for the FlowDataProviderCore." alt="" coords="273,71,552,112"/>
+</map>

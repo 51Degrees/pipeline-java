@@ -1,0 +1,4 @@
+<map id="fiftyone.pipeline.web.services.UACHServiceCore.Default" name="fiftyone.pipeline.web.services.UACHServiceCore.Default">
+<area shape="rect" id="node1" title="Default implementation of the UACHServiceCore service." alt="" coords="5,95,225,136"/>
+<area shape="rect" id="node2" href="$interfacefiftyone_1_1pipeline_1_1web_1_1services_1_1_u_a_c_h_service_core.html" title="Service to set HTTP headers in the response." alt="" coords="5,5,225,47"/>
+</map>

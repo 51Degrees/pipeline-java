@@ -1,0 +1,8 @@
+<map id="fiftyone.pipeline.jsonbuilder.flowelements.JsonBuilder" name="fiftyone.pipeline.jsonbuilder.flowelements.JsonBuilder">
+<area shape="rect" id="node1" title="The JsonBuilderElement takes accessible properties and adds the property key:values to the Json objec..." alt="" coords="881,57,1180,98"/>
+<area shape="rect" id="node2" href="$interfacefiftyone_1_1pipeline_1_1core_1_1flowelements_1_1_flow_element.html" title="A component that processes a FlowData (by examining its evidence, or by examining data processed by o..." alt="" coords="593,42,832,113"/>
+<area shape="rect" id="node3" title=" " alt="" coords="321,5,437,32"/>
+<area shape="rect" id="node4" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_element_data.html" title="Represents property values that have be determined by a specific FlowElement based on the supplied ev..." alt="" coords="281,57,477,98"/>
+<area shape="rect" id="node5" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_data.html" title="Represents a collection of property values." alt="" coords="5,64,232,91"/>
+<area shape="rect" id="node6" href="$interfacefiftyone_1_1pipeline_1_1core_1_1data_1_1_element_property_meta_data.html" title="Defines details of a property that can be returned by a FlowElement." alt="" coords="281,122,477,163"/>
+</map>

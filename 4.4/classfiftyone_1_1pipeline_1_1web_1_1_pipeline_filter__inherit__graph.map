@@ -1,0 +1,4 @@
+<map id="fiftyone.pipeline.web.PipelineFilter" name="fiftyone.pipeline.web.PipelineFilter">
+<area shape="rect" id="node1" title="Servlet filter used to intercept HTTP requests and process them using the 51Degrees Pipeline." alt="" coords="5,80,220,121"/>
+<area shape="rect" id="node2" title=" " alt="" coords="85,5,140,32"/>
+</map>

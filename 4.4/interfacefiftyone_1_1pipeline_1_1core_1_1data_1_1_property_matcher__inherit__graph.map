@@ -1,0 +1,4 @@
+<map id="fiftyone.pipeline.core.data.PropertyMatcher" name="fiftyone.pipeline.core.data.PropertyMatcher">
+<area shape="rect" id="node1" title="Matcher interface used primarily by the FlowData#getWhere(PropertyMatcher) method to filter propertie..." alt="" coords="57,5,253,47"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,95,304,136"/>
+</map>

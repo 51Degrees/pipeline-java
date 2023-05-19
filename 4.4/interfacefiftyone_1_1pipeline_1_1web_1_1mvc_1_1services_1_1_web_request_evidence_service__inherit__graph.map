@@ -1,0 +1,5 @@
+<map id="fiftyone.pipeline.web.mvc.services.WebRequestEvidenceService" name="fiftyone.pipeline.web.mvc.services.WebRequestEvidenceService">
+<area shape="rect" id="node1" title="Spring framework service for the WebRequestEvidenceServiceCore." alt="" coords="11,95,263,136"/>
+<area shape="rect" id="node3" href="$classfiftyone_1_1pipeline_1_1web_1_1mvc_1_1services_1_1_web_request_evidence_service_1_1_default.html" title=" " alt="" coords="5,184,268,225"/>
+<area shape="rect" id="node2" href="$interfacefiftyone_1_1pipeline_1_1web_1_1services_1_1_web_request_evidence_service_core.html" title="Service used to populate the Evidence from a HttpServletRequest ready for it to be processed by the P..." alt="" coords="17,5,257,47"/>
+</map>
