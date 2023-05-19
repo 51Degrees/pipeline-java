@@ -47,9 +47,9 @@
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
 
-        <tomcat.version>8.5.87</tomcat.version>
+        <tomcat.version>8.5.88</tomcat.version>
         <javax.servlet-api.version>4.0.1</javax.servlet-api.version>
-        <spring-webmvc.version>5.2.23.RELEASE</spring-webmvc.version>
+        <spring-webmvc.version>5.2.24.RELEASE</spring-webmvc.version>
         <jstl.version>1.2</jstl.version>
         <jakarta.xml.bind-api.version>3.0.1</jakarta.xml.bind-api.version>
         <jaxb-runtime.version>3.0.2</jaxb-runtime.version>
