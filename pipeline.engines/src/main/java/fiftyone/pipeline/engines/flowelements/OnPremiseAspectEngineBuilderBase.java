@@ -35,8 +35,11 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.apache.commons.lang3.BooleanUtils.isFalse;
 
@@ -101,8 +104,23 @@ public abstract class OnPremiseAspectEngineBuilderBase<
             File directory = pathToCreate.toFile();
             if (isFalse(directory.exists())) {
                 directory = Files.createDirectories(pathToCreate).toFile();
-                boolean success = directory.setReadable(true, false);
-                success = success && directory.setWritable(true, false);
+                boolean success;
+
+                try {
+                    Set<PosixFilePermission> permissions = EnumSet.of(
+                            PosixFilePermission.OWNER_WRITE,
+                            PosixFilePermission.OWNER_READ,
+                            PosixFilePermission.OWNER_EXECUTE,
+                            PosixFilePermission.GROUP_READ,
+                            PosixFilePermission.GROUP_EXECUTE
+                    );
+                    Files.setPosixFilePermissions(pathToCreate, permissions);
+                    success = directory.canRead() && directory.canWrite();
+                } catch (UnsupportedOperationException e) {
+                    success = directory.setReadable(true, true)
+                            && directory.setWritable(true, true);
+                }
+
                 logger.debug("Temp dir is {} can write {}", tempDir, directory.canWrite());
                 logger.debug("File permission setting reported {}.", success);
 
