@@ -479,7 +479,7 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
     
     /**
      * Verify that resource key is set in propertiesEndPoint when
-     * CloudRequestEngine is build.
+     * requested.
      */
     @Test
     public void CloudPropertiesEndPoint_Set_Resource_Key() {
@@ -487,9 +487,11 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
         
 		try {
 			configureMockedClient();
-			new CloudRequestEngineBuilder(loggerFactory, httpClient)
-			    .setResourceKey(resourceKey)
-			    .build();
+            CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
+                    .setResourceKey(resourceKey)
+                    .build();
+            engine.getPublicProperties();
+
 			assertTrue(propertiesEndPoint.contains(resourceKey),
                     "Resource key is not set in properties endpoint.");
 		} catch (Exception e) {
