@@ -71,19 +71,18 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase {
                 .setResourceKey(resourceKey)
                 .build();
 
-        try (Pipeline pipeline = new PipelineBuilder(loggerFactory)
+
+        Pipeline pipeline = new PipelineBuilder(loggerFactory)
                 .addFlowElement(engine).build();
-             FlowData data = pipeline.createFlowData()) {
-            data.addEvidence("query.User-Agent", userAgent);
+        FlowData data = pipeline.createFlowData();
+        data.addEvidence("query.User-Agent", userAgent);
+        data.process();
 
-            data.process();
+        String result = data.getFromElement(engine).getJsonResponse();
+        assertEquals("{'device':{'value':'1'}}", result);
 
-            String result = data.getFromElement(engine).getJsonResponse();
-            assertEquals("{'device':{'value':'1'}}", result);
-
-            JSONObject jsonObj = new JSONObject(result);
-            assertEquals(1, jsonObj.getJSONObject("device").getInt("value"));
-        }
+        JSONObject jsonObj = new JSONObject(result);
+        assertEquals(1, jsonObj.getJSONObject("device").getInt("value"));
 
         verify(httpClient, times(1)) // we expected a single external POST request
                 .postData(
@@ -111,20 +110,19 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase {
                 .setResourceKey(resourceKey)
                 .build();
 
-        try (Pipeline pipeline = new PipelineBuilder(loggerFactory)
+        Pipeline pipeline = new PipelineBuilder(loggerFactory)
                 .setSuppressProcessException(true)
                 .addFlowElement(engine)
                 .build();
-             FlowData data = pipeline.createFlowData()) {
+        FlowData data = pipeline.createFlowData();
 
-            data.addEvidence("query.User-Agent", userAgent);
-            data.process();
+        data.addEvidence("query.User-Agent", userAgent);
+        data.process();
 
-            assertFalse(data.getErrors().isEmpty());
-            ArrayList<FlowError> errors = (ArrayList<FlowError>) data.getErrors();
-            Throwable throwable = errors.get(0).getThrowable();
-            assertInstanceOf(IOException.class, throwable);
-        }
+        assertFalse(data.getErrors().isEmpty());
+        ArrayList<FlowError> errors = (ArrayList<FlowError>) data.getErrors();
+        Throwable throwable = errors.get(0).getThrowable();
+        assertInstanceOf(IOException.class, throwable);
     }
 
     /**

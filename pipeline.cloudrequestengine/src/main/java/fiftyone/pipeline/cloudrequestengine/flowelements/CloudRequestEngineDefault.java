@@ -85,7 +85,7 @@ public class CloudRequestEngineDefault
         String resourceKey,
         String propertiesEndpoint,
         String evidenceKeysEndpoint,
-        int timeoutMillis) throws Exception {
+        int timeoutMillis) {
         this(
             logger,
             aspectDataFactory,
@@ -107,7 +107,7 @@ public class CloudRequestEngineDefault
         String propertiesEndpoint,
         String evidenceKeysEndpoint,
         int timeoutMillis,
-        String cloudRequestOrigin) throws Exception {
+        String cloudRequestOrigin) {
         this(
             logger,
             aspectDataFactory,
@@ -120,6 +120,7 @@ public class CloudRequestEngineDefault
             timeoutMillis,
             cloudRequestOrigin);
     }
+
     public CloudRequestEngineDefault(
         Logger logger,
         ElementDataFactory<CloudRequestData> aspectDataFactory,
@@ -130,45 +131,38 @@ public class CloudRequestEngineDefault
         String propertiesEndpoint,
         String evidenceKeysEndpoint,
         int timeoutMillis,
-        String cloudRequestOrigin) throws Exception {
+        String cloudRequestOrigin) {
         super(logger, aspectDataFactory);
-        try
-        {
-            this.endPoint = endPoint;
-            this.resourceKey = resourceKey;
-            this.licenseKey = licenseKey;
-            this.propertiesEndpoint = propertiesEndpoint;
-            this.evidenceKeysEndpoint = evidenceKeysEndpoint;
-            this.httpClient = httpClient;
-            this.cloudRequestOrigin = cloudRequestOrigin;
 
-            if (timeoutMillis > 0) {
-                this.timeoutMillis = timeoutMillis;
-            }
-            else {
-                this.timeoutMillis = null;
-            }
+        this.endPoint = endPoint;
+        this.resourceKey = resourceKey;
+        this.licenseKey = licenseKey;
+        this.propertiesEndpoint = propertiesEndpoint;
+        this.evidenceKeysEndpoint = evidenceKeysEndpoint;
+        this.httpClient = httpClient;
+        this.cloudRequestOrigin = cloudRequestOrigin;
 
-            propertyMetaData = new ArrayList<>();
-            propertyMetaData.add(new AspectPropertyMetaDataDefault(
+        if (timeoutMillis > 0) {
+            this.timeoutMillis = timeoutMillis;
+        } else {
+            this.timeoutMillis = null;
+        }
+
+        propertyMetaData = new ArrayList<>();
+        propertyMetaData.add(new AspectPropertyMetaDataDefault(
                 "json-response",
                 this,
                 "",
                 String.class,
                 new ArrayList<String>(),
                 true));
-            propertyMetaData.add(new AspectPropertyMetaDataDefault(
-                    "process-started",
-                    this,
-                    "",
-                    Boolean.class,
-                    new ArrayList<String>(),
-                    true));
-        }
-        catch (Exception ex) {
-            logger.error("Error creating " + this.getClass().getName(), ex);
-            throw ex;
-        }
+        propertyMetaData.add(new AspectPropertyMetaDataDefault(
+                "process-started",
+                this,
+                "",
+                Boolean.class,
+                new ArrayList<String>(),
+                true));
     }
 
     @Override
