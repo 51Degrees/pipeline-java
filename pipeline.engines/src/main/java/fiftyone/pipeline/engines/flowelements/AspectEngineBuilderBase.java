@@ -190,7 +190,7 @@ public abstract class AspectEngineBuilderBase<
      * @param engine the engine to configure
      * @throws Exception if an exception occurred which configuring the engine
      */
-    protected void configureEngine(TEngine engine) throws Exception {
+    protected void configureEngine(TEngine engine) {
         if (cacheConfig != null) {
             engine.setCache(new FlowCacheDefault(cacheConfig));
         }
@@ -212,18 +212,16 @@ public abstract class AspectEngineBuilderBase<
      * the engine instance.
      * @param properties the properties list to create the engine with
      * @return an {@link AspectEngine}
-     * @throws Exception if the engine could not be created
      */
-    protected abstract TEngine newEngine(List<String> properties) throws Exception;
+    protected abstract TEngine newEngine(List<String> properties);
 
     /**
      * Build an engine using the configured options. Derived classes should call
      * this method when building an engine to ensure it is configured correctly
      * all down the class hierarchy.
      * @return an {@link AspectEngine}
-     * @throws Exception if the engine could not be created
      */
-    protected TEngine buildEngine() throws Exception {
+    protected TEngine buildEngine() {
         preCreateEngine();
         TEngine engine = newEngine(getProperties());
         configureEngine(engine);

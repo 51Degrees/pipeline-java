@@ -533,15 +533,14 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase {
      * requested.
      */
     @Test
-    public void getPublicProperties_Set_Resource_Key() {
+    public void getPublicProperties_Set_Resource_Key() throws IOException {
         final String resourceKey = "resource_key";
+        configureMockedClient();
+        try (CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
+                .setResourceKey(resourceKey)
+                .build()) {
 
-        try {
-            configureMockedClient();
-            new CloudRequestEngineBuilder(loggerFactory, httpClient)
-                    .setResourceKey(resourceKey)
-                    .build()
-                    .getPublicProperties();
+            engine.getPublicProperties();
 
             assertTrue(propertiesEndPoint.contains(resourceKey),
                     "Resource key is not set in properties endpoint.");
@@ -558,11 +557,11 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase {
     public void getPublicProperties_Throw_Exception_When_Server_Unavailable() throws IOException {
         final String resourceKey = "resource_key";
         configureFailingMockClient();
-        try {
-            new CloudRequestEngineBuilder(loggerFactory, httpClient)
-                    .setResourceKey(resourceKey)
-                    .build()
-                    .getPublicProperties();
+        try (CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
+                .setResourceKey(resourceKey)
+                .build()) {
+
+            engine.getPublicProperties();
 
             fail("Expected exception was not thrown");
         } catch (Exception e) {
@@ -577,11 +576,12 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase {
     public void getEvidenceKeyFilter_Throw_Exception_When_Server_Unavailable() throws IOException {
         final String resourceKey = "resource_key";
         configureFailingMockClient();
-        try {
-            new CloudRequestEngineBuilder(loggerFactory, httpClient)
-                    .setResourceKey(resourceKey)
-                    .build()
-                    .getEvidenceKeyFilter();
+
+        try (CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
+                .setResourceKey(resourceKey)
+                .build()) {
+
+            engine.getEvidenceKeyFilter();
 
             fail("Expected exception was not thrown");
         } catch (Exception e) {
