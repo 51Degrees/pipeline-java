@@ -27,6 +27,8 @@ import fiftyone.pipeline.cloudrequestengine.CloudRequestException;
 import fiftyone.pipeline.cloudrequestengine.Constants;
 import fiftyone.pipeline.core.data.AccessiblePropertyMetaData;
 import fiftyone.pipeline.core.data.FlowData;
+import fiftyone.pipeline.core.data.FlowError;
+import fiftyone.pipeline.core.exceptions.PropertyNotLoadedException;
 import fiftyone.pipeline.core.flowelements.Pipeline;
 import fiftyone.pipeline.core.flowelements.PipelineBuilder;
 import fiftyone.pipeline.engines.services.HttpClientDefault;
@@ -38,7 +40,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +51,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
+public class CloudRequestEngineTests extends CloudRequestEngineTestsBase {
     public CloudRequestEngineTests() throws MalformedURLException {
         super();
     }
@@ -64,12 +68,12 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
         configureMockedClient();
 
         CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
-            .setResourceKey(resourceKey)
-            .build();
+                .setResourceKey(resourceKey)
+                .build();
 
         try (Pipeline pipeline = new PipelineBuilder(loggerFactory)
-            .addFlowElement(engine).build();
-            FlowData data = pipeline.createFlowData()) {
+                .addFlowElement(engine).build();
+             FlowData data = pipeline.createFlowData()) {
             data.addEvidence("query.User-Agent", userAgent);
 
             data.process();
@@ -82,16 +86,45 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
         }
 
         verify(httpClient, times(1)) // we expected a single external POST request
-            .postData(
-            argThat(c -> {
-                return c.getURL().equals(expectedUrl); // to this uri
-            }),
-            ArgumentMatchers.anyMap(),
-            argThat(bytes -> {
-                String string = new String(bytes);
-                return string.contains("resource=" + resourceKey) && // content contains resource key
-                    string.contains("User-Agent=" + userAgent); // content contains user agent
-            }));
+                .postData(
+                        argThat(c -> {
+                            return c.getURL().equals(expectedUrl); // to this uri
+                        }),
+                        ArgumentMatchers.anyMap(),
+                        argThat(bytes -> {
+                            String string = new String(bytes);
+                            return string.contains("resource=" + resourceKey) && // content contains resource key
+                                    string.contains("User-Agent=" + userAgent); // content contains user agent
+                        }));
+    }
+
+    /**
+     * Test errors thrown by cloud request engine are added to flow.errors when SuppressProcessExceptions == true
+     */
+    @Test
+    public void Process_SuppressProcessExceptions_Exceptions_Added_To_Errors() throws Exception {
+        final String resourceKey = "resourcekey";
+        final String userAgent = "iPhone";
+        configureFailingMockClient();
+
+        CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
+                .setResourceKey(resourceKey)
+                .build();
+
+        try (Pipeline pipeline = new PipelineBuilder(loggerFactory)
+                .setSuppressProcessException(true)
+                .addFlowElement(engine)
+                .build();
+             FlowData data = pipeline.createFlowData()) {
+
+            data.addEvidence("query.User-Agent", userAgent);
+            data.process();
+
+            assertFalse(data.getErrors().isEmpty());
+            ArrayList<FlowError> errors = (ArrayList<FlowError>) data.getErrors();
+            Throwable throwable = errors.get(0).getThrowable();
+            assertInstanceOf(IOException.class, throwable);
+        }
     }
 
     /**
@@ -107,14 +140,14 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
         configureMockedClient();
 
         CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
-            .setResourceKey(resourceKey)
-            .setLicenseKey(licenseKey)
-            .build();
+                .setResourceKey(resourceKey)
+                .setLicenseKey(licenseKey)
+                .build();
 
         try (Pipeline pipeline = new PipelineBuilder(loggerFactory)
-            .addFlowElement(engine)
-            .build();
-            FlowData data = pipeline.createFlowData()) {
+                .addFlowElement(engine)
+                .build();
+             FlowData data = pipeline.createFlowData()) {
             data.addEvidence("query.User-Agent", userAgent);
 
             data.process();
@@ -127,17 +160,17 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
         }
 
         verify(httpClient, times(1)) // we expected a single external POST request
-            .postData(
-                argThat(c -> {
-                    return c.getURL().equals(expectedUrl); // to this uri
-                }),
-                ArgumentMatchers.anyMap(),
-                argThat(bytes -> {
-                    String string = new String(bytes);
-                    return string.contains("resource=" + resourceKey) && // content contains resource key
-                        string.contains("license=" + licenseKey) && // content contains license key
-                        string.contains("User-Agent=" + userAgent); // content contains user agent
-                }));
+                .postData(
+                        argThat(c -> {
+                            return c.getURL().equals(expectedUrl); // to this uri
+                        }),
+                        ArgumentMatchers.anyMap(),
+                        argThat(bytes -> {
+                            String string = new String(bytes);
+                            return string.contains("resource=" + resourceKey) && // content contains resource key
+                                    string.contains("license=" + licenseKey) && // content contains license key
+                                    string.contains("User-Agent=" + userAgent); // content contains user agent
+                        }));
     }
 
 
@@ -149,47 +182,47 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
     @Test
     public void subProperties() throws Exception {
         accessiblePropertiesResponse =
-        "{\n" +
-        "    \"Products\": {\n" +
-        "        \"device\": {\n" +
-        "            \"DataTier\": \"CloudV4TAC\",\n" +
-        "            \"Properties\": [\n" +
-        "                {\n" +
-        "                    \"Name\": \"IsMobile\",\n" +
-        "                        \"Type\": \"Boolean\",\n" +
-        "                        \"Category\": \"Device\"\n" +
-        "                },\n" +
-        "                {\n" +
-        "                    \"Name\": \"IsTablet\",\n" +
-        "                        \"Type\": \"Boolean\",\n" +
-        "                        \"Category\": \"Device\"\n" +
-        "                }\n" +
-        "            ]\n" +
-        "        },\n" +
-        "        \"devices\": {\n" +
-        "            \"DataTier\": \"CloudV4TAC\",\n" +
-        "            \"Properties\": [\n" +
-        "                {\n" +
-        "                    \"Name\": \"Devices\",\n" +
-        "                    \"Type\": \"Array\",\n" +
-        "                    \"Category\": \"Unspecified\",\n" +
-        "                    \"ItemProperties\": [\n" +
-        "                        {\n" +
-        "                            \"Name\": \"IsMobile\",\n" +
-        "                            \"Type\": \"Boolean\",\n" +
-        "                            \"Category\": \"Device\"\n" +
-        "                        },\n" +
-        "                        {\n" +
-        "                            \"Name\": \"IsTablet\",\n" +
-        "                            \"Type\": \"Boolean\",\n" +
-        "                            \"Category\": \"Device\"\n" +
-        "                        }\n" +
-        "                    ]\n" +
-        "                }\n" +
-        "            ]\n" +
-        "        }\n" +
-        "    }\n" +
-        "}";
+                "{\n" +
+                        "    \"Products\": {\n" +
+                        "        \"device\": {\n" +
+                        "            \"DataTier\": \"CloudV4TAC\",\n" +
+                        "            \"Properties\": [\n" +
+                        "                {\n" +
+                        "                    \"Name\": \"IsMobile\",\n" +
+                        "                        \"Type\": \"Boolean\",\n" +
+                        "                        \"Category\": \"Device\"\n" +
+                        "                },\n" +
+                        "                {\n" +
+                        "                    \"Name\": \"IsTablet\",\n" +
+                        "                        \"Type\": \"Boolean\",\n" +
+                        "                        \"Category\": \"Device\"\n" +
+                        "                }\n" +
+                        "            ]\n" +
+                        "        },\n" +
+                        "        \"devices\": {\n" +
+                        "            \"DataTier\": \"CloudV4TAC\",\n" +
+                        "            \"Properties\": [\n" +
+                        "                {\n" +
+                        "                    \"Name\": \"Devices\",\n" +
+                        "                    \"Type\": \"Array\",\n" +
+                        "                    \"Category\": \"Unspecified\",\n" +
+                        "                    \"ItemProperties\": [\n" +
+                        "                        {\n" +
+                        "                            \"Name\": \"IsMobile\",\n" +
+                        "                            \"Type\": \"Boolean\",\n" +
+                        "                            \"Category\": \"Device\"\n" +
+                        "                        },\n" +
+                        "                        {\n" +
+                        "                            \"Name\": \"IsTablet\",\n" +
+                        "                            \"Type\": \"Boolean\",\n" +
+                        "                            \"Category\": \"Device\"\n" +
+                        "                        }\n" +
+                        "                    ]\n" +
+                        "                }\n" +
+                        "            ]\n" +
+                        "        }\n" +
+                        "    }\n" +
+                        "}";
         configureMockedClient();
 
         CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
@@ -221,9 +254,9 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
 
     private static Stream<Arguments> getValidateErrorArgs() {
         return Stream.of(
-            Arguments.of("include message", 400, true),
-            Arguments.of("no message", 400, false),
-            Arguments.of("include message", 200, true));
+                Arguments.of("include message", 400, true),
+                Arguments.of("no message", 400, false),
+                Arguments.of("include message", 200, true));
     }
 
     /**
@@ -238,8 +271,7 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
      */
     @ParameterizedTest(name = "response code {1} - {0}")
     @MethodSource("getValidateErrorArgs")
-    public void validateErrorHandling(String name, int responseCode, boolean includeMessage) throws Exception
-    {
+    public void validateErrorHandling(String name, int responseCode, boolean includeMessage) throws Exception {
         final String resourceKey = "resource_key";
         String errorMessage = "some error message";
         if (includeMessage) {
@@ -254,16 +286,15 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
         try {
             new CloudRequestEngineBuilder(loggerFactory, httpClient)
                     .setResourceKey(resourceKey)
-                    .build();
-        }
-        catch (Exception ex)
-        {
+                    .build()
+                    .getPublicProperties();
+        } catch (Exception ex) {
             exception = ex;
         }
 
         assertNotNull(exception, "Expected exception to occur");
         assertTrue(exception instanceof CloudRequestException);
-        CloudRequestException cloudEx = (CloudRequestException)exception;
+        CloudRequestException cloudEx = (CloudRequestException) exception;
         if (includeMessage) {
             assertTrue(cloudEx.getMessage().contains(errorMessage),
                     "Exception message did not contain the expected text.");
@@ -272,12 +303,12 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
 
     private static Stream<Arguments> getPrecidenceArgs() {
         return Stream.of(
-            Arguments.of("query+header (no conflict)", false, "query.User-Agent=iPhone", "header.User-Agent=iPhone"),
-            Arguments.of("query+cookie (no conflict)", false, "query.User-Agent=iPhone", "cookie.User-Agent=iPhone"),
-            Arguments.of("header+cookie (conflict)", true, "header.User-Agent=iPhone", "cookie.User-Agent=iPhone"),
-            Arguments.of("query+a (no conflict)", false, "query.value=1", "a.value=1"),
-            Arguments.of("a+b (conflict)", true, "a.value=1", "b.value=1"),
-            Arguments.of("e+f (conflict)", true, "e.value=1", "f.value=1"));
+                Arguments.of("query+header (no conflict)", false, "query.User-Agent=iPhone", "header.User-Agent=iPhone"),
+                Arguments.of("query+cookie (no conflict)", false, "query.User-Agent=iPhone", "cookie.User-Agent=iPhone"),
+                Arguments.of("header+cookie (conflict)", true, "header.User-Agent=iPhone", "cookie.User-Agent=iPhone"),
+                Arguments.of("query+a (no conflict)", false, "query.value=1", "a.value=1"),
+                Arguments.of("a+b (conflict)", true, "a.value=1", "b.value=1"),
+                Arguments.of("e+f (conflict)", true, "e.value=1", "f.value=1"));
     }
 
     /**
@@ -295,12 +326,12 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
         configureMockedClient();
 
         CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
-            .setResourceKey("resourcekey")
-            .build();
+                .setResourceKey("resourcekey")
+                .build();
 
         Pipeline pipeline = new PipelineBuilder(loggerFactory)
-            .addFlowElement(engine)
-            .build();
+                .addFlowElement(engine)
+                .build();
 
         try (FlowData flowData = pipeline.createFlowData()) {
             flowData.addEvidence(evidence1Parts[0], evidence1Parts[1]);
@@ -321,13 +352,12 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
                     }
                 }
                 assertEquals(
-                    String.format(Constants.Messages.EvidenceConflict,
-                        evidence1Parts[0],
-                        evidence1Parts[1],
-                        String.format("%s:%s", evidence2Parts[0], evidence2Parts[1])),
+                        String.format(Constants.Messages.EvidenceConflict,
+                                evidence1Parts[0],
+                                evidence1Parts[1],
+                                String.format("%s:%s", evidence2Parts[0], evidence2Parts[1])),
                         warning);
-            }
-            else {
+            } else {
                 loggerFactory.assertMaxWarnings(0);
             }
         }
@@ -336,16 +366,28 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
     @SuppressWarnings("serial")
     private static Stream<Arguments> getSelectedEvidenceArgs() {
         return Stream.of(
-            Arguments.of(
-                "query",
-                new HashMap<String, Object>() {{put("query.User-Agent","iPhone");put("header.User-Agent","iPhone");}},
-                "query",
-                new HashMap<String, Object>(){{put("query.User-Agent","iPhone");}}),
-            Arguments.of(
-                "other",
-                new HashMap<String, Object>(){{put("header.User-Agent","iPhone");put("a.User-Agent","iPhone");put("z.User-Agent","iPhone");}},
-                "other",
-                new HashMap<String, Object>(){{put("z.User-Agent","iPhone");put("a.User-Agent","iPhone");}}));
+                Arguments.of(
+                        "query",
+                        new HashMap<String, Object>() {{
+                            put("query.User-Agent", "iPhone");
+                            put("header.User-Agent", "iPhone");
+                        }},
+                        "query",
+                        new HashMap<String, Object>() {{
+                            put("query.User-Agent", "iPhone");
+                        }}),
+                Arguments.of(
+                        "other",
+                        new HashMap<String, Object>() {{
+                            put("header.User-Agent", "iPhone");
+                            put("a.User-Agent", "iPhone");
+                            put("z.User-Agent", "iPhone");
+                        }},
+                        "other",
+                        new HashMap<String, Object>() {{
+                            put("z.User-Agent", "iPhone");
+                            put("a.User-Agent", "iPhone");
+                        }}));
     }
 
     /**
@@ -358,8 +400,8 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
     public void getSelectedEvidence(String name, Map<String, Object> evidence, String type, Map<String, Object> expectedValue) throws Exception {
         configureMockedClient();
         CloudRequestEngineDefault engine = (CloudRequestEngineDefault) new CloudRequestEngineBuilder(loggerFactory, httpClient)
-            .setResourceKey("resourcekey")
-            .build();
+                .setResourceKey("resourcekey")
+                .build();
 
         Map<String, Object> result = engine.getSelectedEvidence(evidence, type);
 
@@ -369,18 +411,28 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
     @SuppressWarnings("serial")
     private static Stream<Arguments> getFormDataArgs() {
         return Stream.of(
-            Arguments.of(
-                "query > header",
-                new HashMap<String, Object>(){{put("query.User-Agent","query-iPhone");put("header.User-Agent","header-iPhone");}},
-                "query-iPhone"),
-            Arguments.of(
-                "header > cookie",
-                new HashMap<String, Object>(){{put("header.User-Agent","header-iPhone");put("cookie.User-Agent","cookie-iPhone");}},
-                "header-iPhone"),
-            Arguments.of(
-                "a > b > z",
-                new HashMap<String, Object>(){{put("a.User-Agent","a-iPhone");put("b.User-Agent","b-iPhone");put("z.User-Agent","z-iPhone");}},
-                "a-iPhone"));
+                Arguments.of(
+                        "query > header",
+                        new HashMap<String, Object>() {{
+                            put("query.User-Agent", "query-iPhone");
+                            put("header.User-Agent", "header-iPhone");
+                        }},
+                        "query-iPhone"),
+                Arguments.of(
+                        "header > cookie",
+                        new HashMap<String, Object>() {{
+                            put("header.User-Agent", "header-iPhone");
+                            put("cookie.User-Agent", "cookie-iPhone");
+                        }},
+                        "header-iPhone"),
+                Arguments.of(
+                        "a > b > z",
+                        new HashMap<String, Object>() {{
+                            put("a.User-Agent", "a-iPhone");
+                            put("b.User-Agent", "b-iPhone");
+                            put("z.User-Agent", "z-iPhone");
+                        }},
+                        "a-iPhone"));
     }
 
     /**
@@ -394,12 +446,12 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
     public void getFormData(String name, Map<String, Object> evidence, String expectedValue) throws Exception {
         configureMockedClient();
         CloudRequestEngineDefault engine = (CloudRequestEngineDefault) new CloudRequestEngineBuilder(loggerFactory, httpClient)
-            .setResourceKey("resourcekey")
-            .build();
+                .setResourceKey("resourcekey")
+                .build();
 
         Pipeline pipeline = new PipelineBuilder(loggerFactory)
-            .addFlowElement(engine)
-            .build();
+                .addFlowElement(engine)
+                .build();
 
         try (FlowData data = pipeline.createFlowData()) {
             for (Map.Entry<String, Object> entry : evidence.entrySet()) {
@@ -412,7 +464,7 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
     }
 
     /**
-     * Verify that the request to the cloud service will contain 
+     * Verify that the request to the cloud service will contain
      * the configured origin header value.
      */
     @Test
@@ -425,13 +477,13 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
         configureMockedClient();
 
         CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
-            .setResourceKey(resourceKey)
-            .setCloudRequestOrigin(origin)
-            .build();
+                .setResourceKey(resourceKey)
+                .setCloudRequestOrigin(origin)
+                .build();
 
         try (Pipeline pipeline = new PipelineBuilder(loggerFactory)
-            .addFlowElement(engine).build();
-            FlowData data = pipeline.createFlowData()) {
+                .addFlowElement(engine).build();
+             FlowData data = pipeline.createFlowData()) {
             data.addEvidence("query.User-Agent", userAgent);
 
             data.process();
@@ -440,63 +492,102 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase{
         ArgumentCaptor<Map<String, String>> argumentsCaptured = ArgumentCaptor.forClass(Map.class);
 
         verify(httpClient, times(1)) // we expected a single external POST request
-            .postData(
-            argThat(c -> {
-                return c.getURL().equals(expectedUrl); // to this uri
-            }),
-            argumentsCaptured.capture(),
-            argThat(bytes -> {
-                String string = new String(bytes);
-                return string.contains("resource=" + resourceKey) && // content contains resource key
-                    string.contains("User-Agent=" + userAgent); // content contains user agent
-            }));
-        
+                .postData(
+                        argThat(c -> {
+                            return c.getURL().equals(expectedUrl); // to this uri
+                        }),
+                        argumentsCaptured.capture(),
+                        argThat(bytes -> {
+                            String string = new String(bytes);
+                            return string.contains("resource=" + resourceKey) && // content contains resource key
+                                    string.contains("User-Agent=" + userAgent); // content contains user agent
+                        }));
+
         // Verify that the origin header has the expected value.
         Map<String, String> headers = argumentsCaptured.getValue();
-        assertTrue(headers.containsKey(Constants.OriginHeaderName)); 
-        assertEquals(origin, headers.get(Constants.OriginHeaderName)); 
+        assertTrue(headers.containsKey(Constants.OriginHeaderName));
+        assertEquals(origin, headers.get(Constants.OriginHeaderName));
     }
 
     /**
-     * Verify that the request to the cloud service will contain 
+     * Verify that the request to the cloud service will contain
      * the configured origin header value.
      */
     @Test
     public void HttpDataSetInException() throws Exception {
         final String resourceKey = "resource_key";
 
-        try{
+        try {
             new CloudRequestEngineBuilder(loggerFactory, new HttpClientDefault())
-                .setResourceKey(resourceKey)
-                .build();
+                    .setResourceKey(resourceKey)
+                    .build()
+                    .getPublicProperties();
             fail("Expected exception was not thrown");
-        } catch(CloudRequestException ex) {
+        } catch (CloudRequestException ex) {
             assertTrue(ex.getHttpStatusCode() > 0, "Status code should not be 0");
-            assertNotNull(ex.getResponseHeaders(),"Response headers not populated");
+            assertNotNull(ex.getResponseHeaders(), "Response headers not populated");
             assertTrue(ex.getResponseHeaders().size() > 0, "Response headers not populated");
         }
     }
-    
+
     /**
      * Verify that resource key is set in propertiesEndPoint when
      * requested.
      */
     @Test
-    public void CloudPropertiesEndPoint_Set_Resource_Key() {
+    public void getPublicProperties_Set_Resource_Key() {
         final String resourceKey = "resource_key";
-        
-		try {
-			configureMockedClient();
-            CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
-                    .setResourceKey(resourceKey)
-                    .build();
-            engine.getPublicProperties();
 
-			assertTrue(propertiesEndPoint.contains(resourceKey),
+        try {
+            configureMockedClient();
+            new CloudRequestEngineBuilder(loggerFactory, httpClient)
+                    .setResourceKey(resourceKey)
+                    .build()
+                    .getPublicProperties();
+
+            assertTrue(propertiesEndPoint.contains(resourceKey),
                     "Resource key is not set in properties endpoint.");
-		} catch (Exception e) {
-			e.printStackTrace();
-			fail("Unexpected exception was thrown");
-		}
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Unexpected exception was thrown");
+        }
+    }
+
+    /**
+     * Verify that PropertyNotLoadedException is thrown on getPublicProperties if remote server is unavailable
+     */
+    @Test
+    public void getPublicProperties_Throw_Exception_When_Server_Unavailable() throws IOException {
+        final String resourceKey = "resource_key";
+        configureFailingMockClient();
+        try {
+            new CloudRequestEngineBuilder(loggerFactory, httpClient)
+                    .setResourceKey(resourceKey)
+                    .build()
+                    .getPublicProperties();
+
+            fail("Expected exception was not thrown");
+        } catch (Exception e) {
+            assertInstanceOf(PropertyNotLoadedException.class, e);
+        }
+    }
+
+    /**
+     * Verify that PropertyNotLoadedException is thrown on getEvidenceKeyFilter if remote server is unavailable
+     */
+    @Test
+    public void getEvidenceKeyFilter_Throw_Exception_When_Server_Unavailable() throws IOException {
+        final String resourceKey = "resource_key";
+        configureFailingMockClient();
+        try {
+            new CloudRequestEngineBuilder(loggerFactory, httpClient)
+                    .setResourceKey(resourceKey)
+                    .build()
+                    .getEvidenceKeyFilter();
+
+            fail("Expected exception was not thrown");
+        } catch (Exception e) {
+            assertInstanceOf(PropertyNotLoadedException.class, e);
+        }
     }
 }

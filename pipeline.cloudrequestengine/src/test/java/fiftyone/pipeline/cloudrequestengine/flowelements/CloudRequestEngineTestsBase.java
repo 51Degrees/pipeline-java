@@ -22,12 +22,13 @@
 
 package fiftyone.pipeline.cloudrequestengine.flowelements;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import fiftyone.common.testhelpers.TestLoggerFactory;
+import fiftyone.pipeline.engines.services.HttpClient;
+import org.mockito.ArgumentMatchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+import org.slf4j.ILoggerFactory;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -37,14 +38,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.mockito.ArgumentMatchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-import org.slf4j.ILoggerFactory;
-import org.slf4j.Logger;
-
-import fiftyone.common.testhelpers.TestLoggerFactory;
-import fiftyone.pipeline.engines.services.HttpClient;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 public class CloudRequestEngineTestsBase {
 	HttpClient httpClient;
@@ -130,5 +125,10 @@ public class CloudRequestEngineTestsBase {
                         any(HttpURLConnection.class),
                         ArgumentMatchers.<String, String>anyMap(),
                         (byte[])any());
+    }
+
+    protected void configureFailingMockClient() throws IOException {
+        httpClient = mock(HttpClient.class);
+        when(httpClient.connect(any())).thenThrow(IOException.class);
     }
 }

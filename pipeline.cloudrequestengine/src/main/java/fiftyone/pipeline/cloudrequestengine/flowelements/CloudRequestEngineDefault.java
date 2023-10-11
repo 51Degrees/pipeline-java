@@ -71,9 +71,11 @@ public class CloudRequestEngineDefault
     private Integer timeoutMillis;
 
     private List<AspectPropertyMetaData> propertyMetaData;
-    private Map<String, AccessiblePropertyMetaData.ProductMetaData> publicProperties;
+    private volatile Map<String, AccessiblePropertyMetaData.ProductMetaData> publicProperties;
+    private final Object publicPropertiesLock = new Object();
 
-    private EvidenceKeyFilter evidenceKeyFilter;
+    private volatile EvidenceKeyFilter evidenceKeyFilter;
+    private final Object evidenceKeyFilterLock = new Object();
 
     public CloudRequestEngineDefault(
         Logger logger,
@@ -187,7 +189,11 @@ public class CloudRequestEngineDefault
     @Override
     public EvidenceKeyFilter getEvidenceKeyFilter() throws CloudRequestException, AggregateException, PropertyNotLoadedException {
         if (evidenceKeyFilter == null) {
-            getCloudEvidenceKeys();
+            synchronized (evidenceKeyFilterLock) {
+                if (evidenceKeyFilter == null) {
+                    getCloudEvidenceKeys();
+                }
+            }
         }
         return evidenceKeyFilter;
     }
@@ -196,7 +202,11 @@ public class CloudRequestEngineDefault
     public Map<String, AccessiblePropertyMetaData.ProductMetaData>
     getPublicProperties() throws CloudRequestException, AggregateException, PropertyNotLoadedException {
         if (publicProperties == null) {
-            getCloudProperties();
+            synchronized (publicPropertiesLock) {
+                if (publicProperties == null) {
+                    getCloudProperties();
+                }
+            }
         }
         return publicProperties;
     }
