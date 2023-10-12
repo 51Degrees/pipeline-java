@@ -205,7 +205,7 @@ public abstract class OnPremiseAspectEngineBuilderBase<
 
     @SuppressWarnings("unchecked")
     @Override
-    protected void configureEngine(TEngine engine) {
+    protected void configureEngine(TEngine engine) throws Exception {
         super.configureEngine(engine);
         // Create the auto-update configuration and register it.
         for (AspectEngineDataFile dataFile : dataFiles) {
