@@ -26,6 +26,7 @@ import fiftyone.common.testhelpers.TestLogger;
 import fiftyone.pipeline.cloudrequestengine.CloudRequestException;
 import fiftyone.pipeline.cloudrequestengine.Constants;
 import fiftyone.pipeline.core.data.AccessiblePropertyMetaData;
+import fiftyone.pipeline.core.data.EvidenceKeyFilter;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.FlowError;
 import fiftyone.pipeline.core.exceptions.PropertyNotLoadedException;
@@ -552,6 +553,20 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase {
     }
 
     /**
+     * Verify that getPublicProperties contains test data
+     */
+    @Test
+    public void getPublicProperties() throws Exception {
+        configureMockedClient();
+        final String resourceKey = "resource_key";
+        CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
+                .setResourceKey(resourceKey)
+                .build();
+        Map<String, AccessiblePropertyMetaData.ProductMetaData> properties = engine.getPublicProperties();
+        assertTrue(properties.containsKey("device"));
+    }
+
+    /**
      * Verify that PropertyNotLoadedException is thrown on getPublicProperties if remote server is unavailable
      */
     @Test
@@ -568,6 +583,20 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase {
         } catch (Exception e) {
             assertInstanceOf(PropertyNotLoadedException.class, e);
         }
+    }
+
+    /**
+     * Verify that getEvidenceKeyFilter returns test data
+     */
+    @Test
+    public void getEvidenceKeyFilter() throws Exception {
+        configureMockedClient();
+        final String resourceKey = "resource_key";
+        CloudRequestEngine engine = new CloudRequestEngineBuilder(loggerFactory, httpClient)
+                .setResourceKey(resourceKey)
+                .build();
+        EvidenceKeyFilter evidenceKeyFilter = engine.getEvidenceKeyFilter();
+        assertTrue(evidenceKeyFilter.include("query.User-Agent"));
     }
 
     /**
