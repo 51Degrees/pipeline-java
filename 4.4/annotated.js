@@ -105,7 +105,8 @@ var annotated =
           [ "exceptions", null, [
             [ "EngineRefreshException", "classfiftyone_1_1pipeline_1_1core_1_1exceptions_1_1_engine_refresh_exception.html", "classfiftyone_1_1pipeline_1_1core_1_1exceptions_1_1_engine_refresh_exception" ],
             [ "PipelineConfigurationException", "classfiftyone_1_1pipeline_1_1core_1_1exceptions_1_1_pipeline_configuration_exception.html", "classfiftyone_1_1pipeline_1_1core_1_1exceptions_1_1_pipeline_configuration_exception" ],
-            [ "PipelineDataException", "classfiftyone_1_1pipeline_1_1core_1_1exceptions_1_1_pipeline_data_exception.html", "classfiftyone_1_1pipeline_1_1core_1_1exceptions_1_1_pipeline_data_exception" ]
+            [ "PipelineDataException", "classfiftyone_1_1pipeline_1_1core_1_1exceptions_1_1_pipeline_data_exception.html", "classfiftyone_1_1pipeline_1_1core_1_1exceptions_1_1_pipeline_data_exception" ],
+            [ "PropertyNotLoadedException", "classfiftyone_1_1pipeline_1_1core_1_1exceptions_1_1_property_not_loaded_exception.html", "classfiftyone_1_1pipeline_1_1core_1_1exceptions_1_1_property_not_loaded_exception" ]
           ] ],
           [ "flowelements", null, [
             [ "FlowDataFactoryDefault", "classfiftyone_1_1pipeline_1_1core_1_1flowelements_1_1_flow_data_factory_default.html", "classfiftyone_1_1pipeline_1_1core_1_1flowelements_1_1_flow_data_factory_default" ],
