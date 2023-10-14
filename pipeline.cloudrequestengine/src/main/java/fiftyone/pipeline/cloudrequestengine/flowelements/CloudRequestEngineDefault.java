@@ -30,6 +30,7 @@ import fiftyone.pipeline.core.data.EvidenceKeyFilter;
 import fiftyone.pipeline.core.data.EvidenceKeyFilterWhitelist;
 import fiftyone.pipeline.core.data.FlowData;
 import fiftyone.pipeline.core.data.factories.ElementDataFactory;
+import fiftyone.pipeline.core.exceptions.PropertyNotLoadedException;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaData;
 import fiftyone.pipeline.engines.data.AspectPropertyMetaDataDefault;
 import fiftyone.pipeline.engines.flowelements.AspectEngineBase;
@@ -46,7 +47,6 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -71,9 +71,11 @@ public class CloudRequestEngineDefault
     private Integer timeoutMillis;
 
     private List<AspectPropertyMetaData> propertyMetaData;
-    private Map<String, AccessiblePropertyMetaData.ProductMetaData> publicProperties;
+    private volatile Map<String, AccessiblePropertyMetaData.ProductMetaData> publicProperties;
+    private final Object publicPropertiesLock = new Object();
 
-    private EvidenceKeyFilter evidenceKeyFilter;
+    private volatile EvidenceKeyFilter evidenceKeyFilter;
+    private final Object evidenceKeyFilterLock = new Object();
 
     public CloudRequestEngineDefault(
         Logger logger,
@@ -83,7 +85,7 @@ public class CloudRequestEngineDefault
         String resourceKey,
         String propertiesEndpoint,
         String evidenceKeysEndpoint,
-        int timeoutMillis) throws Exception {
+        int timeoutMillis) {
         this(
             logger,
             aspectDataFactory,
@@ -105,7 +107,7 @@ public class CloudRequestEngineDefault
         String propertiesEndpoint,
         String evidenceKeysEndpoint,
         int timeoutMillis,
-        String cloudRequestOrigin) throws Exception {
+        String cloudRequestOrigin) {
         this(
             logger,
             aspectDataFactory,
@@ -118,6 +120,7 @@ public class CloudRequestEngineDefault
             timeoutMillis,
             cloudRequestOrigin);
     }
+
     public CloudRequestEngineDefault(
         Logger logger,
         ElementDataFactory<CloudRequestData> aspectDataFactory,
@@ -128,49 +131,38 @@ public class CloudRequestEngineDefault
         String propertiesEndpoint,
         String evidenceKeysEndpoint,
         int timeoutMillis,
-        String cloudRequestOrigin) throws Exception {
+        String cloudRequestOrigin) {
         super(logger, aspectDataFactory);
-        try
-        {
-            this.endPoint = endPoint;
-            this.resourceKey = resourceKey;
-            this.licenseKey = licenseKey;
-            this.propertiesEndpoint = propertiesEndpoint;
-            this.evidenceKeysEndpoint = evidenceKeysEndpoint;
-            this.httpClient = httpClient;
-            this.cloudRequestOrigin = cloudRequestOrigin;
 
-            if (timeoutMillis > 0) {
-                this.timeoutMillis = timeoutMillis;
-            }
-            else {
-                this.timeoutMillis = null;
-            }
+        this.endPoint = endPoint;
+        this.resourceKey = resourceKey;
+        this.licenseKey = licenseKey;
+        this.propertiesEndpoint = propertiesEndpoint;
+        this.evidenceKeysEndpoint = evidenceKeysEndpoint;
+        this.httpClient = httpClient;
+        this.cloudRequestOrigin = cloudRequestOrigin;
 
-            getCloudProperties();
+        if (timeoutMillis > 0) {
+            this.timeoutMillis = timeoutMillis;
+        } else {
+            this.timeoutMillis = null;
+        }
 
-            getCloudEvidenceKeys();
-
-            propertyMetaData = new ArrayList<>();
-            propertyMetaData.add(new AspectPropertyMetaDataDefault(
+        propertyMetaData = new ArrayList<>();
+        propertyMetaData.add(new AspectPropertyMetaDataDefault(
                 "json-response",
                 this,
                 "",
                 String.class,
                 new ArrayList<String>(),
                 true));
-            propertyMetaData.add(new AspectPropertyMetaDataDefault(
-                    "process-started",
-                    this,
-                    "",
-                    Boolean.class,
-                    new ArrayList<String>(),
-                    true));
-        }
-        catch (Exception ex) {
-            logger.error("Error creating " + this.getClass().getName(), ex);
-            throw ex;
-        }
+        propertyMetaData.add(new AspectPropertyMetaDataDefault(
+                "process-started",
+                this,
+                "",
+                Boolean.class,
+                new ArrayList<String>(),
+                true));
     }
 
     @Override
@@ -189,13 +181,27 @@ public class CloudRequestEngineDefault
     }
 
     @Override
-    public EvidenceKeyFilter getEvidenceKeyFilter() {
+    public EvidenceKeyFilter getEvidenceKeyFilter() throws CloudRequestException, AggregateException, PropertyNotLoadedException {
+        if (evidenceKeyFilter == null) {
+            synchronized (evidenceKeyFilterLock) {
+                if (evidenceKeyFilter == null) {
+                    getCloudEvidenceKeys();
+                }
+            }
+        }
         return evidenceKeyFilter;
     }
 
     @Override
     public Map<String, AccessiblePropertyMetaData.ProductMetaData>
-    getPublicProperties() {
+    getPublicProperties() throws CloudRequestException, AggregateException, PropertyNotLoadedException {
+        if (publicProperties == null) {
+            synchronized (publicPropertiesLock) {
+                if (publicProperties == null) {
+                    getCloudProperties();
+                }
+            }
+        }
         return publicProperties;
     }
 
@@ -208,7 +214,7 @@ public class CloudRequestEngineDefault
             connection.setReadTimeout(timeoutMillis);
         }
         ((CloudRequestDataInternal)aspectData).setProcessStarted(true);
-        
+
         Map<String, String> headers = new HashMap<>();
         setCommonHeaders(headers);
         headers.put("Content-Type", "application/x-www-form-urlencoded");
@@ -373,58 +379,65 @@ public class CloudRequestEngineDefault
     protected void unmanagedResourcesCleanup() {
     }
 
-    private void setCommonHeaders(Map<String, String> headers) {        
+    private void setCommonHeaders(Map<String, String> headers) {
         if(cloudRequestOrigin != null &&
             cloudRequestOrigin.length() > 0) {
             headers.put(fiftyone.pipeline.cloudrequestengine.Constants.OriginHeaderName, cloudRequestOrigin);
         }
     }
 
-    private void getCloudProperties() throws CloudRequestException, AggregateException, IOException {
-        String jsonResult;
+    private void getCloudProperties() throws CloudRequestException, AggregateException, PropertyNotLoadedException {
+        try {
+            String jsonResult;
 
-        Map<String, String> headers = new HashMap<>();
-        setCommonHeaders(headers);
-        
-        HttpURLConnection connection = httpClient.connect(new URL(propertiesEndpoint.trim() + (resourceKey != null ? "?Resource=" + resourceKey : "")));
-        jsonResult = httpClient.getResponseString(connection, headers);
-        validateResponse(jsonResult, connection);
+            Map<String, String> headers = new HashMap<>();
+            setCommonHeaders(headers);
 
-        JSONObject jsonObj = null;
-        if (jsonResult.isEmpty() == false) {
-            jsonObj = new JSONObject(jsonResult);
-        }
+            HttpURLConnection connection = httpClient.connect(new URL(propertiesEndpoint.trim() + (resourceKey != null ? "?Resource=" + resourceKey : "")));
+            jsonResult = httpClient.getResponseString(connection, headers);
+            validateResponse(jsonResult, connection);
 
-        if (jsonObj != null) {
-            AccessiblePropertyMetaData.LicencedProducts accessiblePropertyData =
-                new AccessiblePropertyMetaData.LicencedProducts(jsonObj.getJSONObject("Products"));
+            JSONObject jsonObj = null;
+            if (jsonResult.isEmpty() == false) {
+                jsonObj = new JSONObject(jsonResult);
+            }
 
-            publicProperties = accessiblePropertyData.products;
-        }
-        else {
-            throw new RuntimeException("Failed to retrieve available properties " +
-                "from cloud service at " + propertiesEndpoint + ".");
+            if (jsonObj != null) {
+                AccessiblePropertyMetaData.LicencedProducts accessiblePropertyData =
+                        new AccessiblePropertyMetaData.LicencedProducts(jsonObj.getJSONObject("Products"));
+
+                publicProperties = accessiblePropertyData.products;
+            } else {
+                throw new RuntimeException("Failed to retrieve available properties " +
+                        "from cloud service at " + propertiesEndpoint + ".");
+            }
+        } catch (IOException e) {
+            throw new PropertyNotLoadedException(e);
         }
     }
 
-    private void getCloudEvidenceKeys() throws CloudRequestException, AggregateException, IOException {
-        String jsonResult;
+    private void getCloudEvidenceKeys() throws CloudRequestException, AggregateException, PropertyNotLoadedException {
+        try {
+            String jsonResult;
 
-        Map<String, String> headers = new HashMap<>();
-        setCommonHeaders(headers);
+            Map<String, String> headers = new HashMap<>();
+            setCommonHeaders(headers);
 
-        HttpURLConnection connection = httpClient.connect(new URL(evidenceKeysEndpoint.trim()));
-        jsonResult = httpClient.getResponseString(connection, headers);
-        validateResponse(jsonResult, connection, false);
+            HttpURLConnection connection = httpClient.connect(new URL(evidenceKeysEndpoint.trim()));
+            jsonResult = httpClient.getResponseString(connection, headers);
+            validateResponse(jsonResult, connection, false);
 
-        if (jsonResult != null && jsonResult.isEmpty() == false) {
-            JSONArray jsonArray = new JSONArray(jsonResult);
-            List<String> keys = new ArrayList<>();
-            for (int i = 0; i < jsonArray.length(); i++) {
-                keys.add(jsonArray.get(i).toString());
+            if (jsonResult != null && jsonResult.isEmpty() == false) {
+                JSONArray jsonArray = new JSONArray(jsonResult);
+                List<String> keys = new ArrayList<>();
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    keys.add(jsonArray.get(i).toString());
+                }
+                evidenceKeyFilter = new EvidenceKeyFilterWhitelist(keys,
+                        String.CASE_INSENSITIVE_ORDER);
             }
-            evidenceKeyFilter = new EvidenceKeyFilterWhitelist(keys,
-                String.CASE_INSENSITIVE_ORDER);
+        } catch (IOException e) {
+            throw new PropertyNotLoadedException(e);
         }
     }
 
