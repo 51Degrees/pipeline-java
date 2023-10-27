@@ -1,10 +1,20 @@
-fiftyoneDegreesManager = function() {
+﻿fiftyoneDegreesManager = function() {
     'use-strict';
     var json = {{&_jsonObject}};
+    var parameters = {{&_parameters}};
+    var sessionId = "{{&_sessionId}}";
+    var sessionKey = "{{_objName}}_" + sessionId;
+    this.sessionId = sessionId;
+    var sequence = {{&_sequence}};
 
     // Log any errors returned in the JSON object.
     if(json.error !== undefined){
         console.log(json.error);
+    }
+
+    // Log any warnings returned in the JSON object.
+    if (json.warnings !== undefined) {
+        console.log(json.warnings);
     }
 
     // Set to true when the JSON object is complete.
@@ -24,8 +34,45 @@ fiftyoneDegreesManager = function() {
     var jsPropertiesStarted = [];
 
     // startsWith polyfill.
-    var startsWith = function(source, searchValue){
+    var startsWith = function(source, searchValue) {
         return source.lastIndexOf(searchValue, 0) === 0;
+    }
+
+    // endsWith polyfill.
+    var endsWith = function(source, searchValue) {
+        return source.substring(source.length - searchValue.length, source.length) === searchValue;
+    }
+
+    var clearCache = function() {
+        if (sessionStorage) {
+            for (i = 0; i < sessionStorage.length; i++) {
+                key = sessionStorage.key(i);
+                if (startsWith(key, sessionKey)) {
+                    sessionStorage.removeItem(key);
+                }
+            }
+        }
+    }
+
+    var loadParameters = function() {
+        if (sessionStorage) {
+            var parametersString = sessionStorage.getItem(sessionKey + "_parameters");
+            if (parametersString) {
+                parameters = JSON.parse(parametersString);
+            }
+        }
+        return parameters;
+    }
+
+    var saveParameters = function(sourceParams) {
+        if (sourceParams) {
+            parameters = sourceParams
+        }
+
+        if (sessionStorage) {
+            var parametersString = JSON.stringify(parameters);
+            sessionStorage.setItem(sessionKey + "_parameters", parametersString);
+        }
     }
 
     // Get cookies with the '51D_' prefix that have been added to the request
@@ -52,7 +99,12 @@ fiftyoneDegreesManager = function() {
         var keyValuePairs = [];
         for (var key in fodCookies) {
             if (fodCookies.hasOwnProperty(key)) {
-                keyValuePairs.push(key+"="+fodCookies[key]);
+                // Url encode the cookie value.
+                // This is done to ensure that invalid characters (e.g. = chars at the end of
+                // base 64 encoded strings) reach the server intact.
+                // The server will automatically decode the value before passing it into the
+                // Pipeline API.
+                keyValuePairs.push(key+"="+encodeURIComponent(fodCookies[key]));
             }
         }
         return keyValuePairs;
@@ -94,7 +146,7 @@ fiftyoneDegreesManager = function() {
     // JavaScript left to process then reload the JSON object.
     var completedCallback = function(resolve, reject){
         callbackCounter--;
-        if (callbackCounter === 0){
+        if (callbackCounter === 0) {
 {{#_updateEnabled}}
             processRequest(resolve, reject);
 {{/_updateEnabled}}
@@ -103,78 +155,112 @@ fiftyoneDegreesManager = function() {
         }
     }
 
-    // Executes any Javascript contained in the json data. Sets the processedJs
-    // flag to true when there is no further Javascript to be processed.
+    // Executes any JavaScript contained in the JSON data. Session storage is
+    // used to check the process state of the JavaScript property, if the name
+    // of the property exists as a key then it has been processed. If all the
+    // processed JavaScript properties have been flagged as processed already
+    // then session storage is checked again for a JSON payload. If it exists
+    // then this is loaded into the managers internal data store. If not or if
+    // JavaScript properties have been processed then the call-back is
+    // processed with any new evidence produced by the JavaScript properties.
+    // If JavaScript properties are processed then a key containing the name of
+    // the JavaScript property is added to session storage. The complete flag is
+    // set to true when there is no further JavaScript to be processed.
     var processJsProperties = function(resolve, reject, jsProperties, ignoreDelayFlag) {
         var executeCallback = true;
         var started = 0;
+        var cached = 0;
+        var cachedResponse = undefined;
+        var toProcess = 0;
 
-        if (jsProperties !== undefined &&
-            jsProperties.length > 0) {
+        // If there is no cached response and there are JavaScript code snippets
+        // then process them and perform any call-backs required.
+        if (jsProperties !== undefined && jsProperties.length > 0) {
 
-            // Execute each of the Javascript property code snippets using the
+            // Execute each of the JavaScript property code snippets using the
             // index of the value to access the value to avoid problems with
             // JavaScript returning erroneous values.
-            for(var index = 0;
-                index < jsProperties.length;
-                index++) {
-
+            for (var index = 0; index < jsProperties.length; index++) {
                 var name = jsProperties[index];
-
-                if(jsPropertiesStarted.includes(name) === false) {
-                    // Create new function bound to this instance and execute it.
-                    // This is needed to ensure the scope of the function is
-                    // associated with this instance if any members are altered or
-                    // added. Avoids global scoped variables.
+                if (jsPropertiesStarted.indexOf(name) === -1) {
                     var body = getFromJson(name);
-                    var delay = getFromJson(name + 'delayexecution', false, true);
 
-                    if ((ignoreDelayFlag || (delay === undefined || delay === false)) &&
-                        body !== undefined) {
-                        var func = undefined;
-                        var searchString = '// 51D replace this comment with callback function.';
-                        completed = false;
-                        jsPropertiesStarted.push(name);
-                        started++;
+                    // If there is a body then this property should be processed.
+                    if (body) {
+                        toProcess++;
+                    }
+                    var isCached = sessionStorage && sessionStorage.getItem(sessionKey + "_" + name);
 
-                        if(body.indexOf(searchString) !== -1){
-                            callbackCounter++;
-                            body = body.replace(/\/\/ 51D replace this comment with callback function./g, 'callbackFunc(resolveFunc, rejectFunc);');
-                            func = new Function('callbackFunc', 'resolveFunc', 'rejectFunc',
-                                "try {\n" +
-                                body + "\n" +
-                                "} catch (err) {\n" +
-                                "console.log(err);" +
-                                "}"
-                            );
-                            func(completedCallback, resolve, reject);
-                            executeCallback = false;
-                        } else {
-                            func = new Function(
-                                "try {\n" +
-                                body + "\n" +
-                                "} catch (err) {\n" +
-                                "console.log(err);" +
-                                "}"
-                            );
-                            func();
+                    if (!isCached) {
+                        // Create new function bound to this instance and execute it.
+                        // This is needed to ensure the scope of the function is
+                        // associated with this instance if any members are altered or
+                        // added. Avoids global scoped variables.
+
+                        var delay = getFromJson(name + 'delayexecution', false, true);
+
+                        if ((ignoreDelayFlag || (delay === undefined || delay === false)) &&
+                            body !== undefined) {
+                            var func = undefined;
+                            var searchString = '// 51D replace this comment with callback function.';
+                            completed = false;
+                            jsPropertiesStarted.push(name);
+                            started++;
+
+                            if (body.indexOf(searchString) !== -1){
+                                callbackCounter++;
+                                body = body.replace(/\/\/ 51D replace this comment with callback function./g, 'callbackFunc(resolveFunc, rejectFunc);');
+                                func = new Function('callbackFunc', 'resolveFunc', 'rejectFunc',
+                                    "try {\n" +
+                                    body + "\n" +
+                                    "} catch (err) {\n" +
+                                    "console.log(err);" +
+                                    "}"
+                                );
+                                func(completedCallback, resolve, reject);
+                                executeCallback = false;
+                            } else {
+                                func = new Function(
+                                    "try {\n" +
+                                    body + "\n" +
+                                    "} catch (err) {\n" +
+                                    "console.log(err);" +
+                                    "}"
+                                );
+                                func();
+                            }
+                            if (sessionStorage) {
+                                sessionStorage.setItem(sessionKey + "_" + name, true)
+                            }
                         }
+                    } else {
+                        cached++;
                     }
                 }
             }
         }
+        if(cached === toProcess || started === 0)  {
+            if (sessionStorage) {
+                var cachedResponse = sessionStorage.getItem(sessionKey);
+                if (cachedResponse) {
+                    loadJSON(resolve, reject, cachedResponse);
+                    executeCallback = false;
+                }
+            }
+        }
 
-        if(started === 0) {
+        if (started === 0) {
             executeCallback = false;
             completed = true;
         }
-        if(executeCallback) {
+        if (executeCallback) {
             callbackCounter = 1;
             completedCallback(resolve, reject);
         }
     };
 
 {{#_updateEnabled}}
+{{^_supportsFetch}}
     // Standard method to create a CORS HTTP request ready to send data.
     var createCORSRequest = function(method, url) {
         var xhr;
@@ -203,6 +289,7 @@ fiftyoneDegreesManager = function() {
         }
         return xhr;
     };
+{{/_supportsFetch}}
 {{/_updateEnabled}}
 
     // Check if the JSON object still has any JavaScript snippets to run.
@@ -231,13 +318,96 @@ fiftyoneDegreesManager = function() {
     }
 
 {{#_updateEnabled}}
-    // Sends the cookie parameters that have been set by the executed Javascript
-    // in the POST body of a new request to refresh the json data. Resolve is
-    // called with the new json if the request is processed as expected. Reject
-    // is called if there was a problem. The parameters are send as a POST
-    // request so that encoding and data length issues are minimised.
+    // Process the response as json and call the resolve method.
+    var loadJSON = function(resolve, reject, responseText) {
+        json = JSON.parse(responseText);
+
+        if (hasJSFunctions()) {
+            // json updated so fire 'on change' functions
+            // before executing any new JS properties that
+            // have come back.
+            fireChangeFuncs(json);
+            process(resolve, reject);
+        } else {
+            completed = true;
+            // json updated so fire 'on change' functions
+            // This must happen after completed = true in order
+            // for 'complete' functions to fire.
+            fireChangeFuncs(json);
+            resolve(json);
+{{^_enableCookies}}
+            var fodCookies = getFodCookies();
+            for (var key in fodCookies) {
+                if (fodCookies.hasOwnProperty(key)) {
+                    deleteCookie(key);
+                }
+            }
+{{/_enableCookies}}
+        }
+    }
+
+    // Sends a POST request to the call-back URL to retrieve and updated
+    // JSON payload from the cloud service. A POST request is used so that
+    // parameters can be passed in the request body, this is to get around
+    // the limitations on the length of query strings. As POST requests are not
+    // cached by browsers, the result of the POST request is stored in session
+    // storage on a successful response. This can then be checked before making
+    // repeat requests to the call-back URL.
+    // Any cookie parameters that have been set by the executed JavaScript
+    // properties are added to the list of parameters, this list is then
+    // serialized as Form Data and sent in the POST body to the call-back URL,
+    // refreshing the JSON data. The new JSON is then loaded if the request is
+    // returned with a success status code. If there was a problem then the
+    // session storage items are invalidated and reject is called.
     var processRequest = function(resolve, reject){
-        // Request URL with a license key and User-Agent if provided.
+        loadParameters();
+
+        // Get additional parameters from cookies in case they are not sent
+        // by the browser.
+		var cookieParams = getParametersFromCookies();
+        for(var cookie in cookieParams) {
+            var parts = cookieParams[cookie].split('=');
+            parameters[parts[0]] = parts[1];
+        }
+
+        saveParameters();
+
+        var params = [];
+        for (var param in parameters) {
+            if (parameters.hasOwnProperty(param)) {
+                params.push(param+"="+parameters[param])
+            }
+        }
+
+        // Add the session and sequence to the request
+        if (sessionId) {
+            params.push("session-id=" + sessionId);
+        }
+        if (sequence) {
+            params.push("sequence=" + sequence);
+        }
+
+        var postBody = "";
+        if (params.length > 0) {
+            postBody = params.join('&').replace(/%20/g, '+');
+        }
+
+{{#_supportsFetch}}
+        fetch('{{{_url}}}', {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: postBody
+        })
+        .then(response => {
+            return response.text();
+        })
+        .then(responseText => {
+{{/_supportsFetch}}
+{{^_supportsFetch}}
+        // Request callback URL with additional parameters.
         var xhr = createCORSRequest('POST', '{{{_url}}}');
 
         // If there is no support for HTTP requests then call reject and throw
@@ -255,47 +425,36 @@ fiftyoneDegreesManager = function() {
             // Get the response body from the request.
             var responseText = xhr.responseText;
 
-            // Process the response as json and call the resolve method.
-            json = JSON.parse(responseText);
-
-            if (hasJSFunctions()) {
-                // json updated so fire 'on change' functions
-                // before executing any new JS properties that
-                // have come back.
-                fireChangeFuncs(json);
-                process(resolve, reject);
+{{/_supportsFetch}}
+            // Cache the response text.
+            if (sessionStorage) {
+                sessionStorage.setItem(sessionKey, responseText);
             }
-            else {
-                completed = true;
-                // json updated so fire 'on change' functions
-                // This must happen after completed = true in order
-                // for 'complete' functions to fire.
-                fireChangeFuncs(json);
-                resolve(json);
-{{^_enableCookies}}
-                var fodCookies = getFodCookies();
-                for (var key in fodCookies) {
-                    if (fodCookies.hasOwnProperty(key)) {
-                        deleteCookie(key);
-                    }
-                }
-{{/_enableCookies}}
-            }
-
+            // Load the JSON object from the response text
+            loadJSON(resolve, reject, responseText);
+            // Increment the sequence on a successful request
+            sequence++;
+{{#_supportsFetch}}
+        })
+        .catch(error => {
+            // Invalidate the cache on error.
+            clearCache();
+            reject(error);
+        });
+{{/_supportsFetch}}
+{{^_supportsFetch}}
         };
 
         xhr.onerror = function () {
-            // An error occurred with the request. Return the details in the
-            // call to reject method.
+            // An error occurred with the request. Invalidate the cache and
+            // return the details in the call to reject method.
+            clearCache();
             reject(Error(xhr.statusText));
         };
 
-        // Get additional parameters from cookies in case they are not sent
-        // by the browser.
-        var params = getParametersFromCookies();
-
-        // Send the cookie parameters as the POST body.
-        xhr.send(params.join('&').replace(/%20/g, '+'));
+        // Send the GET request.
+        xhr.send(postBody);
+{{/_supportsFetch}}
     }
 {{/_updateEnabled}}
 
@@ -305,8 +464,8 @@ fiftyoneDegreesManager = function() {
     }
 
     // Populate this instance of the FOD object with getters to access the
-    // properties. If the value is null then get the noValueMessage from the
-    // JSON object corresponding to the property.
+	// properties. If the value is null then get the noValueMessage from the
+	// JSON object corresponding to the property.
     var update = function(data){
         var self = this;
         Object.getOwnPropertyNames(data).forEach(function(key) {
@@ -358,9 +517,9 @@ fiftyoneDegreesManager = function() {
                 // Property name ends with 'evidenceproperties' so is
                 // what we're looking for.
                 // Add the values to the array if we don't already have it.
-                if (value !== null && Array.isArray(value) && prop.endsWith('evidenceproperties')) {
+                if (value !== null && Array.isArray(value) && endsWith(prop, 'evidenceproperties')) {
                     value.forEach(function(item, index) {
-                        if(evidenceProperties.includes(item) === false) {
+                        if(evidenceProperties.indexOf(item) === -1) {
                             evidenceProperties.push(item);
                         }
                     });
@@ -369,7 +528,7 @@ fiftyoneDegreesManager = function() {
                 // and add any resulting evidence properties to the list.
                 else if(typeof value === 'object' && value !== null) {
                     getEvidencePropertiesFromObject(value).forEach(function(item, index) {
-                        if(evidenceProperties.includes(item) === false) {
+                        if(evidenceProperties.indexOf(item) === -1) {
                             evidenceProperties.push(item);
                         }
                     });
@@ -387,9 +546,9 @@ fiftyoneDegreesManager = function() {
     });
 {{/_supportsPromises}}
 
-    this.onChange = function(resolve) {
-        changeFuncs.push(resolve);
-    }
+	this.onChange = function(resolve) {
+		changeFuncs.push(resolve);
+	}
 
     this.complete = function(resolve, properties) {
 {{#_hasDelayedProperties}}
