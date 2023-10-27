@@ -27,7 +27,9 @@ import fiftyone.pipeline.core.data.*;
 import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.core.exceptions.PipelineDataException;
 import fiftyone.pipeline.core.flowelements.FlowElement;
+import fiftyone.pipeline.engines.data.AspectPropertyValue;
 import fiftyone.pipeline.engines.data.AspectPropertyValueDefault;
+import fiftyone.pipeline.engines.exceptions.PropertyMissingException;
 import fiftyone.pipeline.javascriptbuilder.data.JavaScriptBuilderData;
 import fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElement;
 import fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElementBuilder;
@@ -35,12 +37,13 @@ import fiftyone.pipeline.javascriptbuilder.helpers.TcpHelper;
 import fiftyone.pipeline.javascriptbuilder.helpers.TestServer;
 import fiftyone.pipeline.jsonbuilder.data.JsonBuilderData;
 import fiftyone.pipeline.jsonbuilder.flowelements.JsonBuilder;
-import fiftyone.pipeline.jsonbuilder.flowelements.JsonBuilderDataInternal;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.invocation.InvocationOnMock;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.stubbing.Answer;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -58,8 +61,8 @@ import static fiftyone.pipeline.core.Constants.EVIDENCE_QUERY_USERAGENT_KEY;
 import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.EVIDENCE_SEQUENCE;
 import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.EVIDENCE_SESSIONID;
 import static fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_HOST_KEY;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_OBJECT_NAME;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -79,13 +82,13 @@ public class JavaScriptBuilderTests {
     private JSONObject json;
     private Map<String, Object> evidence;
     private String protocol = "https";
-    private String host = "host";
+    private String host = "localhost";
     private String userAgent = "iPhone";
     private String latitude = "51";
     private String longitude = "-1";
     private int sequence = 2;
     private String sessionId = "abcdefg-hijklmn-opqrst-uvwxyz";
-    
+
     public JavaScriptBuilderTests() {
         ILoggerFactory internalLogger = mock(ILoggerFactory.class);
         when(internalLogger.getLogger(anyString())).thenReturn(mock(Logger.class));
@@ -95,24 +98,17 @@ public class JavaScriptBuilderTests {
     @BeforeEach
     public void Init() throws IOException {
         flowData = mock(FlowData.class);
-        
         jsonBuilderElement = mock(JsonBuilder.class);
-
+        javaScriptBuilderElement = new JavaScriptBuilderElementBuilder(loggerFactory).build();
         evidence = new HashMap<>();
-        
+
         List<ElementPropertyMetaData> properties = new ArrayList<>();
-        
         properties.add(new ElementPropertyMetaDataDefault("property", jsonBuilderElement, "", String.class, true));
-        
         doReturn(properties).when(jsonBuilderElement).getProperties();
 
-        javaScriptBuilderElement = new JavaScriptBuilderElementBuilder(loggerFactory).build();
-        
         elementDataMock = mock(ElementData.class);
-        
         Map<String,Object> data = new HashMap<>();
         data.put("property", "thisIsAValue" );
-        
         doReturn(data).when(elementDataMock).asKeyMap();
 
         int port = TcpHelper.getAvailablePort();
@@ -137,57 +133,17 @@ public class JavaScriptBuilderTests {
     @Test
     public void Valid_Js() throws Exception {
         configureMocks();
-        
+
         javaScriptBuilderElement.process(flowData);
-     
+
         assertTrue(isValidFodObject(result.getJavaScript(), "device", "ismobile", true));
     }
-    
+
     @SuppressWarnings("unchecked")
     @Test
-    public void JavaScriptBuilder_NoJson() throws Exception {
-        doAnswer(new Answer<Object>() { 
-            @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
-                JsonBuilderData result = mock(JsonBuilderData.class);
-                when(result.getJson()).thenThrow(new PipelineDataException("nope"));
-                return result;
-            }
-        }).when(flowData).get(JsonBuilderData.class);
-
-        when(flowData.getAs(anyString(), any(Class.class))).thenReturn(new AspectPropertyValueDefault<>("None"));
-        
-        final Map<String, Object> evidence = new HashMap<>();
-        evidence.put(EVIDENCE_HOST_KEY, "localhost");
-        evidence.put(EVIDENCE_PROTOCOL, "https");
-        
-        Evidence evidenceObj = mock(Evidence.class);
-        when(evidenceObj.asKeyMap()).thenReturn(evidence);
-        
-        when(flowData.getEvidence()).thenReturn(evidenceObj);
-        
-        when(flowData.tryGetEvidence(anyString(), any(Class.class))).thenAnswer(
-                invocation -> {
-                    TryGetResult<Object> result = new TryGetResult<>();
-                    if (evidence.containsKey((String)invocation.getArgument(0))) {
-                        result.setValue(evidence.get((String)invocation.getArgument(0)));
-                    }
-                    return result;
-                }
-        );
-        
-        when(flowData.get(anyString())).thenReturn(elementDataMock);
-        
-        doAnswer(new Answer<Object>() { 
-            @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
-                FlowElement.DataFactory<JavaScriptBuilderData> factory =
-                        invocation.getArgument(1);
-                result = factory.create(flowData);
-                return result;
-            }
-        }).when(flowData).getOrAdd(anyString(), any(FlowElement.DataFactory.class));
-
+    public void JavaScriptBuilder_NoJson() {
+        configureMocks();
+        json = null;
         assertThrows(
             PipelineConfigurationException.class,
             () -> javaScriptBuilderElement.process(flowData));
@@ -200,11 +156,7 @@ public class JavaScriptBuilderTests {
     @SuppressWarnings("unchecked")
     @Test
     public void JavaScriptBuilderElement_DelayExecution() throws Exception {
-        javaScriptBuilderElement =
-            new JavaScriptBuilderElementBuilder(loggerFactory)
-                .build();
-
-        final JSONObject json = new JSONObject();
+        configureMocks();
 
         JSONObject locationData = new JSONObject();
         locationData.put("postcode", (String)null);
@@ -215,76 +167,159 @@ public class JavaScriptBuilderTests {
         locationData.put("javascriptdelayexecution", true);
         json.put("location", locationData);
 
-        final FlowData flowData = mock(FlowData.class);
-
-        when(flowData.get(JsonBuilderData.class)).thenAnswer(
-            new Answer<JsonBuilderData>() {
-                @Override
-                public JsonBuilderData answer(InvocationOnMock invocationOnMock) throws Throwable {
-                    JsonBuilderData d = new JsonBuilderDataInternal(mock(Logger.class), flowData);
-                    d.put("json", json.toString());
-                    return d;
-                }
-            }
-        );
-
-
-        final Map<String, Object> evidence = new HashMap<>();
-        evidence.put(EVIDENCE_HOST_KEY, "localhost");
-        evidence.put(EVIDENCE_PROTOCOL, "https");
-
-        Evidence evidenceObj = mock(Evidence.class);
-        when(evidenceObj.asKeyMap()).thenReturn(evidence);
-
-        when(flowData.getEvidence()).thenReturn(evidenceObj);
-        when(flowData.getAs(anyString(), any(Class.class))).thenReturn(new AspectPropertyValueDefault<>("None"));
-
-        when(flowData.tryGetEvidence(anyString(), any(Class.class))).thenAnswer(
-            new Answer<Object>() {
-                @Override
-                public Object answer(InvocationOnMock invocation) throws Throwable {
-                    TryGetResult<Object> result = new TryGetResult<>();
-                    if (evidence.containsKey((String)invocation.getArgument(0))) {
-                        result.setValue(evidence.get((String)invocation.getArgument(0)));
-                    }
-                    return result;
-                }
-            }
-        );
-
-        //configure(flowData, json);
-
-        final JavaScriptBuilderData[] result = {null};
-        when(flowData.getOrAdd(
-            any(String.class),
-            any(FlowElement.DataFactory.class)))
-            .thenAnswer((Answer<JavaScriptBuilderData>) invocationOnMock -> {
-                @SuppressWarnings("rawtypes")
-                FlowElement.DataFactory dataFactory = invocationOnMock.getArgument(1);
-                result[0] = (JavaScriptBuilderData) dataFactory.create(flowData);
-                return result[0];
-            });
+        javaScriptBuilderElement =
+                new JavaScriptBuilderElementBuilder(loggerFactory)
+                        .build();
         javaScriptBuilderElement.process(flowData);
 
         assertTrue(
-            result[0].getJavaScript().contains("getEvidencePropertiesFromObject"),
+                result.getJavaScript().contains("getEvidencePropertiesFromObject"),
             "Expected the generated JavaScript to contain the " +
                 "'getEvidencePropertiesFromObject' function but it does not.");
     }
 
-    private boolean isValidFodObject(String javaScript, String key, String property, Object value) throws Exception
-    {
-//        ScriptEngineManager manager = new ScriptEngineManager();
-//        ScriptEngine engine = manager.getEngineByName("JavaScript");
-//        ScriptContext context = engine.getContext();
-//        // Evaluate the JavaScript include.
-//        engine.eval(javaScript, context);
-//
-//        Object res = engine.eval("fod."+key+"."+property+";", context);
+    /**
+     * Verify that the JavaScript contains the Session ID and Sequence
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void JavaScriptBuilderElement_VerifySession() throws Exception {
+        configureMocks();
 
+        javaScriptBuilderElement =
+                new JavaScriptBuilderElementBuilder(loggerFactory)
+                        .build();
+        javaScriptBuilderElement.process(flowData);
+
+        String javaScript = result.getJavaScript();
+        assertTrue(javaScript.contains(sessionId), "JavaScript does not contain expected session id '" + sessionId + "'.");
+        assertTrue(javaScript.contains("var sequence = " + sequence + ";"), "JavaScript does not contain expected sequence '1'.");
+    }
+
+    /**
+     * Check that the callback URL is generated correctly.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void JavaScriptBuilderElement_VerifyUrl() throws Exception {
+        configureMocks();
+
+        javaScriptBuilderElement =
+                new JavaScriptBuilderElementBuilder(loggerFactory)
+                        .setEndpoint("/json")
+                        .build();
+        javaScriptBuilderElement.process(flowData);
+
+        String expectedUrl = "https://localhost/json";
+        String javaScript = result.getJavaScript();
+        assertTrue(javaScript.contains(expectedUrl), "JavaScript does not contain expected URL '" + expectedUrl + "'.");
+    }
+
+    /**
+     * Verify that parameters are set in the JavaScript payload and if the
+     * query parameters are in the evidence
+     */
+    @ParameterizedTest
+    @CsvSource(
+            {"iPhone,51.12345,-1.92173272",
+                    "Samsung,1.09199,2.1121121",
+                    "Sony,3.123455,44.1123111"}
+    )
+    @SuppressWarnings("unchecked")
+    public void JavaScriptBuilderElement_VerifyParameters(String userAgent, String lat, String lon) throws Exception {
+        this.userAgent = userAgent;
+        latitude = lat;
+        longitude = lon;
+        configureMocks();
+
+        javaScriptBuilderElement =
+                new JavaScriptBuilderElementBuilder(loggerFactory)
+                        .build();
+        javaScriptBuilderElement.process(flowData);
+        String javaScript = result.getJavaScript();
+        assertTrue(javaScript.contains(userAgent), "JavaScript does not contain expected user agent query parameter '" + userAgent + "'.");
+        assertTrue(javaScript.contains(lat), "JavaScript does not contain expected latitude query parameter '" + lat + "'.");
+        assertTrue(javaScript.contains(lon), "JavaScript does not contain expected longitude query parameter '" + lon + "'.");
+    }
+
+    public enum ExceptionCase {
+
+        PROPERTY_MISSING(new PropertyMissingException(), false),
+        PIPELINE_DATA_EXCEPTION(new PipelineDataException(), false),
+        EXCEPTION(new RuntimeException(), true),
+        NONE(null, false);
+
+        public Throwable throwable;
+        public boolean expected;
+
+        ExceptionCase(Throwable throwable, boolean expected) {
+            this.throwable = throwable;
+            this.expected = expected;
+        }
+    }
+
+    /**
+     * Check that accessing the 'Promise' property works as intended in a range of scenarios
+     */
+    @ParameterizedTest
+    @EnumSource(ExceptionCase.class)
+    @SuppressWarnings("unchecked")
+    public void JavaScriptBuilderElement_Promise(ExceptionCase exceptionCase) {
+        configureMocks();
+
+        switch (exceptionCase) {
+            case PROPERTY_MISSING:
+            case PIPELINE_DATA_EXCEPTION:
+            case EXCEPTION:
+                when(flowData.getAs("Promise", AspectPropertyValue.class))
+                        .thenThrow(exceptionCase.throwable);
+                break;
+            case NONE:
+                when(flowData.getAs("Promise", AspectPropertyValue.class))
+                        .thenReturn(new AspectPropertyValueDefault<>("None"));
+                break;
+        }
+
+        Exception thrown = null;
+        javaScriptBuilderElement =
+                new JavaScriptBuilderElementBuilder(loggerFactory)
+                        .build();
+        try {
+            javaScriptBuilderElement.process(flowData);
+        } catch (Exception e) {
+            thrown = e;
+        }
+
+        if (exceptionCase.expected) {
+            assertNotNull(thrown, "Expected an exception to be visible externally but it was not.");
+        } else {
+            assertNull(thrown, "Did not expect an exception to be visible externally but one was.");
+            assertNotNull(result.getJavaScript(), "Expected JavaScript output to be populated but it was not.");
+            assertNotEquals("", "Expected JavaScript output to be populated but it was not.");
+        }
+    }
+
+    /**
+     * Check that the JavaScript object name can be overridden successfully.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void JavaScriptBuilderElement_VerifyObjName() throws Exception {
+        configureMocks();
+        String jsonObjName = "testObj";
+        evidence.put(EVIDENCE_OBJECT_NAME, jsonObjName);
+
+        javaScriptBuilderElement =
+                new JavaScriptBuilderElementBuilder(loggerFactory)
+                        .build();
+        javaScriptBuilderElement.process(flowData);
+
+        driver.executeScript(result.getJavaScript() + "; window.testObj = testObj;");
+    }
+
+    private boolean isValidFodObject(String javaScript, String key, String property, Object value) {
         driver.executeScript(javaScript + "; window.fod = fod;");
         Object res = driver.executeScript("return fod." + key + "." + property + ";");
-
 
         return res.toString().equals(value.toString());
     }
@@ -304,11 +339,13 @@ public class JavaScriptBuilderTests {
 
         doAnswer((Answer<Object>) invocation -> {
             JsonBuilderData result = mock(JsonBuilderData.class);
-            when(result.getJson()).thenReturn(json.toString(2));
+            if (json != null) {
+                when(result.getJson()).thenReturn(json.toString(0));
+            } else {
+                when(result.getJson()).thenThrow(new PipelineDataException("nope"));
+            }
             return result;
         }).when(flowData).get(JsonBuilderData.class);
-
-        when(flowData.getAs(anyString(), any(Class.class))).thenReturn(new AspectPropertyValueDefault<>("None"));
 
         evidence.put(EVIDENCE_HOST_KEY, host);
         evidence.put(EVIDENCE_PROTOCOL, protocol);
@@ -323,15 +360,17 @@ public class JavaScriptBuilderTests {
         when(flowData.getEvidence()).thenReturn(evidenceObj);
         when(flowData.tryGetEvidence(anyString(), any(Class.class))).thenAnswer(
                 invocation -> {
-                    TryGetResult<Object> result = new TryGetResult<>();
+                    TryGetResult<Object> getResult = new TryGetResult<>();
                     if (evidence.containsKey((String) invocation.getArgument(0))) {
-                        result.setValue(evidence.get((String) invocation.getArgument(0)));
+                        getResult.setValue(evidence.get((String) invocation.getArgument(0)));
                     }
-                    return result;
+                    return getResult;
                 }
         );
 
         when(flowData.get(anyString())).thenReturn(elementDataMock);
+
+        when(flowData.getAs(anyString(), any(Class.class))).thenReturn(new AspectPropertyValueDefault<>("None"));
 
         doAnswer((Answer<Object>) invocation -> {
             FlowElement.DataFactory<JavaScriptBuilderData> factory =

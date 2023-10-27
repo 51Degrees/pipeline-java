@@ -77,7 +77,7 @@
         <jaxb-runtime.version>3.0.2</jaxb-runtime.version>
         <jaxb-impl.version>3.0.2</jaxb-impl.version>
 
-        <mustache-compiler.version>0.8.18</mustache-compiler.version>
+        <mustache-compiler.version>0.9.11</mustache-compiler.version>
         <graal-js-scriptengine.version>22.0.0.2</graal-js-scriptengine.version>
         <graal-js.version>22.0.0.2</graal-js.version>
 

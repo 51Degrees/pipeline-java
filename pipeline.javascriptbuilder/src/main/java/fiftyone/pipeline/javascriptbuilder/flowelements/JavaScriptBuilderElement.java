@@ -31,6 +31,7 @@ import fiftyone.pipeline.core.exceptions.PipelineConfigurationException;
 import fiftyone.pipeline.core.exceptions.PipelineDataException;
 import fiftyone.pipeline.core.flowelements.FlowElementBase;
 import fiftyone.pipeline.engines.data.AspectPropertyValue;
+import fiftyone.pipeline.engines.exceptions.PropertyMissingException;
 import fiftyone.pipeline.javascriptbuilder.Constants;
 import fiftyone.pipeline.javascriptbuilder.data.JavaScriptBuilderData;
 import fiftyone.pipeline.javascriptbuilder.templates.JavaScriptResource;
@@ -184,7 +185,7 @@ public class JavaScriptBuilderElement
     @Override
     public List<ElementPropertyMetaData> getProperties() {
         return Collections.singletonList(
-                (ElementPropertyMetaData) new ElementPropertyMetaDataDefault(
+                new ElementPropertyMetaDataDefault(
                         "javascript",
                         this,
                         "javascript",
@@ -249,8 +250,7 @@ public class JavaScriptBuilderElement
                     data.getAs("Promise", AspectPropertyValue.class);
             supportsPromises = supportsPromisesValue.hasValue() &&
                     supportsPromisesValue.getValue() == "Full";
-        }
-        catch (PipelineDataException e) {
+        } catch (PipelineDataException | PropertyMissingException e) {
             supportsPromises = false;
         }
 
@@ -273,7 +273,6 @@ public class JavaScriptBuilderElement
 
     private String getJsonObject(FlowData data) {
         String jsonObject;
-
 
         try {
             jsonObject = data.get(JsonBuilderData.class).getJson();
@@ -425,7 +424,10 @@ public class JavaScriptBuilderElement
         StringWriter stringWriter = new StringWriter();
         mustache.execute(stringWriter, javaScriptObj.asMap());
 
-        String content = stringWriter.toString();
+        // Getting JavaScript and removing non-printable characters except ones we want to keep (newline, tabs, spaces)
+        String content = stringWriter.toString()
+                .replaceAll("[^\\p{Graph}\n\r\t ]", "");
+        ;
 
         elementData.setJavaScript(content);
     }
