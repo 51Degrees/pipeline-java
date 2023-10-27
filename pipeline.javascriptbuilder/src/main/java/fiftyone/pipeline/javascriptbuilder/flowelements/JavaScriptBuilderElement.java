@@ -427,7 +427,6 @@ public class JavaScriptBuilderElement
         // Getting JavaScript and removing non-printable characters except ones we want to keep (newline, tabs, spaces)
         String content = stringWriter.toString()
                 .replaceAll("[^\\p{Graph}\n\r\t ]", "");
-        ;
 
         elementData.setJavaScript(content);
     }
