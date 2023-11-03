@@ -38,6 +38,6 @@ public class Constants {
     
     public static final String DEFAULT_PROTOCOL = "https";
     
-    public static final String TEMPLATE = "/fiftyone/pipeline/javascriptbuilder/javascript-templates/JavaScriptResource.mustache";
+    public static final String TEMPLATE = "/fiftyone/pipeline/javascriptbuilder/templates/JavaScriptResource.mustache";
     public static final String DEFAULT_OBJECT_NAME = "fod";
 }
