@@ -28,8 +28,11 @@ import java.util.HashMap;
 public class JavaScriptResource {
     private final String _objName;
     private final String _jsonObject;
+    private final String _sessionId;
+    private final int _sequence;
     private final boolean _supportsPromises;
     private final String _url;
+    private final String _parameters;
     private final boolean _enableCookies;
     private final boolean _updateEnabled;
     private final boolean _hasDelayedProperties;
@@ -65,8 +68,11 @@ public class JavaScriptResource {
     public JavaScriptResource(
         String objName,
         String jsonObject,
+        String sessionId,
+        int sequence,
         boolean supportsPromises,
         String url,
+        String parameters,
         boolean enableCookies,
         boolean updateEnabled,
         boolean hasDelayedProperties)
@@ -74,8 +80,11 @@ public class JavaScriptResource {
         _objName = objName;
         _jsonObject = jsonObject.isEmpty() == false
             ? jsonObject : "{\"errors\":[\"Json data missing.\"]}";
+        _sessionId = sessionId;
+        _sequence = sequence;
         _supportsPromises = supportsPromises;
         _url = url;
+        _parameters = parameters;
         _enableCookies = enableCookies;
         _updateEnabled = updateEnabled;
         _hasDelayedProperties = hasDelayedProperties;
@@ -87,8 +96,11 @@ public class JavaScriptResource {
 
         hash.put("_objName", _objName);
         hash.put("_jsonObject", _jsonObject);
+        hash.put("_sessionId", _sessionId);
+        hash.put("_sequence", _sequence);
         hash.put("_supportsPromises", _supportsPromises);
         hash.put("_url", _url);
+        hash.put("_parameters", _parameters);
         hash.put("_enableCookies", _enableCookies);
         hash.put("_updateEnabled", _updateEnabled);
         hash.put("_hasDelayedProperties", _hasDelayedProperties);

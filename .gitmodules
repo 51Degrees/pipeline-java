@@ -1,0 +1,3 @@
+[submodule "pipeline.javascriptbuilder/src/main/resources/fiftyone/pipeline/javascriptbuilder/templates"]
+	path = pipeline.javascriptbuilder/src/main/resources/fiftyone/pipeline/javascriptbuilder/templates
+	url = ../javascript-templates.git
