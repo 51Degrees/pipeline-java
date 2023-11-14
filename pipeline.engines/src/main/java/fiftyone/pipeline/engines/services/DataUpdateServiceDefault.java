@@ -477,7 +477,7 @@ public class DataUpdateServiceDefault implements DataUpdateService {
                             watcher,
                             StandardWatchEventKinds.ENTRY_MODIFY));
                 } catch (Exception e) {
-                    logger.error("File watcher for '{}' could not be initialised.",
+                    logger.error("File watcher for '{}' could not be initialised. " + e.getMessage(),
                             aspectDataFile.getDataFilePath(), e);
                 }
                 try {
