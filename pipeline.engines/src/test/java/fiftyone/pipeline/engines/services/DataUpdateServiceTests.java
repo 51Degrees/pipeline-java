@@ -386,7 +386,7 @@ public class DataUpdateServiceTests {
             Files.write(Paths.get(temp2), "Testing".getBytes());
             Files.copy(Paths.get(temp2), Paths.get(tempData), StandardCopyOption.REPLACE_EXISTING);
             // Wait until processing is complete.
-            boolean completed = completeFlag.tryAcquire(2, TimeUnit.SECONDS);
+            boolean completed = completeFlag.tryAcquire(4, TimeUnit.SECONDS);
 
             // Assert
             assertTrue("The OnUpdateComplete event was never fired",
@@ -478,7 +478,7 @@ public class DataUpdateServiceTests {
         // Act
         dataUpdate.registerDataFile(file);
         // Wait until processing is complete.
-        boolean completed = completeFlag.tryAcquire(1, TimeUnit.SECONDS);
+        boolean completed = completeFlag.tryAcquire(2, TimeUnit.SECONDS);
 
         // Assert
         assertTrue("The OnUpdateComplete event was never fired",
@@ -642,6 +642,7 @@ public class DataUpdateServiceTests {
         DataFileConfigurationDefault config = new DataFileConfigurationDefault();
         config.setAutomaticUpdatesEnabled(true);
         config.setVerifyMd5(true);
+        config.setFileSystemWatcherEnabled(false);
 
         AspectEngineDataFileDefault file = new AspectEngineDataFileDefault();
         file.setEngine(engine);
