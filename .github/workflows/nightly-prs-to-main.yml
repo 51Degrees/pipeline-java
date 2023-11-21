@@ -14,4 +14,4 @@ jobs:
       repo-name: ${{ github.event.repository.name }}
     secrets:
       token: ${{ secrets.ACCESS_TOKEN }}
-      asset-keys: '{ "TestResourceKey": "${{ secrets.SUPER_RESOURCE_KEY}}" }'
+      TestResourceKey: ${{ secrets.SUPER_RESOURCE_KEY}}
