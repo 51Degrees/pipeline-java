@@ -424,9 +424,7 @@ public class JavaScriptBuilderElement
         StringWriter stringWriter = new StringWriter();
         mustache.execute(stringWriter, javaScriptObj.asMap());
 
-        // Getting JavaScript and removing non-printable characters except ones we want to keep (newline, tabs, spaces)
-        String content = stringWriter.toString()
-                .replaceAll("[^\\p{Graph}\n\r\t ]", "");
+        String content = stringWriter.toString();
 
         elementData.setJavaScript(content);
     }
