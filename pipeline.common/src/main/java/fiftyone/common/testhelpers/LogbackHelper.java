@@ -73,13 +73,9 @@ public class LogbackHelper {
         LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
 
         ContextInitializer ci = new ContextInitializer(loggerContext);
-        URL url = ci.findURLOfDefaultConfigurationFile(true);
 
         try {
-            JoranConfigurator configurator = new JoranConfigurator();
-            configurator.setContext(loggerContext);
-            loggerContext.reset();
-            configurator.doConfigure(url);
+            ci.autoConfig();
         } catch (JoranException je) {
             // StatusPrinter will handle this
         }
