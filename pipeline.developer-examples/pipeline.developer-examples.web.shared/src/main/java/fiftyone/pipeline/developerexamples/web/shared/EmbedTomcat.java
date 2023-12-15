@@ -26,7 +26,10 @@ import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.core.StandardContext;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.tomcat.util.descriptor.web.FilterDef;
+import org.apache.tomcat.util.descriptor.web.FilterMap;
 
+import javax.servlet.Filter;
 import javax.servlet.http.HttpServlet;
 import java.io.File;
 import java.io.IOException;
@@ -97,7 +100,8 @@ public class EmbedTomcat {
         tomcat.setBaseDir(workingDir);
         tomcat.setPort(port);
 
-        tomcat.addWebapp(contextPath, webappDir);
+        Context context = tomcat.addWebapp(contextPath, webappDir);
+        addFilter(context, "corsFiler", new SimpleCORSFilter());
 
         tomcat.start();
         System.out.format("Browse to http://localhost:%d using a 'private' window in your browser\n" +
@@ -140,4 +144,16 @@ public class EmbedTomcat {
         tomcat.stop();
     }
 
+    private static void addFilter(Context context, String name, Filter filter) {
+        FilterDef filterDef = new FilterDef();
+        filterDef.setFilterName(name);
+        filterDef.setFilter(filter);
+        context.addFilterDef(filterDef);
+
+        FilterMap filterMap = new FilterMap();
+        filterMap.addURLPattern("/*");
+        filterMap.setFilterName(name);
+
+        context.addFilterMap(filterMap);
+    }
 }
