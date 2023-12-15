@@ -101,7 +101,7 @@ public class EmbedTomcat {
         tomcat.setPort(port);
 
         Context context = tomcat.addWebapp(contextPath, webappDir);
-        addFilter(context, "corsFiler", new SimpleCORSFilter());
+        addFilter(context, "corsFiler", new CORSFilter());
 
         tomcat.start();
         System.out.format("Browse to http://localhost:%d using a 'private' window in your browser\n" +
