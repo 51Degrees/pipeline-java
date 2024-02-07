@@ -32,7 +32,7 @@
 
     <name>51Degrees :: Pipeline</name>
     <url>https://51degrees.com</url>
-    <description>Java implementation of 51Degrees Pipeline API</description>
+    <description>The 51Degrees Pipeline API provides architecture for consuming real-time digital data services.</description>
 
     <organization>
         <name>51Degrees</name>

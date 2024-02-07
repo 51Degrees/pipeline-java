@@ -33,6 +33,7 @@
 
     <artifactId>pipeline.engines.fiftyone</artifactId>
     <name>51Degrees :: Pipeline :: FiftyOne</name>
+    <description>Shared base functions for implementing 51Degrees engines for the 51Degrees Pipeline API</description>
     <url>https:51degrees.com</url>
 
     <dependencies>

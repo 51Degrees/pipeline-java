@@ -37,6 +37,7 @@
     <artifactId>pipeline.core</artifactId>
 
     <name>51Degrees :: Pipeline :: Core</name>
+    <description>Core library for the 51Degrees Pipeline API</description>
     <url>https:51degrees.com</url>
 
     <dependencies>
