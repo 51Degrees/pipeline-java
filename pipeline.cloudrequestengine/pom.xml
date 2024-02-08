@@ -33,6 +33,7 @@
 
     <artifactId>pipeline.cloudrequestengine</artifactId>
     <name>51Degrees :: Pipeline :: Cloud Request Engine</name>
+    <description>Cloud request engine for the 51Degrees Pipeline API</description>
     <url>https:51degrees.com</url>
 
     <dependencies>

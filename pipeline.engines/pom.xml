@@ -33,6 +33,7 @@
     <artifactId>pipeline.engines</artifactId>
 
     <name>51Degrees :: Pipeline :: Engines</name>
+    <description>Shared base functionality for implementing engines for the 51Degrees Pipeline API</description>
     <url>https:51degrees.com</url>
 
     <dependencies>
