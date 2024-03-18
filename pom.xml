@@ -325,6 +325,8 @@
                     <providerName>AzureKeyVault</providerName>
                     <providerClass>com.azure.security.keyvault.jca.KeyVaultJcaProvider</providerClass>
                     <arguments>
+                        <argument>-J--module-path="${keyvaultJcaJar}"</argument>
+                        <argument>-J--add-modules="com.azure.security.keyvault.jca"</argument>
                         <argument>-J-Dazure.keyvault.uri=${keyvaultUrl}</argument>
                         <argument>-J-Dazure.keyvault.tenant-id=${keyvaultTenant}</argument>
                         <argument>-J-Dazure.keyvault.client-id=${keyvaultClientId}</argument>
