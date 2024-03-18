@@ -18,7 +18,6 @@ jobs:
       TestResourceKey: ${{ secrets.SUPER_RESOURCE_KEY}}
       MavenSettings: ${{ secrets.JAVA_STAGING_SETTINGS_BASE64 }}
       JavaGpgKeyPassphrase: ${{ secrets.JAVA_GPG_KEY_PASSPHRASE }}
-      CodeSigningCert: ${{ secrets.CODE_SIGNING_CERT }}
       JavaPGP: ${{ secrets.JAVA_KEY_PGP_FILE }}
       CodeSigningKeyVaultUrl: ${{ secrets.CODE_SIGNING_KEY_VAULT_URL }}
       CodeSigningKeyVaultClientId: ${{ secrets.CODE_SIGNING_KEY_VAULT_CLIENT_ID }}
