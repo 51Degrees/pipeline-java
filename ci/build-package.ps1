@@ -19,6 +19,7 @@ param(
     -ExtraArgs "-DskipNativeBuild=true" `
     -JavaGpgKeyPassphrase $Keys['JavaGpgKeyPassphrase'] `
     -JavaPGP $Keys['JavaPGP'] `
+    -CodeSigningKeyVaultName: $Keys['-CodeSigningKeyVaultName'] `
     -CodeSigningKeyVaultUrl $Keys['CodeSigningKeyVaultUrl'] `
     -CodeSigningKeyVaultClientId $Keys['CodeSigningKeyVaultClientId'] `
     -CodeSigningKeyVaultTenantId $Keys['CodeSigningKeyVaultTenantId'] `

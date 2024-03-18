@@ -305,34 +305,30 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jarsigner-plugin</artifactId>
-                <version>${maven-jarsigner-plugin.version}</version>
+                <groupId>net.jsign</groupId>
+                <artifactId>jsign-maven-plugin</artifactId>
+                <version>6.0</version>
                 <executions>
-                <execution>
-                    <id>sign</id>
-                    <goals>
-                    <goal>sign</goal>
-                    </goals>
-                </execution>
+                    <execution>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skippackagesign}</skip>
+                            <fileset>
+                                <directory>target</directory>
+                                <includes>
+                                    <include>*.jar</include>
+                                </includes>
+                            </fileset>
+
+                            <storetype>AZUREKEYVAULT</storetype>
+                            <keystore>${keyvaultVaultName}</keystore>
+                            <storepass>${keyvaultAccessToken}</storepass>
+                            <alias>${keyvaultCertName}</alias>
+                        </configuration>
+                    </execution>
                 </executions>
-                <configuration>
-                    <skip>${skippackagesign}</skip>
-                    <keystore>NONE</keystore>
-                    <storetype>AzureKeyVault</storetype>
-                    <alias>${keyvaultCertName}</alias>
-                    <storepass/>
-                    <providerName>AzureKeyVault</providerName>
-                    <providerClass>com.azure.security.keyvault.jca.KeyVaultJcaProvider</providerClass>
-                    <arguments>
-                        <argument>-J--module-path="${keyvaultJcaJar}"</argument>
-                        <argument>-J--add-modules="com.azure.security.keyvault.jca"</argument>
-                        <argument>-J-Dazure.keyvault.uri=${keyvaultUrl}</argument>
-                        <argument>-J-Dazure.keyvault.tenant-id=${keyvaultTenant}</argument>
-                        <argument>-J-Dazure.keyvault.client-id=${keyvaultClientId}</argument>
-                        <argument>-J-Dazure.keyvault.client-secret=${keyvaultClientSecret}</argument>
-                    </arguments>
-                </configuration>
             </plugin>
            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
