@@ -318,10 +318,18 @@
                 </executions>
                 <configuration>
                     <skip>${skippackagesign}</skip>
-                    <keystore>${keystore}</keystore>
-                    <alias>${alias}</alias>
-                    <storepass>${keystorepass}</storepass>
-                    <keypass>${keypass}</keypass>
+                    <keystore>NONE</keystore>
+                    <storetype>AzureKeyVault</storetype>
+                    <alias>${keyvaultCertName}</alias>
+                    <storepass/>
+                    <providerName>AzureKeyVault</providerName>
+                    <providerClass>com.azure.security.keyvault.jca.KeyVaultJcaProvider</providerClass>
+                    <arguments>
+                        <argument>-J-Dazure.keyvault.uri=${keyvaultUrl}</argument>
+                        <argument>-J-Dazure.keyvault.tenant-id=${keyvaultTenant}</argument>
+                        <argument>-J-Dazure.keyvault.client-id=${keyvaultClientId}</argument>
+                        <argument>-J-Dazure.keyvault.client-secret=${keyvaultClientSecret}</argument>
+                    </arguments>
                 </configuration>
             </plugin>
            <plugin>
