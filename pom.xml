@@ -324,8 +324,10 @@
                     <storepass>${keyvaultAccessToken}</storepass>
                     <providerClass>net.jsign.jca.JsignJcaProvider</providerClass>
                     <arguments>
-                        <argument>-J--class-path="${keyvaultJcaJar}"</argument>
-                        <argument>-J--add-modules="java.sql"</argument>
+                        <argument>-J-cp</argument>
+                        <argument>-J${keyvaultJcaJar}</argument>
+                        <argument>-J--add-modules</argument>
+                        <argument>-Jjava.sql</argument>
                     </arguments>
                 </configuration>
             </plugin>
