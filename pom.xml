@@ -318,19 +318,14 @@
                 </executions>
                 <configuration>
                     <skip>${skippackagesign}</skip>
-                    <keystore>NONE</keystore>
-                    <storetype>AzureKeyVault</storetype>
+                    <keystore>${keyvaultVaultName}</keystore>
+                    <storetype>AZUREKEYVAULT</storetype>
                     <alias>${keyvaultCertName}</alias>
-                    <storepass/>
-                    <providerName>AzureKeyVault</providerName>
-                    <providerClass>com.azure.security.keyvault.jca.KeyVaultJcaProvider</providerClass>
+                    <storepass>${keyvaultAccessToken}</storepass>
+                    <providerClass>net.jsign.jca.JsignJcaProvider</providerClass>
                     <arguments>
-                        <argument>-J--module-path="${keyvaultJcaJar}"</argument>
-                        <argument>-J--add-modules="com.azure.security.keyvault.jca"</argument>
-                        <argument>-J-Dazure.keyvault.uri=${keyvaultUrl}</argument>
-                        <argument>-J-Dazure.keyvault.tenant-id=${keyvaultTenant}</argument>
-                        <argument>-J-Dazure.keyvault.client-id=${keyvaultClientId}</argument>
-                        <argument>-J-Dazure.keyvault.client-secret=${keyvaultClientSecret}</argument>
+                        <argument>-J--class-path="${keyvaultJcaJar}"</argument>
+                        <argument>-J--add-modules="java.sql"</argument>
                     </arguments>
                 </configuration>
             </plugin>
