@@ -318,11 +318,12 @@
                 </executions>
                 <configuration>
                     <skip>${skippackagesign}</skip>
-                    <keystore>${keyvaultVaultName}</keystore>
+                    <keystore>NONE</keystore>
                     <storetype>AZUREKEYVAULT</storetype>
                     <alias>${keyvaultCertName}</alias>
                     <storepass>${keyvaultAccessToken}</storepass>
                     <providerClass>net.jsign.jca.JsignJcaProvider</providerClass>
+                    <providerArg>${keyvaultVaultName}</providerArg>
                     <arguments>
                         <argument>-J-cp</argument>
                         <argument>-J${keyvaultJcaJar}</argument>
