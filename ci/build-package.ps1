@@ -25,6 +25,7 @@ param(
     -CodeSigningKeyVaultTenantId $Keys['CodeSigningKeyVaultTenantId'] `
     -CodeSigningKeyVaultClientSecret $Keys['CodeSigningKeyVaultClientSecret'] `
     -CodeSigningKeyVaultCertificateName $Keys['CodeSigningKeyVaultCertificateName'] `
+    -CodeSigningKeyVaultCertificateData $Keys['CodeSigningKeyVaultCertificateData'] `
     -MavenSettings $Keys['MavenSettings'] 
 
 

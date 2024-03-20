@@ -325,6 +325,7 @@
                     <providerClass>net.jsign.jca.JsignJcaProvider</providerClass>
                     <providerArg>${keyvaultVaultName}</providerArg>
                     <tsa>http://timestamp.globalsign.com/tsa/r6advanced1</tsa>
+                    <certchain>${keyvaultCertChain}</certchain>
                     <arguments>
                         <argument>-J-cp</argument>
                         <argument>-J${keyvaultJcaJar}</argument>
