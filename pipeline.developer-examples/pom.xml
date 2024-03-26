@@ -47,7 +47,7 @@
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
 
-        <tomcat.version>8.5.99</tomcat.version>
+        <tomcat.version>8.5.100</tomcat.version>
         <javax.servlet-api.version>4.0.1</javax.servlet-api.version>
         <spring-webmvc.version>5.2.25.RELEASE</spring-webmvc.version>
         <jstl.version>1.2</jstl.version>
