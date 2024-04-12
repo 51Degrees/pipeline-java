@@ -270,6 +270,7 @@ public interface ClientsidePropertyServiceCore {
             response.setHeader("Cache-Control", stringJoin(cacheControl, ","));
             response.setHeader("Vary", stringJoin(headersAffectingJavaScript, ","));
             response.setHeader("ETag", Integer.toString(hash));
+            response.setHeader("Access-Control-Allow-Origin", "*");
         }
     }
 }
