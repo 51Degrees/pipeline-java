@@ -239,13 +239,14 @@ public interface ClientsidePropertyServiceCore {
                     default:
                         break;
                 }
-                response.getWriter().write(content);
 
                 setHeaders(
                     response,
                     hash,
                     content == null ? 0 : content.length(),
                     contentType == ContentTypes.JavaScript ? "x-javascript" : "json");
+
+                response.getWriter().write(content);
             }
 
         }
@@ -270,6 +271,7 @@ public interface ClientsidePropertyServiceCore {
             response.setHeader("Cache-Control", stringJoin(cacheControl, ","));
             response.setHeader("Vary", stringJoin(headersAffectingJavaScript, ","));
             response.setHeader("ETag", Integer.toString(hash));
+            response.setHeader("Access-Control-Allow-Origin", "*");
         }
     }
 }

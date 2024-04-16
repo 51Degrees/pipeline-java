@@ -253,6 +253,8 @@ public class ClientsidePropertyServiceTests {
     else {
       verify(response, times(0)).setHeader(eq("ETag"), anyString());
     }
+
+    verify(response).setHeader(eq("Access-Control-Allow-Origin"), eq("*"));
   }
 
   @SuppressWarnings("rawtypes")
