@@ -179,6 +179,7 @@ public class JavaScriptBuilderElement
                 Constants.EVIDENCE_HOST_KEY,
                 fiftyone.pipeline.core.Constants.EVIDENCE_PROTOCOL,
                 EVIDENCE_OBJECT_NAME,
+                EVIDENCE_ENABLE_COOKIES,
                 EVIDENCE_WEB_CONTEXT_ROOT),
                 String.CASE_INSENSITIVE_ORDER);
     }
