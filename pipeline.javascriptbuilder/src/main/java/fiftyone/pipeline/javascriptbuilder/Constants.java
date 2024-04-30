@@ -36,9 +36,17 @@ public class Constants {
              fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR +
             EVIDENCE_OBJECT_NAME_SUFFIX;
 
+    /**
+     * The suffix used when the JavaScriptBuilderElement 'enable cookies'
+     * parameter is supplied as evidence.
+     */
     public static final String EVIDENCE_ENABLE_COOKIES_SUFFIX =
         "fod-js-enable-cookies";
 
+    /**
+     * The complete key to be used when the JavaScriptBuilderElement
+     * 'enable cookies' parameter is supplied as part of the query string.
+     */
     public static final String EVIDENCE_ENABLE_COOKIES =
         fiftyone.pipeline.core.Constants.EVIDENCE_QUERY_PREFIX +
             fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR +
