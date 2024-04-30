@@ -35,7 +35,15 @@ public class Constants {
              fiftyone.pipeline.core.Constants.EVIDENCE_QUERY_PREFIX +
              fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR +
             EVIDENCE_OBJECT_NAME_SUFFIX;
-    
+
+    public static final String EVIDENCE_ENABLE_COOKIES_SUFFIX =
+        "fod-js-enable-cookies";
+
+    public static final String EVIDENCE_ENABLE_COOKIES =
+        fiftyone.pipeline.core.Constants.EVIDENCE_QUERY_PREFIX +
+            fiftyone.pipeline.core.Constants.EVIDENCE_SEPERATOR +
+            EVIDENCE_ENABLE_COOKIES_SUFFIX;
+
     public static final String DEFAULT_PROTOCOL = "https";
     
     public static final String TEMPLATE = "/fiftyone/pipeline/javascriptbuilder/templates/JavaScriptResource.mustache";
