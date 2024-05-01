@@ -46,6 +46,7 @@ import java.util.*;
 import static fiftyone.pipeline.core.Constants.*;
 import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.EVIDENCE_SEQUENCE;
 import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.EVIDENCE_SESSIONID;
+import static fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_ENABLE_COOKIES;
 import static fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_OBJECT_NAME;
 
 //! [class]
@@ -178,6 +179,7 @@ public class JavaScriptBuilderElement
                 Constants.EVIDENCE_HOST_KEY,
                 fiftyone.pipeline.core.Constants.EVIDENCE_PROTOCOL,
                 EVIDENCE_OBJECT_NAME,
+                EVIDENCE_ENABLE_COOKIES,
                 EVIDENCE_WEB_CONTEXT_ROOT),
                 String.CASE_INSENSITIVE_ORDER);
     }
@@ -402,6 +404,18 @@ public class JavaScriptBuilderElement
             objectName = res.getValue();
         }
 
+        boolean cookies;
+        // Try and get the requested enable cookies from evidence.
+        TryGetResult<String> cookieVal = data.tryGetEvidence(
+            EVIDENCE_ENABLE_COOKIES,
+            String.class);
+        if (cookieVal.hasValue() == false ||
+            cookieVal.getValue().isEmpty()) {
+            cookies = enableCookies;
+        } else {
+            cookies = Boolean.parseBoolean(cookieVal.getValue());
+        }
+
         boolean updateEnabled = url != null && url.isEmpty() == false;
 
         // This check won't be 100% fool-proof but it only needs to be
@@ -412,12 +426,12 @@ public class JavaScriptBuilderElement
         JavaScriptResource javaScriptObj = new JavaScriptResource(
             objectName,
             jsonObject,
-                sessionId,
-                sequence,
+            sessionId,
+            sequence,
             supportsPromises,
             url,
-                parameters,
-            enableCookies,    
+            parameters,
+            cookies,
             updateEnabled,
             hasDelayedProperties);
       

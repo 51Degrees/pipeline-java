@@ -156,7 +156,12 @@ public class JavaScriptBuilderElementBuilder {
     
     /**
      * Set whether the client JavaScript stores results of client side
-     * processing in cookies.
+     * processing in cookies. If set to false, the JavaScript will not populate
+     * any cookies, and will instead use session storage.
+     * <p>
+     * This can also be set per request, using the "query.fod-js-enable-cookies"
+     * evidence key. For more details on personal data policy, see
+     * http://51degrees.com/terms/client-services-privacy-policy/
      * <p>
      * Default is true
      * @param enableCookies should enable cookies?
