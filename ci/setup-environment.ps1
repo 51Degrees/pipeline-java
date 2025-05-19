@@ -1,11 +1,6 @@
 param(
-    [Parameter(Mandatory=$true)]
-    [string]$RepoName,
-    [Parameter(Mandatory=$true)]
-    [string]$JavaSDKEnvVar,
-    [string]$ProjectDir = "."
+    [Parameter(Mandatory)][string]$RepoName,
+    [Parameter(Mandatory)][string]$JavaSDKEnvVar
 )
 
-./java/setup-enviroment.ps1 -RepoName $RepoName -ProjectDir $ProjectDir -JavaSDKEnvVar $JavaSDKEnvVar
-
-exit $LASTEXITCODE
+./java/setup-enviroment.ps1 @PSBoundParameters
