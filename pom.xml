@@ -204,7 +204,7 @@
                 <version>${central-publishing-maven-plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <skipPublishing>true</skipPublishing>
+                    <skipPublishing>${skipPublishing}</skipPublishing>
                     <publishingServerId>central</publishingServerId>
                     <autoPublish>true</autoPublish>
                     <waitUntil>published</waitUntil>
@@ -311,6 +311,7 @@
                 </executions>
                 <configuration>
                     <skip>${skippackagesign}</skip>
+                    <verbose>true</verbose>
                     <keystore>NONE</keystore>
                     <storetype>AZUREKEYVAULT</storetype>
                     <alias>${keyvaultCertName}</alias>
