@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 
 /**
  * Native library loader class used to load the correct compiled library for an
@@ -156,7 +157,9 @@ public class LibLoader {
         byte[] buffer = new byte[1024];
         int read;
         File temp = File.createTempFile(libName, "");
-        try (InputStream in = engineClass.getResourceAsStream("/" + libName)) {
+        try (InputStream in = Optional
+                .ofNullable(engineClass.getResourceAsStream("/" + libName))
+                .orElseGet(() -> engineClass.getResourceAsStream("/Debug/" + libName))) {
             if (in == null) {
                 throw new UnsatisfiedLinkError(String.format(
                     "Could not find the resource '%s'. Check the resource " +
