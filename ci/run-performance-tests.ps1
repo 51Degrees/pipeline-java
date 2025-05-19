@@ -1,14 +1,9 @@
-
 param(
-    [string]$ProjectDir = ".",
-    [string]$Name,
-    [Parameter(Mandatory=$true)]
-    [string]$RepoName
+    [Parameter(Mandatory)][string]$RepoName,
+    [string]$Name
 )
 
-
-
-./java/run-performance-tests.ps1 -RepoName $RepoName -ProjectDir $ProjectDir -Name $Name -TestName "ShareUsageOverheadTests"
+./java/run-performance-tests.ps1 @PSBoundParameters -TestName "ShareUsageOverheadTests"
 
 
 $RepoPath = [IO.Path]::Combine($pwd, $RepoName)

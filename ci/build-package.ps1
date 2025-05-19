@@ -1,19 +1,12 @@
-
 param(
-    [Parameter(Mandatory=$true)]
-    [string]$RepoName,
-    [string]$ProjectDir = ".",
-    [string]$Name,
-    [Parameter(Mandatory=$true)]
-    [string]$Version,
-    [Parameter(Mandatory=$true)]
-    [Hashtable]$Keys
+    [Parameter(Mandatory)][string]$RepoName,
+    [Parameter(Mandatory)][string]$Version,
+    [Parameter(Mandatory)][Hashtable]$Keys,
+    [string]$Name
 )
-
 
 ./java/build-package.ps1 `
     -RepoName $RepoName `
-    -ProjectDir $ProjectDir `
     -Name $Name `
     -Version $Version `
     -ExtraArgs "-DskipNativeBuild=true" `
@@ -25,8 +18,4 @@ param(
     -CodeSigningKeyVaultTenantId $Keys['CodeSigningKeyVaultTenantId'] `
     -CodeSigningKeyVaultClientSecret $Keys['CodeSigningKeyVaultClientSecret'] `
     -CodeSigningKeyVaultCertificateName $Keys['CodeSigningKeyVaultCertificateName'] `
-    -CodeSigningKeyVaultCertificateData $Keys['CodeSigningKeyVaultCertificateData'] `
-    -MavenSettings $Keys['MavenSettings'] 
-
-
-exit $LASTEXITCODE
+    -CodeSigningKeyVaultCertificateData $Keys['CodeSigningKeyVaultCertificateData']
