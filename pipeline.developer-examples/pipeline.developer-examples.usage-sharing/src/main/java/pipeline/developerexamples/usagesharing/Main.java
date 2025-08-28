@@ -55,8 +55,8 @@ import java.util.Objects;
  * 
  * @include pipeline.developer-examples.usage-sharing/src/main/resources/51d.xml
  * 
- * For details of what each setting does, see the reference documentation 
- * for the [share usage builder](http://51degrees.com/pipeline-java/classfiftyone_1_1pipeline_1_1engines_1_1fiftyone_1_1flowelements_1_1_share_usage_builder_base.html) 
+ * For details of what each setting does, see the 
+ * [Share Usage reference](/documentation/4.5/_pipeline_api__features__usage_sharing.html) 
  * 
  * This example is available in full on [GitHub](https://github.com/51Degrees/pipeline-java/blob/main/pipeline.developer-examples/pipeline.developer-examples.usage-sharing/src/main/java/pipeline/developerexamples/usagesharing/Main.java).
  * 
