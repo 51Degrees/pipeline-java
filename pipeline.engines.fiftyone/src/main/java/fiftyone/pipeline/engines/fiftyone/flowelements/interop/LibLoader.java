@@ -78,12 +78,13 @@ public class LibLoader {
     private static String getArch() throws UnsupportedOperationException {
         String arch = System.getProperty("os.arch").toLowerCase();
 
-        if (arch.contains("arm")) {
-            return "arm";
+        // Check aarch64/arm64 BEFORE generic arm (arm64 contains "arm")
+        if (arch.contains("aarch64") || arch.contains("arm64")) {
+            return "aarch64";
         }
 
-        if (arch.contains("aarch64")) {
-            return "aarch64";
+        if (arch.contains("arm")) {
+            return "arm";
         }
 
         // Check for 64 bit
