@@ -111,15 +111,14 @@ public class JavaScriptBuilderTests {
         data.put("property", "thisIsAValue" );
         doReturn(data).when(elementDataMock).asKeyMap();
 
-        int port = TcpHelper.getAvailablePort();
-        testServer = new TestServer(port);
+        testServer = new TestServer();
         testServer.start();
 
         ChromeOptions options = new ChromeOptions();
         options.setAcceptInsecureCerts(true);
         options.addArguments("--headless");
         driver = new ChromeDriver(options);
-        driver.navigate().to("http://localhost:" + port + "/");
+        driver.navigate().to("http://localhost:" + testServer.getPort() + "/");
     }
 
     @AfterEach

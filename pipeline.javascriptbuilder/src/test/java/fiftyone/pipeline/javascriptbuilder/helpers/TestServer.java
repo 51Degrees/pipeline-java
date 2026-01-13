@@ -31,6 +31,7 @@ import java.net.InetSocketAddress;
 
 public class TestServer {
 
+    private final InetSocketAddress address;
     private final HttpServer httpServer;
     private final String page = "<!DOCTYPE>" +
             "<html>" +
@@ -49,9 +50,13 @@ public class TestServer {
         exchange.close();
     };
 
-    public TestServer(int port) throws IOException {
-        InetSocketAddress address = new InetSocketAddress(port);
+    public TestServer() throws IOException {
+        address = new InetSocketAddress(0);
         httpServer = HttpServer.create(address, 0);
+    }
+
+    public int getPort() {
+        return address.getPort();
     }
 
     public void start() {
