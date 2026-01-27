@@ -147,9 +147,12 @@ public abstract class DataFileConfigurationBuilderBase<
      * The {@link DataUpdateService} has the ability to watch a data file on
      * disk and automatically refresh the engine as soon as the file is updated.
      * This setting enables/disables that feature.
-     *
-     * The {@link #setAutoUpdate(boolean)} feature must also be enabled in order
-     * for the file system watcher to work.
+     * <p>
+     * This feature works independently of {@link #setAutoUpdate(boolean)}.
+     * You can enable file system watcher without enabling automatic updates
+     * if you want the engine to detect external file changes without polling
+     * for updates from the server.
+     * <p>
      * If the engine is built from a byte[] then this setting does nothing.
      * @param enabled  the cache configuration to use
      * @return this builder instance
