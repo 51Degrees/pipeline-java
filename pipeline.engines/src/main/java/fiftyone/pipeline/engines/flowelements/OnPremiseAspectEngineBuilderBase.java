@@ -187,18 +187,15 @@ public abstract class OnPremiseAspectEngineBuilderBase<
             dataFile.setConfiguration(dataFileConfig);
             dataFile.setTempDataDirPath(tempDir);
 
-            if (dataFileConfig.getAutomaticUpdatesEnabled() ||
-                dataFileConfig.getFileSystemWatcherEnabled()) {
+            if (dataFileConfig.getAutomaticUpdatesEnabled()) {
                 if (dataUpdateService == null) {
                     throw new RuntimeException(
-                        "Data update service is required but does not exist. " +
-                            "The data update service is needed when automatic updates " +
-                            "or file system watcher is enabled. " +
-                            "This can be corrected by passing a DataUpdateService " +
+                        "Auto update enabled by data update service does not exist. " +
+                            "This can be corrected by passing an DataUpdateService " +
                             "instance to the engine builder constructor. " +
                             "If building from configuration, this can be corrected " +
-                            "by adding a DataUpdateService instance to the " +
-                            "pipeline builder via addService() method.");
+                            "by adding an DataUpdateService instance to the " +
+                            "the pipeline builder via addService() method.");
                 }
                 dataUpdateService.registerDataFile(dataFile);
             }
