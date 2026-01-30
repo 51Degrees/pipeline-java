@@ -40,12 +40,6 @@ import java.util.Set;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.*;
-
-import fiftyone.pipeline.engines.configuration.DataFileConfiguration;
-import fiftyone.pipeline.engines.configuration.DataFileConfigurationDefault;
-import fiftyone.pipeline.engines.data.AspectEngineDataFile;
-import fiftyone.pipeline.engines.services.DataUpdateService;
 
 @SuppressWarnings("rawtypes")
 public class OnPremiseAspectEngineBuilderBaseTest {
@@ -54,12 +48,12 @@ public class OnPremiseAspectEngineBuilderBaseTest {
 
     @Before
     public void Init() {
-        aspectEngineBuilder = createEngineBuilderBase(null);
+        aspectEngineBuilder = createEngineBuilderBase();
         deleteTempDir();
     }
 
-    private OnPremiseAspectEngineBuilderBase createEngineBuilderBase(DataUpdateService dataUpdateService) {
-        return new OnPremiseAspectEngineBuilderBase(null, dataUpdateService) {
+    private OnPremiseAspectEngineBuilderBase createEngineBuilderBase() {
+        return new OnPremiseAspectEngineBuilderBase() {
             @Override
             public OnPremiseAspectEngineBuilderBase setPerformanceProfile(Constants.PerformanceProfiles profile) {
                 return null;
@@ -136,19 +130,5 @@ public class OnPremiseAspectEngineBuilderBaseTest {
         assertTrue(tempDir.canRead());
         assertTrue(tempDir.canWrite());
         assertTrue(tempDir.canExecute());
-    }
-
-    @Test
-    public void testRegisterWithFileSystemWatcherOnly() {
-        DataUpdateService dataUpdateService = mock(DataUpdateService.class);
-        OnPremiseAspectEngineBuilderBase builder = createEngineBuilderBase(dataUpdateService);
-        DataFileConfiguration config = new DataFileConfigurationDefault();
-        config.setAutomaticUpdatesEnabled(false);
-        config.setFileSystemWatcherEnabled(true);
-        config.setIdentifier("test");
-        builder.addDataFile(config);
-        builder.preCreateEngine();
-
-        verify(dataUpdateService, times(1)).registerDataFile(any(AspectEngineDataFile.class));
     }
 }
