@@ -620,6 +620,10 @@ public class DataUpdateServiceDefault implements DataUpdateService {
                         logger.debug("HTTP Status is OK");
                         // wrap input stream in a buffered stream
                         InputStream is = new BufferedInputStream(connection.getInputStream());
+                        // decompress, if necessary
+                        if (dataFile.getConfiguration().getDecompressContent()) {
+                            is = new GZIPInputStream(is);
+                        }
                         // if checking md5 wrap in a DigestStream
                         MessageDigest md = null;
                         if (dataFile.getConfiguration().getVerifyMd5()) {
@@ -634,10 +638,6 @@ public class DataUpdateServiceDefault implements DataUpdateService {
                                 return AutoUpdateStatus.AUTO_UPDATE_ERR_MD5_VALIDATION_FAILED;
                             }
                             is = new DigestInputStream(is, md);
-                        }
-                        // decompress, if necessary
-                        if (dataFile.getConfiguration().getDecompressContent()) {
-                            is = new GZIPInputStream(is);
                         }
                         // copy resulting stream to destination
                         if (Objects.nonNull(tempFile.getPath())) {
