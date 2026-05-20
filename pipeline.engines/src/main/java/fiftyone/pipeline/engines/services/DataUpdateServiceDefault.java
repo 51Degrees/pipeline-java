@@ -616,57 +616,8 @@ public class DataUpdateServiceDefault implements DataUpdateService {
                 connection.setInstanceFollowRedirects(true);
 
                 switch (connection.getResponseCode()) {
-                    case (HttpURLConnection.HTTP_OK): {
-                        logger.debug("HTTP Status is OK");
-                        // wrap input stream in a buffered stream
-                        InputStream is = new BufferedInputStream(connection.getInputStream());
-                        // if checking md5 wrap in a DigestStream
-                        MessageDigest md = null;
-                        if (dataFile.getConfiguration().getVerifyMd5()) {
-                            try {
-                                md = MessageDigest.getInstance("MD5");
-                                if (Objects.isNull(md)) {
-                                    return AutoUpdateStatus.AUTO_UPDATE_ERR_MD5_VALIDATION_FAILED;
-                                }
-                            } catch (NoSuchAlgorithmException e) {
-                                // this should be impossible
-                                logger.error("MD5 Algorithm not found");
-                                return AutoUpdateStatus.AUTO_UPDATE_ERR_MD5_VALIDATION_FAILED;
-                            }
-                            is = new DigestInputStream(is, md);
-                        }
-                        // decompress, if necessary
-                        if (dataFile.getConfiguration().getDecompressContent()) {
-                            is = new GZIPInputStream(is);
-                        }
-                        // copy resulting stream to destination
-                        if (Objects.nonNull(tempFile.getPath())) {
-                            logger.debug("Copying download stream");
-                            // destination is a file
-                            java.nio.file.Files.copy(is, Paths.get(tempFile.getPath()),
-                                    StandardCopyOption.REPLACE_EXISTING);
-                            logger.debug("Copied downloaded stream");
-                        } else {
-                            // looks like we are writing to memory, or somewhere that has no path
-                            byte[] buffer = new byte[1024];
-                            int len = is.read(buffer);
-                            while (len != -1) {
-                                tempFile.getWriter().writeBytes(buffer, len);
-                                len = is.read(buffer);
-                            }
-                        }
-                        // check md5
-                        if (dataFile.getConfiguration().getVerifyMd5()) {
-                            String md5Header = connection.getHeaderField("Content-MD5");
-                            // for the compiler
-                            assert md != null;
-                            String md5Hex = DatatypeConverter.printHexBinary(md.digest());
-                            if (md5Header.equalsIgnoreCase(md5Hex) == false) {
-                                return AutoUpdateStatus.AUTO_UPDATE_ERR_MD5_VALIDATION_FAILED;
-                            }
-                        }
-                        return AutoUpdateStatus.AUTO_UPDATE_IN_PROGRESS;
-                    }
+                    case (HttpURLConnection.HTTP_OK):
+                        return downloadOkResponse(connection, dataFile, tempFile);
 
                     // Note: needed because TooManyRequests is not available
                     // in some versions of the HttpStatusCode enum.
@@ -695,6 +646,101 @@ public class DataUpdateServiceDefault implements DataUpdateService {
             logger.error("Error while processing data file download", e);
             return AutoUpdateStatus.AUTO_UPDATE_HTTPS_ERR;
         }
+    }
+
+    /**
+     * Persist the body of a 200 OK download to {@code tempFile}.
+     * <p>
+     * The response stream is wrapped via {@link #openResponseStream}
+     * before being chained through the MD5 digest and (optionally) a
+     * {@link GZIPInputStream}, so the JDK's concatenated-gzip-member
+     * decoder behaves correctly on top of {@link HttpURLConnection} on
+     * every JDK from 7 upwards. See that method for the gory details.
+     */
+    private AutoUpdateStatus downloadOkResponse(
+            HttpURLConnection connection,
+            AspectEngineDataFile dataFile,
+            FileWrapper tempFile) throws IOException {
+        logger.debug("HTTP Status is OK");
+        boolean verifyMd5 = dataFile.getConfiguration().getVerifyMd5();
+        boolean decompress = dataFile.getConfiguration().getDecompressContent();
+
+        InputStream src = openResponseStream(connection);
+
+        MessageDigest md = null;
+        if (verifyMd5) {
+            try {
+                md = MessageDigest.getInstance("MD5");
+            } catch (NoSuchAlgorithmException e) {
+                logger.error("MD5 Algorithm not found");
+                return AutoUpdateStatus.AUTO_UPDATE_ERR_MD5_VALIDATION_FAILED;
+            }
+            src = new DigestInputStream(src, md);
+        }
+        if (decompress) {
+            src = new GZIPInputStream(src);
+        }
+
+        writeBodyTo(tempFile, src);
+
+        if (verifyMd5 && !md5Matches(md, connection)) {
+            return AutoUpdateStatus.AUTO_UPDATE_ERR_MD5_VALIDATION_FAILED;
+        }
+        return AutoUpdateStatus.AUTO_UPDATE_IN_PROGRESS;
+    }
+
+    /**
+     * Wrap the HTTP response in a buffered stream whose
+     * {@link InputStream#available()} never reports 0 before genuine
+     * end-of-stream.
+     * <p>
+     * The Distributor serves the Enterprise hash and IPI payloads as
+     * concatenated gzip members. On JDKs prior to 23,
+     * {@code GZIPInputStream.readTrailer()} consults
+     * {@code this.in.available()} to decide whether to look for the
+     * next member; {@code HttpURLConnection}'s input stream reports 0
+     * momentarily between TCP frames at a member boundary, causing
+     * {@code GZIPInputStream} to declare end-of-stream and silently
+     * drop the rest of the payload. Forcing a positive value here
+     * makes the JDK attempt to read the next gzip header; when the
+     * stream really is exhausted the underlying {@code read()} returns
+     * {@code -1}, {@code readHeader()} throws {@code EOFException},
+     * and {@code readTrailer()} catches it and reports end-of-stream
+     * cleanly. JDK 23+ removed the gated check entirely, so this
+     * wrapper is harmless there.
+     */
+    private static InputStream openResponseStream(HttpURLConnection connection)
+            throws IOException {
+        InputStream lying = new FilterInputStream(connection.getInputStream()) {
+            @Override
+            public int available() throws IOException {
+                int a = super.available();
+                return a > 0 ? a : 1;
+            }
+        };
+        return new BufferedInputStream(lying);
+    }
+
+    private void writeBodyTo(FileWrapper tempFile, InputStream body) throws IOException {
+        if (tempFile.getPath() != null) {
+            logger.debug("Copying download stream");
+            Files.copy(body, Paths.get(tempFile.getPath()),
+                    StandardCopyOption.REPLACE_EXISTING);
+            logger.debug("Copied downloaded stream");
+            return;
+        }
+        // Writer-backed destination (in-process test path).
+        byte[] buffer = new byte[8192];
+        int n;
+        while ((n = body.read(buffer)) != -1) {
+            tempFile.getWriter().writeBytes(buffer, n);
+        }
+    }
+
+    private static boolean md5Matches(MessageDigest md, HttpURLConnection connection) {
+        String header = connection.getHeaderField("Content-MD5");
+        String computed = DatatypeConverter.printHexBinary(md.digest());
+        return header != null && header.equalsIgnoreCase(computed);
     }
 
     @Override
