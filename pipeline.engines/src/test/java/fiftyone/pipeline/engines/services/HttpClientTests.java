@@ -23,6 +23,7 @@
 package fiftyone.pipeline.engines.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -51,8 +52,7 @@ public class HttpClientTests {
    */
   @Test
   public void VerifyErrorHandling() {
-    String result= "No response";
-    String expected = "{ \"status\":\"401\", \"errors\": [\"This Resource Key is not authorized for use with this domain: ''. See http://51degrees.com/documentation/_info__error_messages.html#Resource_key_not_authorized_on_domain for more information.\"] }";
+    String result = null;
 
     try{
       HttpURLConnection connection = client.connect(new URL(testUrl));
@@ -60,8 +60,13 @@ public class HttpClientTests {
     } catch (IOException ex) {
       assertTrue("Unexpected exception: " + ex.getMessage(), false);
     }
-    
-    assertEquals(expected, result);
+
+    // The cloud's 401 error body text changes from time to time; we only
+    // care that getResponseString surfaced the JSON body (instead of
+    // throwing or returning empty) for a non-2xx response.
+    assertNotNull(result);
+    assertTrue("Expected a 401 JSON body but got: " + result,
+        result.replaceAll("\\s+", "").contains("\"status\":\"401\""));
   }
 
   /**
