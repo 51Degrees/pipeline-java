@@ -616,57 +616,8 @@ public class DataUpdateServiceDefault implements DataUpdateService {
                 connection.setInstanceFollowRedirects(true);
 
                 switch (connection.getResponseCode()) {
-                    case (HttpURLConnection.HTTP_OK): {
-                        logger.debug("HTTP Status is OK");
-                        // wrap input stream in a buffered stream
-                        InputStream is = new BufferedInputStream(connection.getInputStream());
-                        // if checking md5 wrap in a DigestStream
-                        MessageDigest md = null;
-                        if (dataFile.getConfiguration().getVerifyMd5()) {
-                            try {
-                                md = MessageDigest.getInstance("MD5");
-                                if (Objects.isNull(md)) {
-                                    return AutoUpdateStatus.AUTO_UPDATE_ERR_MD5_VALIDATION_FAILED;
-                                }
-                            } catch (NoSuchAlgorithmException e) {
-                                // this should be impossible
-                                logger.error("MD5 Algorithm not found");
-                                return AutoUpdateStatus.AUTO_UPDATE_ERR_MD5_VALIDATION_FAILED;
-                            }
-                            is = new DigestInputStream(is, md);
-                        }
-                        // decompress, if necessary
-                        if (dataFile.getConfiguration().getDecompressContent()) {
-                            is = new GZIPInputStream(is);
-                        }
-                        // copy resulting stream to destination
-                        if (Objects.nonNull(tempFile.getPath())) {
-                            logger.debug("Copying download stream");
-                            // destination is a file
-                            java.nio.file.Files.copy(is, Paths.get(tempFile.getPath()),
-                                    StandardCopyOption.REPLACE_EXISTING);
-                            logger.debug("Copied downloaded stream");
-                        } else {
-                            // looks like we are writing to memory, or somewhere that has no path
-                            byte[] buffer = new byte[1024];
-                            int len = is.read(buffer);
-                            while (len != -1) {
-                                tempFile.getWriter().writeBytes(buffer, len);
-                                len = is.read(buffer);
-                            }
-                        }
-                        // check md5
-                        if (dataFile.getConfiguration().getVerifyMd5()) {
-                            String md5Header = connection.getHeaderField("Content-MD5");
-                            // for the compiler
-                            assert md != null;
-                            String md5Hex = DatatypeConverter.printHexBinary(md.digest());
-                            if (md5Header.equalsIgnoreCase(md5Hex) == false) {
-                                return AutoUpdateStatus.AUTO_UPDATE_ERR_MD5_VALIDATION_FAILED;
-                            }
-                        }
-                        return AutoUpdateStatus.AUTO_UPDATE_IN_PROGRESS;
-                    }
+                    case (HttpURLConnection.HTTP_OK):
+                        return downloadOkResponse(connection, dataFile, tempFile);
 
                     // Note: needed because TooManyRequests is not available
                     // in some versions of the HttpStatusCode enum.
@@ -694,6 +645,169 @@ public class DataUpdateServiceDefault implements DataUpdateService {
         } catch (Exception e) {
             logger.error("Error while processing data file download", e);
             return AutoUpdateStatus.AUTO_UPDATE_HTTPS_ERR;
+        }
+    }
+
+    /**
+     * Persist the body of a 200 OK download to {@code tempFile}.
+     * <p>
+     * Implementation note - decompression intentionally happens off the
+     * live network stream:
+     * <ol>
+     *   <li>{@code Content-MD5} covers the raw payload, so we hash the
+     *       raw bytes as they are drained and validate the header
+     *       <em>before</em> writing any decompressed output.</li>
+     *   <li>The Distributor serves the Enterprise hash payload as
+     *       concatenated gzip members (small preamble + large data
+     *       member). On JDKs prior to 23,
+     *       {@code GZIPInputStream.readTrailer()} consults
+     *       {@code this.in.available()} to decide whether to continue
+     *       past a member boundary. When the underlying source is
+     *       {@code HttpURLConnection.HttpInputStream},
+     *       {@code available()} returns 0 at the boundary because the
+     *       network buffer drains between TCP frames, so
+     *       {@code GZIPInputStream} declares end-of-stream and the rest
+     *       of the payload is silently dropped. Reading instead from a
+     *       {@code FileInputStream}/{@code ByteArrayInputStream} - whose
+     *       {@code available()} reflects the true remaining bytes -
+     *       walks every member correctly under every affected JDK.</li>
+     * </ol>
+     */
+    private AutoUpdateStatus downloadOkResponse(
+            HttpURLConnection connection,
+            AspectEngineDataFile dataFile,
+            FileWrapper tempFile) throws IOException {
+        logger.debug("HTTP Status is OK");
+        boolean verifyMd5 = dataFile.getConfiguration().getVerifyMd5();
+        boolean decompress = dataFile.getConfiguration().getDecompressContent();
+
+        MessageDigest md;
+        try {
+            md = verifyMd5 ? MessageDigest.getInstance("MD5") : null;
+        } catch (NoSuchAlgorithmException e) {
+            logger.error("MD5 Algorithm not found");
+            return AutoUpdateStatus.AUTO_UPDATE_ERR_MD5_VALIDATION_FAILED;
+        }
+
+        try (StagedDownload staged = stageRawResponse(connection, tempFile, decompress, md)) {
+            if (verifyMd5 && !md5Matches(md, connection)) {
+                return AutoUpdateStatus.AUTO_UPDATE_ERR_MD5_VALIDATION_FAILED;
+            }
+            staged.commitTo(tempFile, decompress);
+            return AutoUpdateStatus.AUTO_UPDATE_IN_PROGRESS;
+        }
+    }
+
+    /**
+     * Drain the response body into a {@link StagedDownload}, computing
+     * the MD5 over the raw (compressed) bytes as we go. When the
+     * destination is a file path and decompression is not requested,
+     * the bytes are written straight to that path to avoid an extra
+     * copy on commit.
+     */
+    private StagedDownload stageRawResponse(
+            HttpURLConnection connection,
+            FileWrapper tempFile,
+            boolean decompress,
+            MessageDigest md) throws IOException {
+        InputStream src = new BufferedInputStream(connection.getInputStream());
+        if (md != null) {
+            src = new DigestInputStream(src, md);
+        }
+        if (tempFile.getPath() != null) {
+            Path destPath = Paths.get(tempFile.getPath());
+            Path stagingPath = decompress
+                    ? Files.createTempFile(stagingDirectoryFor(destPath), "51d-update-", ".gz")
+                    : destPath;
+            logger.debug("Copying download stream");
+            Files.copy(src, stagingPath, StandardCopyOption.REPLACE_EXISTING);
+            logger.debug("Copied downloaded stream");
+            return new StagedDownload(destPath, stagingPath);
+        }
+        // Writer-backed destination: buffer raw bytes so MD5 can be
+        // validated before producing the writer output.
+        ByteArrayOutputStream buffered = new ByteArrayOutputStream();
+        byte[] chunk = new byte[8192];
+        int n;
+        while ((n = src.read(chunk)) != -1) {
+            buffered.write(chunk, 0, n);
+        }
+        return new StagedDownload(buffered.toByteArray());
+    }
+
+    private static Path stagingDirectoryFor(Path destPath) {
+        return (destPath.getParent() != null)
+                ? destPath.getParent()
+                : Paths.get(System.getProperty("java.io.tmpdir"));
+    }
+
+    private static boolean md5Matches(MessageDigest md, HttpURLConnection connection) {
+        String header = connection.getHeaderField("Content-MD5");
+        String computed = DatatypeConverter.printHexBinary(md.digest());
+        return header != null && header.equalsIgnoreCase(computed);
+    }
+
+    /**
+     * Drained raw response held either on disk ({@link #stagingPath},
+     * possibly equal to {@link #destPath} when no decompression is
+     * required) or in memory ({@link #stagingBytes}).
+     * {@link #commitTo} writes the final output for the data file from
+     * those bytes. {@link #close} removes the staging file when it is
+     * distinct from the final destination.
+     */
+    private final class StagedDownload implements Closeable {
+        private final Path destPath;
+        private final Path stagingPath;
+        private final byte[] stagingBytes;
+
+        StagedDownload(Path destPath, Path stagingPath) {
+            this.destPath = destPath;
+            this.stagingPath = stagingPath;
+            this.stagingBytes = null;
+        }
+
+        StagedDownload(byte[] bytes) {
+            this.destPath = null;
+            this.stagingPath = null;
+            this.stagingBytes = bytes;
+        }
+
+        void commitTo(FileWrapper tempFile, boolean decompress) throws IOException {
+            if (decompress) {
+                try (InputStream raw = openRaw();
+                     GZIPInputStream gz = new GZIPInputStream(raw)) {
+                    if (destPath != null) {
+                        Files.copy(gz, destPath, StandardCopyOption.REPLACE_EXISTING);
+                    } else {
+                        byte[] chunk = new byte[8192];
+                        int n;
+                        while ((n = gz.read(chunk)) != -1) {
+                            tempFile.getWriter().writeBytes(chunk, n);
+                        }
+                    }
+                }
+            } else if (destPath == null) {
+                tempFile.getWriter().writeBytes(stagingBytes, stagingBytes.length);
+            }
+            // (decompress=false, destPath != null): stageRawResponse
+            // already wrote the raw bytes directly to destPath.
+        }
+
+        private InputStream openRaw() throws IOException {
+            return (stagingBytes != null)
+                    ? new ByteArrayInputStream(stagingBytes)
+                    : new BufferedInputStream(Files.newInputStream(stagingPath));
+        }
+
+        @Override
+        public void close() {
+            if (stagingPath != null && !stagingPath.equals(destPath)) {
+                try {
+                    Files.deleteIfExists(stagingPath);
+                } catch (IOException e) {
+                    logger.debug("Could not delete staging file '{}'", stagingPath, e);
+                }
+            }
         }
     }
 
