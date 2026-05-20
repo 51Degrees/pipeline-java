@@ -651,27 +651,11 @@ public class DataUpdateServiceDefault implements DataUpdateService {
     /**
      * Persist the body of a 200 OK download to {@code tempFile}.
      * <p>
-     * Implementation note - decompression intentionally happens off the
-     * live network stream:
-     * <ol>
-     *   <li>{@code Content-MD5} covers the raw payload, so we hash the
-     *       raw bytes as they are drained and validate the header
-     *       <em>before</em> writing any decompressed output.</li>
-     *   <li>The Distributor serves the Enterprise hash payload as
-     *       concatenated gzip members (small preamble + large data
-     *       member). On JDKs prior to 23,
-     *       {@code GZIPInputStream.readTrailer()} consults
-     *       {@code this.in.available()} to decide whether to continue
-     *       past a member boundary. When the underlying source is
-     *       {@code HttpURLConnection.HttpInputStream},
-     *       {@code available()} returns 0 at the boundary because the
-     *       network buffer drains between TCP frames, so
-     *       {@code GZIPInputStream} declares end-of-stream and the rest
-     *       of the payload is silently dropped. Reading instead from a
-     *       {@code FileInputStream}/{@code ByteArrayInputStream} - whose
-     *       {@code available()} reflects the true remaining bytes -
-     *       walks every member correctly under every affected JDK.</li>
-     * </ol>
+     * The response stream is wrapped via {@link #openResponseStream}
+     * before being chained through the MD5 digest and (optionally) a
+     * {@link GZIPInputStream}, so the JDK's concatenated-gzip-member
+     * decoder behaves correctly on top of {@link HttpURLConnection} on
+     * every JDK from 7 upwards. See that method for the gory details.
      */
     private AutoUpdateStatus downloadOkResponse(
             HttpURLConnection connection,
@@ -681,134 +665,82 @@ public class DataUpdateServiceDefault implements DataUpdateService {
         boolean verifyMd5 = dataFile.getConfiguration().getVerifyMd5();
         boolean decompress = dataFile.getConfiguration().getDecompressContent();
 
-        MessageDigest md;
-        try {
-            md = verifyMd5 ? MessageDigest.getInstance("MD5") : null;
-        } catch (NoSuchAlgorithmException e) {
-            logger.error("MD5 Algorithm not found");
-            return AutoUpdateStatus.AUTO_UPDATE_ERR_MD5_VALIDATION_FAILED;
-        }
+        InputStream src = openResponseStream(connection);
 
-        try (StagedDownload staged = stageRawResponse(connection, tempFile, decompress, md)) {
-            if (verifyMd5 && !md5Matches(md, connection)) {
+        MessageDigest md = null;
+        if (verifyMd5) {
+            try {
+                md = MessageDigest.getInstance("MD5");
+            } catch (NoSuchAlgorithmException e) {
+                logger.error("MD5 Algorithm not found");
                 return AutoUpdateStatus.AUTO_UPDATE_ERR_MD5_VALIDATION_FAILED;
             }
-            staged.commitTo(tempFile, decompress);
-            return AutoUpdateStatus.AUTO_UPDATE_IN_PROGRESS;
+            src = new DigestInputStream(src, md);
         }
+        if (decompress) {
+            src = new GZIPInputStream(src);
+        }
+
+        writeBodyTo(tempFile, src);
+
+        if (verifyMd5 && !md5Matches(md, connection)) {
+            return AutoUpdateStatus.AUTO_UPDATE_ERR_MD5_VALIDATION_FAILED;
+        }
+        return AutoUpdateStatus.AUTO_UPDATE_IN_PROGRESS;
     }
 
     /**
-     * Drain the response body into a {@link StagedDownload}, computing
-     * the MD5 over the raw (compressed) bytes as we go. When the
-     * destination is a file path and decompression is not requested,
-     * the bytes are written straight to that path to avoid an extra
-     * copy on commit.
+     * Wrap the HTTP response in a buffered stream whose
+     * {@link InputStream#available()} never reports 0 before genuine
+     * end-of-stream.
+     * <p>
+     * The Distributor serves the Enterprise hash and IPI payloads as
+     * concatenated gzip members. On JDKs prior to 23,
+     * {@code GZIPInputStream.readTrailer()} consults
+     * {@code this.in.available()} to decide whether to look for the
+     * next member; {@code HttpURLConnection}'s input stream reports 0
+     * momentarily between TCP frames at a member boundary, causing
+     * {@code GZIPInputStream} to declare end-of-stream and silently
+     * drop the rest of the payload. Forcing a positive value here
+     * makes the JDK attempt to read the next gzip header; when the
+     * stream really is exhausted the underlying {@code read()} returns
+     * {@code -1}, {@code readHeader()} throws {@code EOFException},
+     * and {@code readTrailer()} catches it and reports end-of-stream
+     * cleanly. JDK 23+ removed the gated check entirely, so this
+     * wrapper is harmless there.
      */
-    private StagedDownload stageRawResponse(
-            HttpURLConnection connection,
-            FileWrapper tempFile,
-            boolean decompress,
-            MessageDigest md) throws IOException {
-        InputStream src = new BufferedInputStream(connection.getInputStream());
-        if (md != null) {
-            src = new DigestInputStream(src, md);
-        }
-        if (tempFile.getPath() != null) {
-            Path destPath = Paths.get(tempFile.getPath());
-            Path stagingPath = decompress
-                    ? Files.createTempFile(stagingDirectoryFor(destPath), "51d-update-", ".gz")
-                    : destPath;
-            logger.debug("Copying download stream");
-            Files.copy(src, stagingPath, StandardCopyOption.REPLACE_EXISTING);
-            logger.debug("Copied downloaded stream");
-            return new StagedDownload(destPath, stagingPath);
-        }
-        // Writer-backed destination: buffer raw bytes so MD5 can be
-        // validated before producing the writer output.
-        ByteArrayOutputStream buffered = new ByteArrayOutputStream();
-        byte[] chunk = new byte[8192];
-        int n;
-        while ((n = src.read(chunk)) != -1) {
-            buffered.write(chunk, 0, n);
-        }
-        return new StagedDownload(buffered.toByteArray());
+    private static InputStream openResponseStream(HttpURLConnection connection)
+            throws IOException {
+        InputStream lying = new FilterInputStream(connection.getInputStream()) {
+            @Override
+            public int available() throws IOException {
+                int a = super.available();
+                return a > 0 ? a : 1;
+            }
+        };
+        return new BufferedInputStream(lying);
     }
 
-    private static Path stagingDirectoryFor(Path destPath) {
-        return (destPath.getParent() != null)
-                ? destPath.getParent()
-                : Paths.get(System.getProperty("java.io.tmpdir"));
+    private void writeBodyTo(FileWrapper tempFile, InputStream body) throws IOException {
+        if (tempFile.getPath() != null) {
+            logger.debug("Copying download stream");
+            Files.copy(body, Paths.get(tempFile.getPath()),
+                    StandardCopyOption.REPLACE_EXISTING);
+            logger.debug("Copied downloaded stream");
+            return;
+        }
+        // Writer-backed destination (in-process test path).
+        byte[] buffer = new byte[8192];
+        int n;
+        while ((n = body.read(buffer)) != -1) {
+            tempFile.getWriter().writeBytes(buffer, n);
+        }
     }
 
     private static boolean md5Matches(MessageDigest md, HttpURLConnection connection) {
         String header = connection.getHeaderField("Content-MD5");
         String computed = DatatypeConverter.printHexBinary(md.digest());
         return header != null && header.equalsIgnoreCase(computed);
-    }
-
-    /**
-     * Drained raw response held either on disk ({@link #stagingPath},
-     * possibly equal to {@link #destPath} when no decompression is
-     * required) or in memory ({@link #stagingBytes}).
-     * {@link #commitTo} writes the final output for the data file from
-     * those bytes. {@link #close} removes the staging file when it is
-     * distinct from the final destination.
-     */
-    private final class StagedDownload implements Closeable {
-        private final Path destPath;
-        private final Path stagingPath;
-        private final byte[] stagingBytes;
-
-        StagedDownload(Path destPath, Path stagingPath) {
-            this.destPath = destPath;
-            this.stagingPath = stagingPath;
-            this.stagingBytes = null;
-        }
-
-        StagedDownload(byte[] bytes) {
-            this.destPath = null;
-            this.stagingPath = null;
-            this.stagingBytes = bytes;
-        }
-
-        void commitTo(FileWrapper tempFile, boolean decompress) throws IOException {
-            if (decompress) {
-                try (InputStream raw = openRaw();
-                     GZIPInputStream gz = new GZIPInputStream(raw)) {
-                    if (destPath != null) {
-                        Files.copy(gz, destPath, StandardCopyOption.REPLACE_EXISTING);
-                    } else {
-                        byte[] chunk = new byte[8192];
-                        int n;
-                        while ((n = gz.read(chunk)) != -1) {
-                            tempFile.getWriter().writeBytes(chunk, n);
-                        }
-                    }
-                }
-            } else if (destPath == null) {
-                tempFile.getWriter().writeBytes(stagingBytes, stagingBytes.length);
-            }
-            // (decompress=false, destPath != null): stageRawResponse
-            // already wrote the raw bytes directly to destPath.
-        }
-
-        private InputStream openRaw() throws IOException {
-            return (stagingBytes != null)
-                    ? new ByteArrayInputStream(stagingBytes)
-                    : new BufferedInputStream(Files.newInputStream(stagingPath));
-        }
-
-        @Override
-        public void close() {
-            if (stagingPath != null && !stagingPath.equals(destPath)) {
-                try {
-                    Files.deleteIfExists(stagingPath);
-                } catch (IOException e) {
-                    logger.debug("Could not delete staging file '{}'", stagingPath, e);
-                }
-            }
-        }
     }
 
     @Override
