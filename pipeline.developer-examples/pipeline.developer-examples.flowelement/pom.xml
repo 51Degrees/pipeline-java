@@ -33,7 +33,7 @@
 
     <artifactId>pipeline.developerexamples.flowelement</artifactId>
     <name>51Degrees :: Pipeline :: Developer Examples :: Flow Element</name>
-    <url>https:51degrees.com</url>
+    <url>https://51degrees.com?utm_source=maven&amp;utm_medium=package&amp;utm_campaign=pipeline-java&amp;utm_content=pipeline.developer-examples-pipeline.developer-examples.flowelement-pom.xml&amp;utm_term=url</url>
 
     <dependencies>
         <dependency>

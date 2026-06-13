@@ -34,7 +34,7 @@
     <artifactId>pipeline.cloudrequestengine</artifactId>
     <name>51Degrees :: Pipeline :: Cloud Request Engine</name>
     <description>Cloud request engine for the 51Degrees Pipeline API</description>
-    <url>https:51degrees.com</url>
+    <url>https://51degrees.com?utm_source=maven&amp;utm_medium=package&amp;utm_campaign=pipeline-java&amp;utm_content=pipeline.cloudrequestengine-pom.xml&amp;utm_term=url</url>
 
     <dependencies>
 

@@ -79,7 +79,7 @@ public class CloudRequestEngineBuilder extends
             throw new PipelineConfigurationException("A resource key is " +
                     "required to access the cloud server. Please use the " +
                     "'setResourceKey(String) method to supply your resource " +
-                    "key obtained from https://configure.51degrees.com");
+                    "key obtained from https://configure.51degrees.com?utm_source=code&utm_medium=comment&utm_campaign=pipeline-java&utm_content=pipeline.cloudrequestengine-src-main-java-fiftyone-pipeline-cloudrequestengine-flowelements-cloudrequestenginebuilder.java&utm_term=resource-key-required");
         }
 
         /*

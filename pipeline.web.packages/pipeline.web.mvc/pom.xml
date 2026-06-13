@@ -33,7 +33,7 @@
 
     <artifactId>pipeline.web.mvc</artifactId>
     <name>51Degrees :: Pipeline :: Web :: MVC</name>
-    <url>https:51degrees.com</url>
+    <url>https://51degrees.com?utm_source=maven&amp;utm_medium=package&amp;utm_campaign=pipeline-java&amp;utm_content=pipeline.web.packages-pipeline.web.mvc-pom.xml&amp;utm_term=url</url>
 
     <dependencies>
         <dependency>
