@@ -46,7 +46,7 @@ public class Constants {
                 + "because your resource key does not include access to any "
                 + "properties under '%s'. For more details on resource keys, "
                 + "see our explainer: "
-                + "https://51degrees.com/documentation/_info__resource_keys.html";
+                + "https://51degrees.com/documentation/_info__resource_keys.html?utm_source=code&utm_medium=comment&utm_campaign=pipeline-java&utm_content=pipeline.cloudrequestengine-src-main-java-fiftyone-pipeline-cloudrequestengine-constants.java&utm_term=exceptionfailedtoloadproperties";
         
         public static final String ProcessCloudEngineNotImplemented = 
                   "This method should be overridden in the class derived from "

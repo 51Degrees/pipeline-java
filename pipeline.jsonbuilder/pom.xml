@@ -32,7 +32,7 @@
     <packaging>jar</packaging>
     
     <name>51Degrees :: Pipeline :: JSON Builder</name>
-    <url>https:51degrees.com</url>
+    <url>https://51degrees.com?utm_source=maven&amp;utm_medium=package&amp;utm_campaign=pipeline-java&amp;utm_content=pipeline.jsonbuilder-pom.xml&amp;utm_term=url</url>
 
     <dependencies>
         <dependency>

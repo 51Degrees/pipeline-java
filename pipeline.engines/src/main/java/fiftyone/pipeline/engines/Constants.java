@@ -56,13 +56,13 @@ public class Constants {
             "This is because your resource key does not include access to " +
             "any properties under '%s'. For more details on resource keys, " +
             "see our explainer: " +
-            "https://51degrees.com/documentation/_info__resource_keys.html";
+            "https://51degrees.com/documentation/_info__resource_keys.html?utm_source=code&utm_medium=comment&utm_campaign=pipeline-java&utm_content=pipeline.engines-src-main-java-fiftyone-pipeline-engines-constants.java&utm_term=product_not_in_cloud_resource";
         public static final String PROPERTY_NOT_IN_CLOUD_RESOURCE =
             "This is because your resource key does not include access to " +
             "this property. Properties that are included for this key under " +
             "'%s' are %s. For more details on resource keys, see our " +
             "explainer: " +
-            "https://51degrees.com/documentation/_info__resource_keys.html";
+            "https://51degrees.com/documentation/_info__resource_keys.html?utm_source=code&utm_medium=comment&utm_campaign=pipeline-java&utm_content=pipeline.engines-src-main-java-fiftyone-pipeline-engines-constants.java&utm_term=property_not_in_cloud_resource";
         public static final String UNKNOWN =
             "The reason for this is unknown. Please check that the aspect " +
             "and property name are correct.";

@@ -38,7 +38,7 @@
 
     <name>51Degrees :: Pipeline :: Core</name>
     <description>Core library for the 51Degrees Pipeline API</description>
-    <url>https:51degrees.com</url>
+    <url>https://51degrees.com?utm_source=maven&amp;utm_medium=package&amp;utm_campaign=pipeline-java&amp;utm_content=pipeline.core-pom.xml&amp;utm_term=url</url>
 
     <dependencies>
         <dependency>
