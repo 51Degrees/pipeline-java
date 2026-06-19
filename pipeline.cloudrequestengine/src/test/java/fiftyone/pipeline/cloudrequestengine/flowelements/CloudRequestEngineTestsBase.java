@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
@@ -45,7 +46,7 @@ public class CloudRequestEngineTestsBase {
 	HttpClient httpClient;
     protected TestLoggerFactory loggerFactory;
 
-    protected URL expectedUrl = new URL("https://cloud.51degrees.com/api/v4/resource_key.json");
+    protected URL expectedUrl = URI.create("https://cloud.51degrees.com/api/v4/resource_key.json").toURL();
     protected String jsonResponse = "{'device':{'value':'1'}}";
     protected String evidenceKeysResponse = "['query.User-Agent']";
     protected String accessiblePropertiesResponse =

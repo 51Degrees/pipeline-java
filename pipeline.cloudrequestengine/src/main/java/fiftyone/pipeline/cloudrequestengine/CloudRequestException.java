@@ -38,7 +38,7 @@ public class CloudRequestException extends PipelineDataException {
     private static final long serialVersionUID = 2110016714691972118L;
 
     private int httpStatusCode;
-    private Map<String, List<String>> responseHeaders;
+    private transient Map<String, List<String>> responseHeaders;
 
     /** 
      * Get the HTTP status code from the response.

@@ -71,7 +71,7 @@ public class LruLoadingCache<K, V>
      */
     LruLoadingCache(int cacheSize, ValueLoader<K, V> loader, int concurrency) {
         super(cacheSize, concurrency, false);
-        setCacheLoader(loader);
+        this.loader = loader;
     }
 
     /**

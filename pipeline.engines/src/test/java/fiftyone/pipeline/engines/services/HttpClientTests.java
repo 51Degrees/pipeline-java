@@ -28,7 +28,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,7 +55,7 @@ public class HttpClientTests {
     String result = null;
 
     try{
-      HttpURLConnection connection = client.connect(new URL(testUrl));
+      HttpURLConnection connection = client.connect(URI.create(testUrl).toURL());
       result = client.getResponseString(connection);
     } catch (IOException ex) {
       assertTrue("Unexpected exception: " + ex.getMessage(), false);
@@ -81,7 +81,7 @@ public class HttpClientTests {
     headers.put("Origin", "51degrees.com");
     
     try{
-      HttpURLConnection connection = client.connect(new URL(testUrl));
+      HttpURLConnection connection = client.connect(URI.create(testUrl).toURL());
       result = client.getResponseString(connection, headers);
       code = connection.getResponseCode();
     } catch (IOException ex) {

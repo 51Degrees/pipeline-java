@@ -47,8 +47,10 @@ public class EmptyEngine
     private EvidenceKeyFilterWhitelist evidenceWhitelist =
         new EvidenceKeyFilterWhitelist(Arrays.asList("test.value"));
 
+    @SuppressWarnings("this-escape")
     private final TypedKey<EmptyEngineData> typedKey = new TypedKeyDefault<>(getElementDataKey(), EmptyEngineData.class);
 
+    @SuppressWarnings("this-escape")
     public EmptyEngine(
         Logger logger,
         ElementDataFactory<EmptyEngineData> aspectDataFactory) {

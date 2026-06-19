@@ -410,7 +410,7 @@ public abstract class ShareUsageBase
         languageVersion = System.getProperty("java.version");
         osVersion = System.getProperty("os.name");
 
-        setEnginesVersion(getClass().getPackage().getImplementationVersion());
+        this.enginesVersion = getClass().getPackage().getImplementationVersion();
         coreVersion = Pipeline.class.getPackage().getImplementationVersion();
 
         includedQueryStringParameters.add(Constants.EVIDENCE_SESSIONID_SUFFIX);

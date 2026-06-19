@@ -64,6 +64,7 @@ public abstract class FlowElementBase<
      * @param elementDataFactory the factory to use when creating a
      *                           {@link ElementDataBase} instance
      */
+    @SuppressWarnings("this-escape")
     public FlowElementBase(
             Logger logger,
             ElementDataFactory<TData> elementDataFactory) {
