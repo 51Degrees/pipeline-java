@@ -59,12 +59,14 @@ public class YamlTranslationsTests {
     }
 
     @Test
-    public void splitsOnFirstColonOnly() {
-        // Keys with no colon; values never contain a colon in the data, but
-        // ensure only the first separator is used.
-        String yaml = "Name: Value: With Colon\n";
+    public void keepsNoAsStringNotBoolean() {
+        // The country code file contains "NO" (Norway). A YAML 1.1 parser
+        // would resolve it to the boolean false; YAML 1.2 keeps it a string.
+        String yaml = "FR: France\nNO: Norway\n";
         Map<String, String> result = YamlTranslations.parse(yaml);
-        assertEquals("Value: With Colon", result.get("Name"));
+        assertEquals("Norway", result.get("NO"));
+        assertEquals(Arrays.asList("FR", "NO"),
+            new ArrayList<>(result.keySet()));
     }
 
     @Test

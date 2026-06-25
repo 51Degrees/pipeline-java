@@ -30,7 +30,10 @@ import org.slf4j.ILoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -129,16 +132,40 @@ public class TranslationEngineBuilder {
     }
 
     /**
-     * Add a translation source by reading the supplied file as UTF-8. The file
-     * name follows the {@code abc.en_GB.yml} convention.
-     * @param file the source file
+     * Add one or more translation sources by reading them from disk as UTF-8.
+     * The path may contain a wildcard in the file name to add multiple files,
+     * e.g. {@code abc.*.yml} to add all languages for the {@code abc}
+     * identifier. File names follow the {@code abc.en_GB.yml} convention.
+     * @param filePath the path to the source file, where a wildcard may be
+     *                used for the language component of the file name
      * @return this builder
-     * @throws IOException if the file cannot be read
+     * @throws IOException if a file cannot be read
      */
-    public TranslationEngineBuilder addSource(File file) throws IOException {
-        byte[] content = Files.readAllBytes(file.toPath());
-        return addSource(
-            file.getName(), new String(content, StandardCharsets.UTF_8));
+    public TranslationEngineBuilder addSource(String filePath)
+        throws IOException {
+        if (filePath == null) {
+            throw new IllegalArgumentException("filePath");
+        }
+        if (filePath.contains("*")) {
+            File file = new File(filePath);
+            File parent = file.getParentFile();
+            Path directory = (parent != null ? parent : new File(".")).toPath();
+            try (DirectoryStream<Path> stream =
+                Files.newDirectoryStream(directory, file.getName())) {
+                for (Path match : stream) {
+                    addSource(match.getFileName().toString(), readUtf8(match));
+                }
+            }
+        } else {
+            Path path = Paths.get(filePath);
+            addSource(path.getFileName().toString(), readUtf8(path));
+        }
+        return this;
+    }
+
+    private static String readUtf8(Path path) throws IOException {
+        return new String(
+            Files.readAllBytes(path), StandardCharsets.UTF_8);
     }
 
     /**

@@ -40,6 +40,14 @@
             <artifactId>pipeline.engines</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- snakeyaml-engine is YAML 1.2, which (unlike YAML 1.1 parsers)
+             keeps the country code "NO" as the string "NO" rather than the
+             boolean false. -->
+        <dependency>
+            <groupId>org.snakeyaml</groupId>
+            <artifactId>snakeyaml-engine</artifactId>
+            <version>2.7</version>
+        </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>

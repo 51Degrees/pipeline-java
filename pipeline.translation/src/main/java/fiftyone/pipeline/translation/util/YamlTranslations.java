@@ -22,37 +22,31 @@
 
 package fiftyone.pipeline.translation.util;
 
+import org.snakeyaml.engine.v2.api.Load;
+import org.snakeyaml.engine.v2.api.LoadSettings;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Minimal parser for the flat <code>key: value</code> YAML maps used by the
- * translation files (e.g. <code>countrycodes.en_GB.yml</code>,
- * <code>countries.fr_FR.yml</code>). These files contain a single mapping of
- * scalar string to scalar string with no nesting, anchors, flow collections or
- * quoting, so a full YAML parser is not required.
+ * Parses the flat <code>key: value</code> YAML maps used by the translation
+ * files (e.g. <code>countrycodes.en_GB.yml</code>,
+ * <code>countries.fr_FR.yml</code>) into an insertion-ordered map.
  * <p>
- * The returned map preserves the order in which entries appear in the file,
- * which the country engine relies on for the ordered list of all known
- * countries.
+ * Uses snakeyaml-engine (YAML 1.2). YAML 1.2 is important here: the country
+ * code file contains the key <code>NO</code> (Norway), which YAML 1.1 parsers
+ * (including the classic snakeyaml library) would resolve to the boolean
+ * <code>false</code>. Under YAML 1.2 it correctly remains the string
+ * "NO".
  */
 public class YamlTranslations {
-
-    /**
-     * Unicode byte order mark (U+FEFF), stripped from the start of a file if
-     * present.
-     */
-    private static final int BOM = 0xFEFF;
 
     private YamlTranslations() {
     }
 
     /**
      * Parse a flat <code>key: value</code> YAML document into an insertion
-     * ordered map. Blank lines and lines beginning with <code>#</code> are
-     * ignored, as are lines that contain no <code>:</code> separator. Keys and
-     * values are trimmed. The first <code>:</code> on a line is treated as the
-     * separator.
+     * ordered map. Keys and values are returned as strings.
      * @param yaml the YAML document contents, or null
      * @return an ordered map of the parsed entries (never null)
      */
@@ -61,25 +55,19 @@ public class YamlTranslations {
         if (yaml == null || yaml.isEmpty()) {
             return result;
         }
-        if (yaml.charAt(0) == BOM) {
-            yaml = yaml.substring(1);
-        }
-        for (String rawLine : yaml.split("\n", -1)) {
-            // Tolerate Windows line endings and surrounding whitespace.
-            String line = rawLine.trim();
-            if (line.isEmpty() || line.charAt(0) == '#') {
-                continue;
+        LoadSettings settings = LoadSettings.builder().build();
+        Object loaded = new Load(settings).loadFromString(yaml);
+        if (loaded instanceof Map) {
+            for (Map.Entry<?, ?> entry : ((Map<?, ?>) loaded).entrySet()) {
+                if (entry.getKey() == null) {
+                    continue;
+                }
+                String key = entry.getKey().toString();
+                String value = entry.getValue() == null
+                    ? ""
+                    : entry.getValue().toString();
+                result.put(key, value);
             }
-            int separator = line.indexOf(':');
-            if (separator < 0) {
-                continue;
-            }
-            String key = line.substring(0, separator).trim();
-            String value = line.substring(separator + 1).trim();
-            if (key.isEmpty()) {
-                continue;
-            }
-            result.put(key, value);
         }
         return result;
     }
