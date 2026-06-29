@@ -1,0 +1,136 @@
+<!--
+  ~ This Original Work is copyright of 51 Degrees Mobile Experts Limited.
+  ~ Copyright 2026 51 Degrees Mobile Experts Limited, Davidson House,
+  ~ Forbury Square, Reading, Berkshire, United Kingdom RG1 3EU.
+  ~
+  ~ This Original Work is licensed under the European Union Public Licence
+  ~  (EUPL) v.1.2 and is subject to its terms as set out below.
+  ~
+  ~  If a copy of the EUPL was not distributed with this file, You can obtain
+  ~  one at https://opensource.org/licenses/EUPL-1.2.
+  ~
+  ~  The 'Compatible Licences' set out in the Appendix to the EUPL (as may be
+  ~  amended by the European Commission) shall be deemed incompatible for
+  ~  the purposes of the Work and the provisions of the compatibility
+  ~  clause in Article 5 of the EUPL shall not apply.
+  ~
+  ~   If using the Work as, or as part of, a network application, by
+  ~   including the attribution notice(s) required under Article 5 of the EUPL
+  ~   in the end user terms of the application under an appropriate heading,
+  ~   such notice(s) shall fulfill the requirements of that article.
+  -->
+
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.51degrees</groupId>
+        <artifactId>pipeline</artifactId>
+        <version>4.5.7-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>pipeline.did</artifactId>
+
+    <name>51Degrees :: Pipeline :: 51Did</name>
+    <description>Strongly typed reader for the 51Did (51Degrees Identifier)
+        value returned by the 51Degrees Cloud service. Parses the OWID
+        envelope and exposes the Flags, License Id and value (Hash) plus the
+        identifier type. Compare values, never envelopes.</description>
+    <url>https://51degrees.com?utm_source=maven&amp;utm_medium=package&amp;utm_campaign=pipeline-java&amp;utm_content=pipeline.did-pom.xml&amp;utm_term=url</url>
+
+    <properties>
+        <!-- The OWID source is consumed from a git submodule of the
+             51Degrees/owid-java fork at the repo root (mirrors how
+             pipeline-dotnet carries the owid-dotnet submodule). The source is
+             compiled in at this module's Java 8 level; no external runtime
+             dependency. -->
+        <owid.source.dir>${project.basedir}/../owid-java/src/main/java</owid.source.dir>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Compile the OWID submodule source directly into this module,
+                 excluding the HTTP-only Endpoints class which is not needed
+                 for offline parse and verify. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.4.0</version>
+                <executions>
+                    <execution>
+                        <id>add-owid-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${owid.source.dir}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/com/swancommunity/owid/Endpoints.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <!-- This module is standalone (no pipeline.common dependency), so
+                 drop the shared MavenRunListener the parent configures - it
+                 lives in pipeline.common's test-jar and only frames test log
+                 output. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <properties combine.self="override"/>
+                </configuration>
+            </plugin>
+            <!-- Enforce the Java 8 API floor. The compiler runs with
+                 -source/-target 8 (inherited), which sets the bytecode level
+                 but still links against the build JDK's library, so a newer
+                 JDK API (e.g. ByteArrayOutputStream.writeBytes, Java 11) could
+                 slip through. Animal Sniffer checks the compiled classes -
+                 including the OWID sources compiled in - against the Java 8
+                 signature and fails the build on any newer API. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>animal-sniffer-maven-plugin</artifactId>
+                <version>1.24</version>
+                <configuration>
+                    <signature>
+                        <groupId>org.codehaus.mojo.signature</groupId>
+                        <artifactId>java18</artifactId>
+                        <version>1.0</version>
+                    </signature>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>check-java8-api</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

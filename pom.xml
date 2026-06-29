@@ -48,6 +48,7 @@
     <modules>
         <module>pipeline.common</module>
         <module>pipeline.core</module>
+        <module>pipeline.did</module>
         <module>pipeline.engines</module>
         <module>pipeline.caching</module>
         <module>pipeline.cloudrequestengine</module>
