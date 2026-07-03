@@ -1,0 +1,19 @@
+FiftyOne.Did (fiftyone.pipeline.did)
+Copyright 2026 51 Degrees Mobile Experts Limited
+Licensed under the European Union Public Licence (EUPL) v.1.2.
+
+------------------------------------------------------------------------------
+This artifact bundles third-party code:
+
+OWID (Open Web Id) - com.swancommunity.owid.*
+  Copyright 2026 51 Degrees Mobile Experts Limited (51degrees.com)
+  Source: https://github.com/SWAN-community/owid-java
+  Licensed under the Apache License, Version 2.0.
+  The full licence text is provided alongside this notice in
+  META-INF/LICENSE-owid.txt.
+
+The OWID source files retain their original Apache-2.0 licence headers. This
+package compiles that source into its jar (rather than depending on a separate
+artifact); the Apache-2.0 licence text and this attribution travel with it as
+required by the licence.
+------------------------------------------------------------------------------

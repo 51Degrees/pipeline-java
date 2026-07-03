@@ -42,6 +42,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -68,9 +69,11 @@ public class FodIdTests {
     }
 
     @Test
-    public void fodId_IsAnOwid() throws Exception {
+    public void exposesOwidLevelFields() throws Exception {
         FodId fodId = FodId.fromBase64(factory.signedOwidBase64(canonicalPayload()));
-        assertTrue(fodId.getOwid() instanceof Owid);
+        // OWID-level concerns are delegated to the wrapped envelope.
+        assertEquals(TEST_DOMAIN, fodId.getDomain());
+        assertNotNull(fodId.getVersion());
     }
 
     @Test
@@ -357,15 +360,33 @@ public class FodIdTests {
 
     @Test
     public void construction_DoesNotVerify() throws Exception {
-        // An unsigned OWID (no/empty signature) still constructs and exposes
-        // all three fields - construction must not verify.
-        Owid unsigned = new Owid(TEST_DOMAIN, Instant.now(), canonicalPayload());
+        // An OWID with a present but tampered (invalid) signature still
+        // constructs and exposes all three fields - construction must not
+        // verify.
+        byte[] bytes = Base64.getDecoder().decode(
+            factory.signedOwidBase64(canonicalPayload()));
+        bytes[bytes.length - 1] ^= 0xFF;   // corrupt the signature
+        Owid tampered = Owid.fromByteArray(bytes);
 
-        FodId fodId = FodId.fromOwid(unsigned);
+        FodId fodId = FodId.fromOwid(tampered);
 
         assertEquals(CANONICAL_FLAGS, fodId.getFlags());
         assertEquals(CANONICAL_LICENSE_ID, fodId.getLicenseId());
         assertArrayEquals(CANONICAL_HASH, fodId.getHash());
+    }
+
+    @Test
+    public void fromOwid_IsDecoupledFromSourceOwid() throws Exception {
+        // Mutating the source OWID after construction must not affect the
+        // FodId (it holds an independent copy).
+        Owid owid = factory.signedOwid(canonicalPayload());
+        FodId fodId = FodId.fromOwid(owid);
+
+        owid.setPayload(new byte[FodId.PAYLOAD_LENGTH]);
+
+        assertEquals(CANONICAL_FLAGS, fodId.getFlags());
+        assertArrayEquals(CANONICAL_HASH, fodId.getHash());
+        assertEquals(CANONICAL_HASH[0], fodId.getPayload()[FodId.HASH_OFFSET]);
     }
 
     @Test

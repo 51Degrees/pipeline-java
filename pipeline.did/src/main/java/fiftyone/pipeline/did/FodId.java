@@ -180,18 +180,22 @@ public final class FodId {
 
     /**
      * Promotes an already-parsed OWID into a 51Did by unpacking its payload.
-     * The wrapped OWID is reused, not re-parsed; OWID-level accessors delegate
-     * to it.
+     * The OWID is <b>copied</b> (round-tripped through its byte form), not
+     * aliased, so that a {@code FodId} can never desync from its envelope if
+     * the caller later mutates the OWID it passed in. The supplied OWID must
+     * therefore be signed (serializable).
      *
      * @param owid the already-parsed OWID envelope
-     * @return the 51Did wrapping {@code owid}
+     * @return a 51Did wrapping an independent copy of {@code owid}
      * @throws NullPointerException if {@code owid} is null
+     * @throws OwidException        if {@code owid} cannot be serialized (e.g.
+     *                              it has not been signed)
      * @throws IllegalArgumentException if the payload is shorter than the
      *                              minimum for its identifier type
      */
-    public static FodId fromOwid(Owid owid) {
+    public static FodId fromOwid(Owid owid) throws OwidException {
         Objects.requireNonNull(owid, "owid");
-        return new FodId(owid, "owid");
+        return new FodId(Owid.fromByteArray(owid.asByteArray()), "owid");
     }
 
     /**
@@ -225,13 +229,6 @@ public final class FodId {
      */
     public byte[] getHash() {
         return hash.clone();
-    }
-
-    /**
-     * @return the wrapped OWID envelope
-     */
-    public Owid getOwid() {
-        return owid;
     }
 
     /** @return the OWID version. */

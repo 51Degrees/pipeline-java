@@ -54,6 +54,16 @@ repository root (`owid-java/`, mirroring how `pipeline-dotnet` carries the
 there is no separate runtime dependency. The vendored OWID sources keep their
 Apache-2.0 headers; the 51Did sources are EUPL-1.2.
 
+### Bundled third-party licence
+
+Because the OWID (`com.swancommunity.owid.*`) code is compiled into
+`pipeline.did.jar`, the jar ships Apache-2.0 code alongside the EUPL-1.2 51Did
+code. As required by Apache-2.0, the jar carries the full Apache licence text
+and an attribution: see `META-INF/LICENSE-owid.txt` and `META-INF/NOTICE.txt`
+(OWID is © 51 Degrees Mobile Experts Limited, from
+[SWAN-community/owid-java](https://github.com/SWAN-community/owid-java),
+Apache-2.0).
+
 ## Usage
 
 ```java
