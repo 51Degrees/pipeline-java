@@ -4,4 +4,4 @@
 [submodule "owid-java"]
 	path = owid-java
 	url = ../owid-java.git
-	branch = feature/java8-baseline
+	branch = main
