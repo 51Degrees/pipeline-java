@@ -43,6 +43,7 @@
         <module>pipeline.developer-examples.clientside-element</module>
         <module>pipeline.developer-examples.clientside-element-mvc</module>
         <module>pipeline.developer-examples.usage-sharing</module>
+        <module>pipeline.developer-examples.fodid</module>
     </modules>
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>

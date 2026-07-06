@@ -1,3 +1,7 @@
 [submodule "pipeline.javascriptbuilder/src/main/resources/fiftyone/pipeline/javascriptbuilder/templates"]
 	path = pipeline.javascriptbuilder/src/main/resources/fiftyone/pipeline/javascriptbuilder/templates
 	url = ../javascript-templates.git
+[submodule "owid-java"]
+	path = owid-java
+	url = ../owid-java.git
+	branch = main
