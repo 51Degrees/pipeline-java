@@ -53,6 +53,7 @@
         <module>pipeline.caching</module>
         <module>pipeline.cloudrequestengine</module>
         <module>pipeline.engines.fiftyone</module>
+        <module>pipeline.translation</module>
         <module>pipeline.javascriptbuilder</module>
         <module>pipeline.jsonbuilder</module>
         <module>pipeline.web.packages</module>
