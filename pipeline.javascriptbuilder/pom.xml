@@ -25,6 +25,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <properties>
+        <!-- Last selenium-java release that still runs on Java 8; the
+             jdk11-selenium profile below upgrades it on Java 11+. -->
+        <selenium.version>4.14.1</selenium.version>
     </properties>
     <parent>
         <groupId>com.51degrees</groupId>
@@ -85,8 +88,27 @@
         <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
-            <version>4.13.0</version>
+            <version>${selenium.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <!-- Selenium dropped Java 8 support after 4.14.x. Tests still run on
+             the Java 8 CI legs with 4.14.1 (default above); on Java 11+ this
+             profile activates automatically and upgrades to a current release
+             whose Selenium Manager resolves matching Chrome/ChromeDriver
+             versions (old managers can pair a stale cached driver with a
+             newer browser: "This version of ChromeDriver only supports
+             Chrome version NNN"). -->
+        <profile>
+            <id>jdk11-selenium</id>
+            <activation>
+                <jdk>[11,)</jdk>
+            </activation>
+            <properties>
+                <selenium.version>4.46.0</selenium.version>
+            </properties>
+        </profile>
+    </profiles>
 </project>
