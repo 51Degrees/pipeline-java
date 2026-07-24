@@ -116,6 +116,7 @@ public abstract class CloudAspectEngineBase<TData extends AspectData>
      * @param aspectDataFactory the factory to use when creating a TData
      *                          instance
      */
+    @SuppressWarnings("this-escape")
     public CloudAspectEngineBase(
         Logger logger,
         ElementDataFactory<TData> aspectDataFactory) {

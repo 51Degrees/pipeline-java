@@ -69,7 +69,7 @@ public abstract class OnPremiseAspectEngineBase<
         String tempDataDirPath) {
         super(logger, aspectDataFactory);
         this.dataFiles = new ArrayList<>();
-        setTempDataDirPath(tempDataDirPath);
+        this.tempDataDirPath = tempDataDirPath;
     }
 
     @Override

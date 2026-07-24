@@ -49,7 +49,8 @@ public class AspectPropertyValueDefault<T> implements AspectPropertyValue<T> {
      * @param value the value to set
      */
     public AspectPropertyValueDefault(T value) {
-        setValue(value);
+        this.hasValue = true;
+        this.value = value;
     }
 
     @Override

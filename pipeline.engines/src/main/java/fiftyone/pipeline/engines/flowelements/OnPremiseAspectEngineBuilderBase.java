@@ -99,7 +99,7 @@ public abstract class OnPremiseAspectEngineBuilderBase<
         createAndVerifyTempDir(Paths.get(tempDir));
     }
 
-    public void createAndVerifyTempDir(Path pathToCreate) {
+    public final void createAndVerifyTempDir(Path pathToCreate) {
         try {
             File directory = pathToCreate.toFile();
             if (isFalse(directory.exists())) {

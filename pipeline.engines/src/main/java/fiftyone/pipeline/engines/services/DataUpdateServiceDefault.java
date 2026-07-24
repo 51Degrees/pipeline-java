@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.nio.file.*;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
@@ -596,7 +596,7 @@ public class DataUpdateServiceDefault implements DataUpdateService {
         logger.debug("downloadFile from {}", url);
 
         try {
-            HttpURLConnection connection = httpClient.connect(new URL(url.trim()));
+            HttpURLConnection connection = httpClient.connect(new URI(url.trim()).toURL());
             if (connection == null) {
                 logger.error("No response from data update service at '{}' for engine '{}'",
                         dataFile.getFormattedUrl(), Objects.nonNull(dataFile.getEngine()) ?

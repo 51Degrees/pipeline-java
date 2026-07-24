@@ -37,7 +37,7 @@ import javax.xml.stream.XMLStreamWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -545,7 +545,7 @@ public class ShareUsageElement extends ShareUsageBase {
             streamXml(allData, os);
         }
 
-        HttpURLConnection connection = httpClient.connect(new URL(shareUsageUrl.trim()));
+        HttpURLConnection connection = httpClient.connect(new URI(shareUsageUrl.trim()).toURL());
         String response = httpClient.postData(connection, headers, baos.toByteArray());
         int responseCode = connection.getResponseCode();
         String responseMessage = connection.getResponseMessage() + "data: '" + response + "'";
