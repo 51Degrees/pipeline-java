@@ -365,7 +365,7 @@ public class FodIdTests {
         // verify.
         byte[] bytes = Base64.getDecoder().decode(
             factory.signedOwidBase64(canonicalPayload()));
-        bytes[bytes.length - 1] ^= 0xFF;   // corrupt the signature
+        bytes[bytes.length - 1] ^= (byte) 0xFF;   // corrupt the signature
         Owid tampered = Owid.fromByteArray(bytes);
 
         FodId fodId = FodId.fromOwid(tampered);
