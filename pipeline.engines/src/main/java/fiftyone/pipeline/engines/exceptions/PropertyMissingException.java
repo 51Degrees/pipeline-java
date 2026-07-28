@@ -57,7 +57,7 @@ public class PropertyMissingException extends RuntimeException {
         String propertyName,
         String message) {
         super(message);
-        this.setReason(reason);
+        this.reason = reason;
         this.propertyName = propertyName;
     }
 
@@ -76,7 +76,7 @@ public class PropertyMissingException extends RuntimeException {
         String message,
         Throwable cause) {
         super(message, cause);
-        this.setReason(reason);
+        this.reason = reason;
         this.propertyName = propertyName;
     }
 

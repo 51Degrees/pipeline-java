@@ -30,6 +30,8 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
 
@@ -357,9 +359,9 @@ public abstract class ShareUsageBuilderBase<T extends ShareUsageBase> {
     @DefaultValue(value="Send to 51D - " + Constants.SHARE_USAGE_DEFAULT_URL)
     public ShareUsageBuilderBase<T> setShareUsageUrl(String shareUsageUrl) {
         try {
-            URL url = new URL(shareUsageUrl);
+            URL url = new URI(shareUsageUrl).toURL();
             assert !url.toString().isEmpty();
-        } catch (MalformedURLException e) {
+        } catch (MalformedURLException | URISyntaxException e) {
             throw new IllegalArgumentException(e);
         }
         this.shareUsageUrl = shareUsageUrl;

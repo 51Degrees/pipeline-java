@@ -41,7 +41,7 @@ public class WeightedValueTests {
     @Test
     public void WeightedValue_GetWeighting_05() {
         IWeightedValue<?>[] values =
-        new IWeightedValue[]{
+        new IWeightedValue<?>[]{
                 new WeightedValue<>(MAX_RAW_WEIGHTING / 2 + 1, 5),
                 new WeightedValue<>(MAX_RAW_WEIGHTING / 2, 13),
         };

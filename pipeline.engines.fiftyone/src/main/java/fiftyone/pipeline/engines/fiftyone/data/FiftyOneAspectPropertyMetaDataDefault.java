@@ -45,6 +45,7 @@ public class FiftyOneAspectPropertyMetaDataDefault
     private final Iterable<ValueMetaDataDefault> values;
     private final ValueMetaDataDefault defaultValue;
 
+    @SuppressWarnings("this-escape")
     public FiftyOneAspectPropertyMetaDataDefault(
         String name,
         FlowElement<?,?> element,

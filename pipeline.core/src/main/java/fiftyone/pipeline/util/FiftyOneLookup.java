@@ -91,6 +91,7 @@ public class FiftyOneLookup {
      * which is not what we want.
      */
     public static class FiftyOneStringSubstitutor extends StringSubstitutor {
+        @SuppressWarnings("this-escape")
         public FiftyOneStringSubstitutor(StringLookup variableResolver) {
             super(variableResolver);
             setEnableSubstitutionInVariables(true);

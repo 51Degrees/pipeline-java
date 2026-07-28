@@ -43,6 +43,9 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -121,6 +124,7 @@ public class CloudRequestEngineDefault
             cloudRequestOrigin);
     }
 
+    @SuppressWarnings("this-escape")
     public CloudRequestEngineDefault(
         Logger logger,
         ElementDataFactory<CloudRequestData> aspectDataFactory,
@@ -208,7 +212,7 @@ public class CloudRequestEngineDefault
     @Override
     protected void processEngine(FlowData data, CloudRequestData aspectData) throws IOException {
         byte[] content = getContent(data);
-        HttpURLConnection connection = httpClient.connect(new URL(endPoint.trim()));
+        HttpURLConnection connection = httpClient.connect(toUrl(endPoint.trim()));
         if (timeoutMillis != null) {
             connection.setConnectTimeout(timeoutMillis);
             connection.setReadTimeout(timeoutMillis);
@@ -386,6 +390,27 @@ public class CloudRequestEngineDefault
         }
     }
 
+    /**
+     * Convert a string into a {@link URL} instance.
+     * <p>
+     * Replaces the deprecated {@code new URL(String)} constructor with
+     * {@link URI#toURL()}, translating the checked {@link URISyntaxException}
+     * into a {@link MalformedURLException} so that callers continue to see the
+     * same {@link java.io.IOException} as they did previously.
+     * @param spec the string to parse as a URL
+     * @return the parsed {@link URL}
+     * @throws MalformedURLException if the string is not a valid URL
+     */
+    private static URL toUrl(String spec) throws MalformedURLException {
+        try {
+            return new URI(spec).toURL();
+        } catch (URISyntaxException e) {
+            MalformedURLException ex = new MalformedURLException(e.getMessage());
+            ex.initCause(e);
+            throw ex;
+        }
+    }
+
     private void getCloudProperties() throws CloudRequestException, AggregateException, PropertyNotLoadedException {
         try {
             String jsonResult;
@@ -393,7 +418,7 @@ public class CloudRequestEngineDefault
             Map<String, String> headers = new HashMap<>();
             setCommonHeaders(headers);
 
-            HttpURLConnection connection = httpClient.connect(new URL(propertiesEndpoint.trim() + (resourceKey != null ? "?Resource=" + resourceKey : "")));
+            HttpURLConnection connection = httpClient.connect(toUrl(propertiesEndpoint.trim() + (resourceKey != null ? "?Resource=" + resourceKey : "")));
             jsonResult = httpClient.getResponseString(connection, headers);
             validateResponse(jsonResult, connection);
 
@@ -423,7 +448,7 @@ public class CloudRequestEngineDefault
             Map<String, String> headers = new HashMap<>();
             setCommonHeaders(headers);
 
-            HttpURLConnection connection = httpClient.connect(new URL(evidenceKeysEndpoint.trim()));
+            HttpURLConnection connection = httpClient.connect(toUrl(evidenceKeysEndpoint.trim()));
             jsonResult = httpClient.getResponseString(connection, headers);
             validateResponse(jsonResult, connection, false);
 

@@ -71,6 +71,7 @@ public abstract class FiftyOneOnPremiseAspectEngineBuilderBase<
      * @param dataUpdateService the {@link DataUpdateService} to use when
      *                          automatic updates happen on the data file
      */
+    @SuppressWarnings("this-escape")
     public FiftyOneOnPremiseAspectEngineBuilderBase(
         ILoggerFactory loggerFactory,
         DataUpdateService dataUpdateService) {

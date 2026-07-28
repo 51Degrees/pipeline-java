@@ -25,7 +25,7 @@ package fiftyone.pipeline.engines.services;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
@@ -53,7 +53,7 @@ public class DataUploaderHttp implements DataUploader{
      */
     @Override
     public OutputStream getOutputStream() throws Exception{
-        connection = (HttpURLConnection) new URL(url.trim()).openConnection();
+        connection = (HttpURLConnection) new URI(url.trim()).toURL().openConnection();
         connection.setConnectTimeout(timeout);
         connection.setRequestMethod("POST");
         for (Map.Entry<String, String> header : headers.entrySet()) {

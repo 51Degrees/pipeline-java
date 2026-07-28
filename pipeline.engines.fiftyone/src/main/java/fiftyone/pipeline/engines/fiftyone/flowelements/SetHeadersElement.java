@@ -74,6 +74,7 @@ public class SetHeadersElement
 	private final List<ElementPropertyMetaData> properties;
 	private final Hashtable<Pipeline, PipelineConfig> pipelineConfigs;
 
+	@SuppressWarnings("this-escape")
 	public SetHeadersElement(
 		Logger logger,
 		ElementDataFactory<SetHeadersData> elementDataFactory) {

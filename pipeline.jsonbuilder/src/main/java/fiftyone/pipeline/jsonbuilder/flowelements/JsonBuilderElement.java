@@ -72,6 +72,7 @@ public class JsonBuilderElement
      * @param logger The logger.
      * @param elementDataFactory The element data factory.
      */
+    @SuppressWarnings("this-escape")
     public JsonBuilderElement(
             Logger logger,
             ElementDataFactory<JsonBuilderData> elementDataFactory) {
