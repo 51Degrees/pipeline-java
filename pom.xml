@@ -175,6 +175,19 @@
 <!--                            <arg>-Werror</arg>-->
                         </compilerArgs>
                     </configuration>
+                    <executions>
+                        <execution>
+                            <id>default-compile</id>
+                            <configuration>
+                                <!-- module-info.java cannot be compiled at source level 1.8. It is
+                                     compiled separately by the 'jpms' profile below, into
+                                     META-INF/versions/9 of a multi-release jar. -->
+                                <excludes>
+                                    <exclude>module-info.java</exclude>
+                                </excludes>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
                 <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -273,6 +286,11 @@
                 <configuration>
                     <doclint>none</doclint>
                     <quiet>true</quiet>
+                    <!-- javadoc runs at ${maven.compiler.source}, which cannot parse
+                         module declarations. -->
+                    <sourceFileExcludes>
+                        <sourceFileExclude>module-info.java</sourceFileExclude>
+                    </sourceFileExcludes>
 <!--                    <tags>
                         &lt;!&ndash; Parse DoxyGen tags cleanly. &ndash;&gt;
                         <tag>
@@ -353,6 +371,56 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!--
+          The pipeline libraries are compiled for Java 8, which predates the module
+          system, so module-info.java cannot be part of the ordinary compilation. This
+          profile compiles the module declarations on their own at release 9 and puts
+          the result in META-INF/versions/9 of a multi-release jar (see the
+          Multi-Release manifest entry in the poms of the modules that declare one).
+
+          The resulting jars still run on Java 8, where META-INF/versions is ignored,
+          and are proper named modules on Java 9 and above.
+
+          Modules without a module-info.java are unaffected - the execution finds no
+          sources and does nothing.
+        -->
+        <profile>
+            <id>jpms</id>
+            <activation>
+                <jdk>[9,)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <version>${maven-compiler-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>compile-module-info</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>compile</goal>
+                                </goals>
+                                <configuration>
+                                    <release>9</release>
+                                    <includes>
+                                        <include>module-info.java</include>
+                                    </includes>
+                                    <multiReleaseOutput>true</multiReleaseOutput>
+                                    <!-- The inherited source/target must not fight with release. -->
+                                    <source combine.self="override"/>
+                                    <target combine.self="override"/>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <reporting>
         <plugins>
