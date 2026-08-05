@@ -80,9 +80,10 @@
                         <configuration>
                             <archive>
                                 <manifestEntries>
-                                    <!-- module-info.class is compiled at release 9 into
-                                         META-INF/versions/9 by the 'jpms' profile. -->
-                                    <Multi-Release>true</Multi-Release>
+                                    <!-- Names this jar as an automatic module. LibLoader
+                                         lives here, so this is the name callers pass to
+                                         the enable-native-access flag. -->
+                                    <Automatic-Module-Name>fiftyone.pipeline.engines.fiftyone</Automatic-Module-Name>
                                 </manifestEntries>
                             </archive>
                         </configuration>

@@ -129,6 +129,61 @@ public class PipelineBuilderTests {
         VerifyMultiplyByElementPipeline(opts);
     }
 
+    /**
+     * A builder named by its fully qualified class name must resolve even
+     * though the discovery scan also finds it. This is the fallback that lets
+     * builders supplied from the module path be configured at all, since the
+     * scan only covers the class path.
+     */
+    @Test
+    public void PipelineBuilder_BuildFromConfiguration_FullyQualifiedClassName() throws Exception {
+        // Create the configuration object.
+        PipelineOptions opts = new PipelineOptions();
+        ElementOptions elOpts = new ElementOptions();
+        elOpts.builderName =
+            "fiftyone.pipeline.core.testclasses.flowelements.MultiplyByElementBuilder";
+        elOpts.buildParameters.put("multiple", "8");
+        opts.elements.add(elOpts);
+
+        VerifyMultiplyByElementPipeline(opts);
+    }
+
+    /**
+     * A dotted name that is not a loadable class must still be reported as a
+     * configuration error rather than escaping as a ClassNotFoundException.
+     */
+    @Test(expected = PipelineConfigurationException.class)
+    public void PipelineBuilder_BuildFromConfiguration_UnknownFullyQualifiedClassName() throws Exception {
+        // Create the configuration object.
+        PipelineOptions opts = new PipelineOptions();
+        ElementOptions elOpts = new ElementOptions();
+        elOpts.builderName = "com.example.does.not.Exist";
+        opts.elements.add(elOpts);
+
+        maxErrors = 1;
+
+        // Pass the configuration to the builder to create the pipeline.
+        builder.buildFromConfiguration(opts);
+    }
+
+    /**
+     * A dotted name that loads but is not a builder must be reported as a
+     * configuration error too.
+     */
+    @Test(expected = PipelineConfigurationException.class)
+    public void PipelineBuilder_BuildFromConfiguration_FullyQualifiedNameNotABuilder() throws Exception {
+        // Create the configuration object.
+        PipelineOptions opts = new PipelineOptions();
+        ElementOptions elOpts = new ElementOptions();
+        elOpts.builderName = "java.lang.String";
+        opts.elements.add(elOpts);
+
+        maxErrors = 1;
+
+        // Pass the configuration to the builder to create the pipeline.
+        builder.buildFromConfiguration(opts);
+    }
+
     @Test(expected = PipelineConfigurationException.class)
     public void PipelineBuilder_BuildFromConfiguration_MandatoryParameterNotSet() throws Exception {
         // Create the configuration object.

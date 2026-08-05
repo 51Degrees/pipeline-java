@@ -63,9 +63,9 @@
                         <configuration>
                             <archive>
                                 <manifestEntries>
-                                    <!-- module-info.class is compiled at release 9 into
-                                         META-INF/versions/9 by the 'jpms' profile. -->
-                                    <Multi-Release>true</Multi-Release>
+                                    <!-- Names this jar as an automatic module, so that
+                                         callers can refer to it on the module path. -->
+                                    <Automatic-Module-Name>fiftyone.common</Automatic-Module-Name>
                                 </manifestEntries>
                             </archive>
                         </configuration>

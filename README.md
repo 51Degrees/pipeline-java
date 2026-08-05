@@ -35,12 +35,12 @@ Packages can be found on Maven under the group [com.51degrees](https://mvnreposi
 
 Alternatively clone this git repository and in the root run `mvn install` to build and install the packages locally. 
 
-## Java modules and native library access
+## Native library access
 
-`pipeline.engines.fiftyone` contains `LibLoader`, which calls `System.load` to load
-the native libraries used by the on-premise engines. `System.load` is a *restricted
-method*: recent JDKs warn when it is called without permission, and a future release
-will block it outright (see [JEP 472](https://openjdk.org/jeps/472)).
+`pipeline.engines.fiftyone` contains `LibLoader`, which calls `System.load` to load the
+native libraries used by the on-premise engines. `System.load` is a *restricted method*
+([JEP 472](https://openjdk.org/jeps/472)): Java 24 and 25 warn once per calling module,
+and a later release will refuse the call and throw `IllegalCallerException`.
 
 ```
 WARNING: A restricted method in java.lang.System has been called
@@ -49,8 +49,35 @@ WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers i
 WARNING: Restricted methods will be blocked in a future release unless native access is enabled
 ```
 
-To let you grant that permission to 51Degrees code alone rather than to everything on
-the classpath, the packages below declare module names:
+There are two ways to grant the permission.
+
+### On the classpath
+
+This is the default layout and needs no changes to how you package or deploy:
+
+```bash
+java -cp "libs/*" --enable-native-access=ALL-UNNAMED com.example.Main
+```
+
+Everything on the classpath belongs to the unnamed module, so `ALL-UNNAMED` is the only
+name the JVM will accept there. This is a rule of the module system, not something these
+packages can improve on.
+
+### Naming 51Degrees code alone
+
+If granting native access to every jar on the classpath is too broad, move
+**only** `pipeline.engines.fiftyone` onto the module path and leave your application and
+all other dependencies - including the other four 51Degrees jars - on the classpath:
+
+```bash
+java -cp "libs/*" --module-path libs/pipeline.engines.fiftyone-4.5.7.jar --add-modules fiftyone.pipeline.engines.fiftyone --enable-native-access=fiftyone.pipeline.engines.fiftyone com.example.Main
+```
+
+The same jar must not appear on both paths. Exclude it from the classpath wildcard, or
+keep it in a separate directory.
+
+All five packages carry a module name, so any of them can be moved to the module path
+the same way, but only `fiftyone.pipeline.engines.fiftyone` needs to be:
 
 | Package                   | Module name                          |
 |---------------------------|--------------------------------------|
@@ -60,55 +87,31 @@ the classpath, the packages below declare module names:
 | pipeline.engines          | `fiftyone.pipeline.engines`          |
 | pipeline.engines.fiftyone | `fiftyone.pipeline.engines.fiftyone` |
 
-### Granting native access
+The names come from an `Automatic-Module-Name` manifest entry, so the jars are ordinary
+non-modular jars, build identically on every JDK from 8 upwards, and impose nothing on
+consumers who stay on the classpath.
 
-Put the 51Degrees JARs on the **module path** and name the module that loads the
-native libraries:
+Device detection users need to grant access to a second module as well. The JNI `native`
+declarations live in `device-detection.hash.engine.on-premise`, and JEP 472 checks
+binding them against the module that declares them - see the
+[device-detection-java README](https://github.com/51Degrees/device-detection-java#native-library-access).
 
-```bash
-java --module-path libs --enable-native-access=fiftyone.pipeline.engines.fiftyone -m your.app/com.example.Main
-```
+### Configuring builders from the module path
 
-With the Maven exec plugin:
+`PipelineBuilder.buildFromConfiguration` discovers element builders by scanning the
+class path, which does not include the module path. When a builder ships in a jar you
+have moved to the module path, name it by its fully qualified class name instead of its
+short name:
 
 ```xml
-<configuration>
-    <arguments>
-        <argument>--enable-native-access=fiftyone.pipeline.engines.fiftyone</argument>
-        ...
-    </arguments>
-</configuration>
+<Element>
+    <BuilderName>fiftyone.pipeline.engines.fiftyone.flowelements.ShareUsageBuilder</BuilderName>
+</Element>
 ```
 
-Module names only exist on the module path. If the 51Degrees JARs are on the
-**classpath** - which is still the default and remains fully supported - they are part
-of the unnamed module, and the only permission the JVM will accept is:
-
-```bash
-java -cp "libs/*" --enable-native-access=ALL-UNNAMED com.example.Main
-```
-
-Passing a module name while running from the classpath has no effect and reports
-`WARNING: Unknown module: fiftyone.pipeline.engines.fiftyone specified to --enable-native-access`.
-
-### Notes for module path users
-
-- The JARs are multi-release: the module descriptors live in `META-INF/versions/9`,
-  so the same artifacts still run on Java 8, where they are ordinary non-modular JARs.
-- Only these five packages are named. Downstream packages such as `device-detection`
-  and your own application do not need module declarations - unnamed modules can read
-  named ones.
-- `PipelineOptionsFactory` (XML/JSON pipeline configuration) uses JAXB, and the JAXB
-  implementation is not discoverable through `ServiceLoader` on the module path. Add it
-  to the module graph explicitly:
-
-```bash
-java --module-path libs --add-modules com.sun.xml.bind --enable-native-access=fiftyone.pipeline.engines.fiftyone -m your.app/com.example.Main
-```
-
-- `PipelineBuilder.buildFromConfiguration` finds element builders by scanning the
-  classpath. Builders supplied from the module path are not visible to that scan, so
-  configuration-driven pipelines should keep their element packages on the classpath.
+This affects `SequenceElementBuilder`, `SetHeadersElementBuilder` and `ShareUsageBuilder`,
+which ship inside `pipeline.engines.fiftyone`. Short names continue to work for every
+builder on the class path.
 
 ## Tests
 
