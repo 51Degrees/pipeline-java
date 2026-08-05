@@ -863,7 +863,46 @@ public class PipelineBuilder
             tries++;
         }
 
+        if (builderType == null) {
+            builderType = getBuilderTypeByClassName(builderName);
+        }
+
         return builderType;
+    }
+
+    /**
+     * Resolve a builder that {@link #getAvailableElementBuilders()} did not
+     * discover, by treating the configured name as a fully qualified class
+     * name.
+     * <p>
+     * The discovery scan looks at the class path only, so builders supplied
+     * from the module path are invisible to it. Naming such a builder by its
+     * fully qualified class name lets the class loader find it instead.
+     *
+     * @param builderName the name from the configuration, which is only treated
+     *                    as a class name if it looks like one
+     * @return the {@link Class} of the element builder, or null if the name is
+     * not a fully qualified class name that resolves to a builder
+     */
+    private Class<?> getBuilderTypeByClassName(String builderName) {
+        // Anything without a package cannot be a fully qualified name, and
+        // would only duplicate the simple name matching done above.
+        if (builderName.contains(".") == false) {
+            return null;
+        }
+
+        try {
+            // Class.forName initialises the class, so a builder with a failing
+            // static initialiser throws an Error rather than an exception.
+            // Catching it here keeps every bad builder name a configuration
+            // error instead of letting it escape buildFromConfiguration.
+            return Class.forName(builderName);
+        } catch (ClassNotFoundException | LinkageError notLoadable) {
+            logger.debug("'" + builderName + "' contains a '.' but is not a " +
+                "class that could be loaded, so it is not a fully qualified " +
+                "builder name.", notLoadable);
+            return null;
+        }
     }
 
     /**
