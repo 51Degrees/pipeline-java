@@ -70,11 +70,11 @@ If granting native access to every jar on the classpath is too broad, move
 all other dependencies - including the other four 51Degrees jars - on the classpath:
 
 ```bash
-java -cp "libs/*" --module-path libs/pipeline.engines.fiftyone-4.5.7.jar --add-modules fiftyone.pipeline.engines.fiftyone --enable-native-access=fiftyone.pipeline.engines.fiftyone com.example.Main
+java -cp "libs/*" --module-path mods/pipeline.engines.fiftyone-4.5.7.jar --add-modules fiftyone.pipeline.engines.fiftyone --enable-native-access=fiftyone.pipeline.engines.fiftyone com.example.Main
 ```
 
-The same jar must not appear on both paths. Exclude it from the classpath wildcard, or
-keep it in a separate directory.
+The same jar must not appear on both paths, so keep it in a directory of its own rather
+than in the one the classpath wildcard covers.
 
 All five packages carry a module name, so any of them can be moved to the module path
 the same way, but only `fiftyone.pipeline.engines.fiftyone` needs to be:

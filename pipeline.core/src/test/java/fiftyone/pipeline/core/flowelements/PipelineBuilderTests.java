@@ -184,6 +184,26 @@ public class PipelineBuilderTests {
         builder.buildFromConfiguration(opts);
     }
 
+    /**
+     * A dotted name whose class fails to initialise must be reported as a
+     * configuration error too. Class.forName initialises the class, so this
+     * arrives as an Error rather than an exception.
+     */
+    @Test(expected = PipelineConfigurationException.class)
+    public void PipelineBuilder_BuildFromConfiguration_FullyQualifiedNameFailsToInitialise() throws Exception {
+        // Create the configuration object.
+        PipelineOptions opts = new PipelineOptions();
+        ElementOptions elOpts = new ElementOptions();
+        elOpts.builderName =
+            "fiftyone.pipeline.core.testclasses.FailingStaticInitBuilder";
+        opts.elements.add(elOpts);
+
+        maxErrors = 1;
+
+        // Pass the configuration to the builder to create the pipeline.
+        builder.buildFromConfiguration(opts);
+    }
+
     @Test(expected = PipelineConfigurationException.class)
     public void PipelineBuilder_BuildFromConfiguration_MandatoryParameterNotSet() throws Exception {
         // Create the configuration object.

@@ -892,11 +892,15 @@ public class PipelineBuilder
         }
 
         try {
+            // Class.forName initialises the class, so a builder with a failing
+            // static initialiser throws an Error rather than an exception.
+            // Catching it here keeps every bad builder name a configuration
+            // error instead of letting it escape buildFromConfiguration.
             return Class.forName(builderName);
-        } catch (ClassNotFoundException classNotFound) {
+        } catch (ClassNotFoundException | LinkageError notLoadable) {
             logger.debug("'" + builderName + "' contains a '.' but is not a " +
                 "class that could be loaded, so it is not a fully qualified " +
-                "builder name.", classNotFound);
+                "builder name.", notLoadable);
             return null;
         }
     }
