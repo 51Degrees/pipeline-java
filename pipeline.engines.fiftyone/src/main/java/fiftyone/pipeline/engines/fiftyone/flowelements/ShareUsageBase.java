@@ -206,6 +206,14 @@ public abstract class ShareUsageBase
     private boolean canceled = false;
 
     /**
+     * Set as soon as the element starts closing. While it is set, a consumer
+     * must drain the queue completely rather than stopping as soon as fewer
+     * than {@link #minEntriesPerMessage} entries are left, so that the final,
+     * sub-threshold batch is not left unsent.
+     */
+    private volatile boolean stopping = false;
+
+    /**
      * Keep a count of data lost
      */
     protected long lostData;
@@ -557,6 +565,16 @@ public abstract class ShareUsageBase
     }
 
     /**
+     * Returns true once the element has started closing. A consumer that sees
+     * this must send everything that is queued, including a final batch that is
+     * smaller than {@link #minEntriesPerMessage}.
+     * @return true if the element is closing
+     */
+    protected boolean isStopping() {
+        return stopping;
+    }
+
+    /**
      * Returns true if there is a thread attempting to send usage data.
      * @return true if data is being sent
      */
@@ -581,14 +599,31 @@ public abstract class ShareUsageBase
 
     @Override
     protected void managedResourcesCleanup() {
-        trySendData();
+        // Tell any consumer - one that is already running as well as the final
+        // one queued below - that the queue has to be drained completely rather
+        // than stopping once fewer than minEntriesPerMessage entries are left.
+        // This is set before anything is submitted, so a consumer can never
+        // observe it as false and then exit leaving a partial batch behind.
+        stopping = true;
+        // Queue a final consumer without consulting isRunning(). That check is
+        // subject to a time-of-check/time-of-use race: a consumer that has
+        // finished its loop with a sub-threshold remainder still reports as
+        // running until its Future flips to done, which used to stop close from
+        // queueing the drain that would have sent the remainder. The executor is
+        // single threaded, so the task queued here cannot run alongside a
+        // consumer that is already in flight - it runs after it - and shutdown()
+        // still allows an already submitted task to run to completion.
+        submitSendData();
         try {
             executor.shutdown();
             if (!executor.awaitTermination(Constants.SHARE_USAGE_DEFAULT_HTTP_POST_TIMEOUT, TimeUnit.MILLISECONDS)){
                 logger.warn("Could not send final data on close down");
                 executor.shutdownNow();
             }
-        } catch (InterruptedException e) {
+        } catch (InterruptedException interruptedException) {
+            // Not re-interrupting: a Pipeline closes its elements in sequence,
+            // so leaving the flag set would make the next element's cleanup
+            // abandon its own wait immediately.
             logger.warn("Interrupted while awaiting close down");
         }
     }
@@ -707,19 +742,41 @@ public abstract class ShareUsageBase
         if (isCanceled() == false && isRunning() == false) {
             synchronized (lock) {
                 if (isRunning() == false) {
-                    logger.debug(threadMarker,"starting runnable");
-                    sendDataFuture = executor.submit(
-                            () -> {
-                                logger.debug(threadMarker,"runnable is running");
-                                try {
-                                    sendUsageData();
-                                    logger.debug(threadMarker, "Done sending");
-                                } catch (Exception e) {
-                                    logger.error("Share usage encountered an error.", e);
-                                }
-                            }
-                    );
+                    submitSendData();
                 }
+            }
+        }
+    }
+
+    /**
+     * Submit a task that drains the queue and sends the data it takes. Unlike
+     * {@link #trySendData()} this does not check whether a consumer is already
+     * running - the executor is single threaded, so the new task simply runs
+     * after any task that is already in flight.
+     */
+    private void submitSendData() {
+        if (isCanceled()) {
+            return;
+        }
+        synchronized (lock) {
+            logger.debug(threadMarker, "starting runnable");
+            try {
+                sendDataFuture = executor.submit(
+                        () -> {
+                            logger.debug(threadMarker, "runnable is running");
+                            try {
+                                sendUsageData();
+                                logger.debug(threadMarker, "Done sending");
+                            } catch (Exception exception) {
+                                logger.error("Share usage encountered an error.", exception);
+                            }
+                        }
+                );
+            } catch (RejectedExecutionException rejectedExecutionException) {
+                // The element has already been closed, so there is nothing that
+                // can be done with any data that is still queued.
+                logger.debug(threadMarker,
+                        "Share usage is shut down, data was not queued for sending.");
             }
         }
     }

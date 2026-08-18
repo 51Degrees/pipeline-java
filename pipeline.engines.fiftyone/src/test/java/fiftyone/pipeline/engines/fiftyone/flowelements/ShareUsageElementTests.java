@@ -52,6 +52,8 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
 import static fiftyone.pipeline.core.Constants.*;
@@ -149,6 +151,12 @@ public class ShareUsageElementTests {
             return true;
         }
     }
+
+    /**
+     * How long a test consumer will linger before giving up waiting for the
+     * element to be closed. Only reached if a test fails early.
+     */
+    private static final long LINGER_TIMEOUT_MILLIS = 30000;
 
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -799,6 +807,115 @@ public class ShareUsageElementTests {
         assertEquals(count, f.getLength(), "Expecting devices");
 
     }
+    /**
+     * A consumer that has finished its drain loop with fewer entries left than
+     * the minimum batch size still reports as running until its task completes.
+     * close() must send that remainder rather than deciding, from the state of
+     * the task, that a consumer is already dealing with it.
+     * This is the deterministic form of the race that makes
+     * {@link #CheckForOffByOneError()} flaky on slower CI runners.
+     */
+    @Test
+    public void ShareUsageElement_PartialBatchWhileConsumerFinishing_SentOnCleanup() throws Exception {
+        final int minimumEntriesPerMessage = 10;
+        final int remainder = 5;
+        final CountDownLatch consumerHasDrainedQueue = new CountDownLatch(1);
+
+        sequenceElement = new SequenceElement(LoggerFactory.getLogger(SequenceElement.class));
+        sequenceElement.addPipeline(pipeline);
+        shareUsageElement = new ShareUsageElement(
+                LoggerFactory.getLogger(ShareUsageElement.class),
+                1,
+                minimumEntriesPerMessage,
+                minimumEntriesPerMessage * 2,
+                100,
+                100,
+                1,
+                true,
+                "http://51Degrees.com/test",
+                new ArrayList<>(),
+                new ArrayList<>(),
+                new ArrayList<>(),
+                DEFAULT_SESSION_COOKIE_NAME,
+                tracker) {
+            @Override
+            protected void sendUsageData() {
+                super.sendUsageData();
+                consumerHasDrainedQueue.countDown();
+                // Hold the task open after its drain loop has finished, so that
+                // it is still 'running' at the point where close decides
+                // whether a final consumer is needed. Releasing on shutdown
+                // means no second thread is needed to drive the test. The
+                // deadline stops the executor's non daemon thread spinning for
+                // ever if the test fails before it reaches close.
+                long giveUpTime = System.currentTimeMillis() + LINGER_TIMEOUT_MILLIS;
+                while (executor.isShutdown() == false
+                        && System.currentTimeMillis() < giveUpTime) {
+                    try {
+                        Thread.sleep(1);
+                    } catch (InterruptedException interruptedException) {
+                        break;
+                    }
+                }
+            }
+        };
+        shareUsageElement.addPipeline(pipeline);
+        connector = new TestConnector();
+        shareUsageElement.dataUploader = connector;
+
+        Map<String, Object> evidenceData = new HashMap<>();
+        evidenceData.put(EVIDENCE_CLIENTIP_KEY, "1.2.3.4");
+
+        FlowData data = pipeline.createFlowData();
+        data.addEvidence(evidenceData);
+
+        // collect multiple <Devices> documents
+        connector.getBaos().write("<allDevices>".getBytes(StandardCharsets.UTF_8));
+
+        // close in a finally as well, so that an assertion failure before the
+        // Act step below still releases the lingering consumer.
+        try {
+            // Send one full batch and wait for the consumer to drain it.
+            for (int i = 0; i < minimumEntriesPerMessage; i++) {
+                shareUsageElement.process(data);
+            }
+            assertTrue(consumerHasDrainedQueue.await(LINGER_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS),
+                    "The consumer should have drained the first batch");
+
+            // Queue too few entries to start a consumer of their own, while the
+            // previous consumer's task has not completed yet.
+            for (int i = 0; i < remainder; i++) {
+                shareUsageElement.process(data);
+            }
+            assertEquals(remainder, shareUsageElement.evidenceCollection.size());
+            assertTrue(shareUsageElement.isRunning(),
+                    "The first consumer should still be reported as running");
+
+            // Act - close must flush the remainder.
+            shareUsageElement.close();
+            assertEquals(0, shareUsageElement.evidenceCollection.size(),
+                    "close should leave nothing queued");
+        } finally {
+            // Swallowed so that a failure above is still the reported one - the
+            // close in the Act step is the one under test.
+            try {
+                shareUsageElement.close();
+            } catch (Exception exception) {
+                logger.warn("Exception closing the element under test", exception);
+            }
+        }
+
+        ByteArrayOutputStream baos = connector.getBaos();
+        baos.write("</allDevices>".getBytes(StandardCharsets.UTF_8));
+        byte[] output = baos.toByteArray();
+
+        DocumentBuilder builder = docBuilderFactory.newDocumentBuilder();
+        Document doc = builder.parse(new ByteArrayInputStream(output));
+
+        NodeList f = (NodeList) xpath.compile("//Device").evaluate(doc, XPathConstants.NODESET);
+        assertEquals(minimumEntriesPerMessage + remainder, f.getLength(), "Expecting devices");
+    }
+
     @Test
     public void CheckForDrainQueueEvenIfError() throws Exception {
         logger.info("Test intentionally creates errors");
