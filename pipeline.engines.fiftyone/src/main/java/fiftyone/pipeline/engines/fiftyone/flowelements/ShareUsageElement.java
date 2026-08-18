@@ -357,15 +357,24 @@ public class ShareUsageElement extends ShareUsageBase {
                     }
                     allData.add(currentData);
                 }
-                sendAsXML(allData);
-            } catch (InterruptedException e) {
+                // The queue can be empty here - for example when close queues a
+                // final consumer but the consumer that was already running has
+                // drained everything - and there is no point posting a document
+                // with no entries in it.
+                if (allData.isEmpty() == false) {
+                    sendAsXML(allData);
+                }
+            } catch (InterruptedException interruptedException) {
+                // Deliberately not re-interrupting: the interrupt comes from
+                // shutdownNow() and the flag would make every following poll()
+                // throw immediately, spinning this loop instead of draining it.
                 logger.error("Interrupted exception caught while waiting on share usage queue");
-            } catch (Exception e) {
-                logger.error("Exception sending usage data", e);
+            } catch (Exception exception) {
+                logger.error("Exception sending usage data", exception);
             }
-          // send in minEntries batches unless shutting down in which case drain the queue
+          // send in minEntries batches unless closing in which case drain the queue
         } while (evidenceCollection.size() >= minEntriesPerMessage ||
-                executor.isShutdown() && evidenceCollection.size() > 0);
+                isStopping() && evidenceCollection.size() > 0);
         logger.debug(threadMarker, "Stopping sending. Queue size is {}", evidenceCollection.size());
     }
 
