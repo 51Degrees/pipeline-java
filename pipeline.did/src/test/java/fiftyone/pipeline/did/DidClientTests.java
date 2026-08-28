@@ -43,7 +43,6 @@ import java.util.Deque;
 import java.util.List;
 
 import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayload;
-import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayloadWithSection;
 import static fiftyone.pipeline.did.FodIdTestFactory.canonicalRandomPayload;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -64,6 +63,11 @@ public class DidClientTests {
     private static final Instant WEEK1 = Instant.parse("2026-08-03T00:00:00Z");
     private static final Instant WEEK2 = WEEK1.plus(Duration.ofDays(7));
     private static final Instant WEEK3 = WEEK2.plus(Duration.ofDays(7));
+    private static final int MAXIMUM_PAYLOAD_LENGTH = 56;
+    private static final int MAXIMUM_BYTE_LENGTH = 136;
+    private static final int MAXIMUM_BASE64_LENGTH = 184;
+    private static final int MAXIMUM_BASE64_URL_LENGTH = 182;
+    private static final String MAXIMUM_TEST_DOMAIN = "51d.es";
 
     private FodIdTestFactory key1;
     private FodIdTestFactory key2;
@@ -212,6 +216,16 @@ public class DidClientTests {
 
         assertEquals(WEEK2, key.getStartsAt());
         assertEquals(1, transport.requests.size());
+    }
+
+    @Test
+    public void publicKeyFor_OversizedObjectIsRefusedBeforeKeyFetch()
+            throws Exception {
+        FodId fodId = oversizedFodId(key2, WEEK2);
+
+        assertThrows(IllegalArgumentException.class,
+            () -> client.publicKeyFor(fodId));
+        assertEquals(0, transport.requests.size());
     }
 
     @Test
@@ -476,10 +490,22 @@ public class DidClientTests {
     @Test
     public void verifySignature_TrueForPayloadLongerThanBase() throws Exception {
         transport.queue(200, keyList("startsAt", false));
-        FodId fodId = key2.fodIdAt(
-            canonicalPayloadWithSection(25), WEEK2.plus(Duration.ofDays(1)));
+        FodId fodId = maximumFodId(
+            key2, WEEK2.plus(Duration.ofDays(1)));
 
         assertTrue(client.verifySignature(fodId));
+    }
+
+    @Test
+    public void verifySignature_OversizedIdentifierIsRefusedBeforeKeyFetch()
+            throws Exception {
+        FodId fodId = oversizedFodId(
+            key2, WEEK2.plus(Duration.ofDays(1)));
+
+        assertEquals(DidClient.SignatureCheck.MALFORMED_PAYLOAD,
+            client.verifySignatureDetailed(fodId));
+        assertFalse(client.verifySignature(fodId));
+        assertEquals(0, transport.requests.size());
     }
 
     @Test
@@ -508,6 +534,43 @@ public class DidClientTests {
             request.getUrl());
         assertFalse(request.getUrl().contains("licence"));
         assertNull(request.getBody());
+    }
+
+    @Test
+    public void verify_AcceptsMaximumPaddedUnpaddedAndObjectForms()
+            throws Exception {
+        transport.queue(200, "{\"valid\":true}");
+        transport.queue(200, "{\"valid\":true}");
+        transport.queue(200, "{\"valid\":true}");
+        FodId fodId = maximumFodId(key2, WEEK2);
+        String padded = fodId.asBase64();
+        String unpadded = fodId.asBase64Url();
+
+        assertEquals(MAXIMUM_BYTE_LENGTH, fodId.asByteArray().length);
+        assertEquals(MAXIMUM_BASE64_LENGTH, padded.length());
+        assertEquals(MAXIMUM_BASE64_URL_LENGTH, unpadded.length());
+        assertTrue(client.verify(padded));
+        assertTrue(client.verify(unpadded));
+        assertTrue(client.verify(fodId));
+        assertEquals(3, transport.requests.size());
+    }
+
+    @Test
+    public void verify_OversizedStringIsRefusedBeforeTransport() {
+        assertThrows(IllegalArgumentException.class,
+            () -> client.verify(repeat('A', MAXIMUM_BASE64_LENGTH + 1)));
+
+        assertEquals(0, transport.requests.size());
+    }
+
+    @Test
+    public void verify_OversizedObjectIsRefusedBeforeTransport()
+            throws Exception {
+        FodId fodId = oversizedFodId(key2, WEEK2);
+
+        assertThrows(IllegalArgumentException.class,
+            () -> client.verify(fodId));
+        assertEquals(0, transport.requests.size());
     }
 
     @Test
@@ -701,6 +764,19 @@ public class DidClientTests {
     }
 
     @Test
+    public void redeem_OversizedInputsAreRefusedBeforeTransport()
+            throws Exception {
+        FodId fodId = oversizedFodId(key2, WEEK2);
+
+        assertThrows(IllegalArgumentException.class,
+            () -> client.redeem(
+                repeat('A', MAXIMUM_BASE64_LENGTH + 1), "sealed", "abc"));
+        assertThrows(IllegalArgumentException.class,
+            () -> client.redeem(fodId, "sealed", "abc"));
+        assertEquals(0, transport.requests.size());
+    }
+
+    @Test
     public void redeem_404RaisesNotSupported() {
         transport.queue(404, "Not Found");
 
@@ -768,6 +844,33 @@ public class DidClientTests {
     }
 
     // ----- Helpers -----
+
+    private static byte[] maximumPayload() {
+        byte[] payload = new byte[MAXIMUM_PAYLOAD_LENGTH];
+        System.arraycopy(
+            canonicalPayload(), 0, payload, 0, FodId.PAYLOAD_LENGTH);
+        return payload;
+    }
+
+    private static byte[] oversizedPayload() {
+        return Arrays.copyOf(maximumPayload(), MAXIMUM_PAYLOAD_LENGTH + 1);
+    }
+
+    private static FodId maximumFodId(
+            FodIdTestFactory factory, Instant date) throws OwidException {
+        return factory.fodIdAt(maximumPayload(), date, MAXIMUM_TEST_DOMAIN);
+    }
+
+    private static FodId oversizedFodId(
+            FodIdTestFactory factory, Instant date) throws OwidException {
+        return factory.fodIdAt(oversizedPayload(), date, MAXIMUM_TEST_DOMAIN);
+    }
+
+    private static String repeat(char value, int count) {
+        char[] characters = new char[count];
+        Arrays.fill(characters, value);
+        return new String(characters);
+    }
 
     private String keyList(String dateField, boolean withWeekStart) {
         JSONArray array = new JSONArray();

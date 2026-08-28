@@ -109,6 +109,10 @@ public final class DidClient {
 
     private static final String USER_AGENT = "pipeline.did/" + version();
 
+    private static final int MAXIMUM_PAYLOAD_LENGTH = 56;
+    private static final int MAXIMUM_BYTE_LENGTH = 136;
+    private static final int MAXIMUM_BASE64_LENGTH = 184;
+
     /** The outcome of an offline signature check, in detail. */
     public enum SignatureCheck {
         /** The signature verifies with the key in force at its date. */
@@ -119,7 +123,7 @@ public final class DidClient {
         NO_KEY_COVERS_DATE,
         /** The envelope version is not 3. */
         UNSUPPORTED_VERSION,
-        /** The payload is shorter than the base length for its type. */
+        /** The identifier's payload or envelope length is not valid. */
         MALFORMED_PAYLOAD,
     }
 
@@ -304,6 +308,7 @@ public final class DidClient {
      */
     public SigningKey publicKeyFor(FodId fodId) throws IOException {
         Objects.requireNonNull(fodId, "fodId");
+        ensureWithinMaximumLength(fodId);
         Instant date = fodId.getDate();
         return inForceAt(keysFor(date), date);
     }
@@ -466,8 +471,7 @@ public final class DidClient {
     /**
      * Checks the identifier's signature offline, mirroring the cloud's own
      * verify endpoint: the envelope version must be 3, the payload must be
-     * at least the base length for its type (a longer payload carries a
-     * creator context section and is accepted), and the signature must
+     * within the supported length for its type, and the signature must
      * verify with the key in force at the identifier's date or, within a
      * short tolerance either side of a key boundary, the neighbouring key.
      *
@@ -480,6 +484,9 @@ public final class DidClient {
         Objects.requireNonNull(fodId, "fodId");
         if (fodId.getVersion() != Version.VERSION3) {
             return SignatureCheck.UNSUPPORTED_VERSION;
+        }
+        if (!isWithinMaximumLength(fodId)) {
+            return SignatureCheck.MALFORMED_PAYLOAD;
         }
         boolean isRandom = fodId.getType() == IdType.RANDOM;
         int baseLength = FodId.HEADER_LENGTH
@@ -519,6 +526,7 @@ public final class DidClient {
      */
     public boolean verify(FodId fodId) throws IOException {
         Objects.requireNonNull(fodId, "fodId");
+        ensureWithinMaximumLength(fodId);
         return verify(base64Url(fodId));
     }
 
@@ -538,6 +546,7 @@ public final class DidClient {
      */
     public boolean verify(String fodId) throws IOException {
         Objects.requireNonNull(fodId, "fodId");
+        ensureEncodedLength(fodId);
         // Under both names so the request works with hosts that read either
         // parameter. Hosts that recognise both prefer 51did and keep owid as
         // a compatibility alias.
@@ -586,6 +595,7 @@ public final class DidClient {
     public RedeemResult redeem(FodId fodId, String result, String challenge)
             throws IOException {
         Objects.requireNonNull(fodId, "fodId");
+        ensureWithinMaximumLength(fodId);
         return redeem(base64(fodId), result, challenge);
     }
 
@@ -602,6 +612,7 @@ public final class DidClient {
     public RedeemResult redeem(String fodId, String result, String challenge)
             throws IOException {
         Objects.requireNonNull(fodId, "fodId");
+        ensureEncodedLength(fodId);
         // The POST route has no {resource} segment, so the resource key
         // goes in the form with everything else.
         StringBuilder form = new StringBuilder()
@@ -650,6 +661,34 @@ public final class DidClient {
         }
         return transport.send(
             new HttpTransport.Request(method, url, headers, body));
+    }
+
+    private static boolean isWithinMaximumLength(FodId fodId) {
+        if (fodId.payloadLength() > MAXIMUM_PAYLOAD_LENGTH
+                || fodId.getDomain() == null
+                || fodId.getDomain().length() > MAXIMUM_BYTE_LENGTH
+                || fodId.getSignature().length != 64) {
+            return false;
+        }
+        try {
+            return fodId.asByteArray().length <= MAXIMUM_BYTE_LENGTH;
+        } catch (OwidException invalid) {
+            return false;
+        }
+    }
+
+    private static void ensureWithinMaximumLength(FodId fodId) {
+        if (!isWithinMaximumLength(fodId)) {
+            throw new IllegalArgumentException(
+                "The value is larger than a 51Did can be.");
+        }
+    }
+
+    private static void ensureEncodedLength(String fodId) {
+        if (fodId.length() > MAXIMUM_BASE64_LENGTH) {
+            throw new IllegalArgumentException(
+                "The value is larger than a 51Did can be.");
+        }
     }
 
     private static DidHttpException httpError(

@@ -170,9 +170,15 @@ final class FodIdTestFactory {
      */
     Owid signedOwidAt(byte[] payload, Instant date, Version version)
             throws OwidException {
+        return signedOwidAt(payload, date, version, TEST_DOMAIN);
+    }
+
+    private Owid signedOwidAt(
+            byte[] payload, Instant date, Version version, String domainName)
+            throws OwidException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         out.write(version.asByte());
-        byte[] domain = TEST_DOMAIN.getBytes(StandardCharsets.UTF_8);
+        byte[] domain = domainName.getBytes(StandardCharsets.UTF_8);
         out.write(domain, 0, domain.length);
         out.write(0);
         writeUInt32(out, Duration.between(DATE_ORIGIN, date).toMinutes());
@@ -187,6 +193,12 @@ final class FodIdTestFactory {
     /** Signs the payload dated at the moment and parses it as a 51Did. */
     FodId fodIdAt(byte[] payload, Instant date) throws OwidException {
         return FodId.fromOwid(signedOwidAt(payload, date));
+    }
+
+    FodId fodIdAt(byte[] payload, Instant date, String domain)
+            throws OwidException {
+        return FodId.fromOwid(
+            signedOwidAt(payload, date, Version.VERSION3, domain));
     }
 
     private static void writeUInt32(ByteArrayOutputStream out, long value) {

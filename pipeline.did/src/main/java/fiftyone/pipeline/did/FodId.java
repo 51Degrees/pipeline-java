@@ -123,10 +123,12 @@ public final class FodId {
     private final int flags;
     private final long licenseId;
     private final byte[] hash;
+    private final int payloadLength;
 
     private FodId(Owid owid, String paramName) {
         this.owid = owid;
         byte[] payload = owid.getPayload();
+        this.payloadLength = payload == null ? 0 : payload.length;
         if (payload == null || payload.length < HEADER_LENGTH) {
             throw new IllegalArgumentException(
                 "51Did payload must be at least " + HEADER_LENGTH
@@ -323,6 +325,11 @@ public final class FodId {
     /** @return a copy of the OWID payload bytes. */
     public byte[] getPayload() {
         return owid.getPayload();
+    }
+
+    /** Package-private length access without copying the payload. */
+    int payloadLength() {
+        return payloadLength;
     }
 
     /** @return a copy of the 64-byte OWID signature. */
