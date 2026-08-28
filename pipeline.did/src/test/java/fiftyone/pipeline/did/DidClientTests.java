@@ -289,7 +289,7 @@ public class DidClientTests {
     }
 
     @Test
-    public void publicKeyFor_RefetchFailureAnswersFromTheHeldList()
+    public void publicKeyFor_RefetchFailureRaises()
             throws Exception {
         transport.queue(200, keyList("startsAt", false));
         FodId fodId = key2.fodIdAt(
@@ -298,9 +298,10 @@ public class DidClientTests {
         clock.advance(Duration.ofHours(25));
 
         // Nothing queued, so the refetch fails with an I/O error.
-        SigningKey key = client.publicKeyFor(fodId);
+        IOException error = assertThrows(IOException.class,
+            () -> client.publicKeyFor(fodId));
 
-        assertEquals(WEEK2, key.getStartsAt());
+        assertTrue(error.getMessage().contains("Nothing queued"));
         assertEquals(2, transport.requests.size());
     }
 
@@ -387,6 +388,21 @@ public class DidClientTests {
             canonicalPayload(), WEEK2.plus(Duration.ofDays(1)));
 
         assertFalse(client.verifySignature(fodId));
+    }
+
+    @Test
+    public void verifySignature_RefetchFailureRaisesRatherThanFalse()
+            throws Exception {
+        transport.queue(200, keyList("startsAt", false));
+        client.publicKeys();
+        FodIdTestFactory missingKey = new FodIdTestFactory();
+        FodId fodId = missingKey.fodIdAt(
+            canonicalPayload(), WEEK3.plus(Duration.ofDays(8)));
+
+        // The held schedule cannot contain the correct key, and the
+        // required refetch has no queued answer.
+        assertThrows(IOException.class, () -> client.verifySignature(fodId));
+        assertEquals(2, transport.requests.size());
     }
 
     @Test

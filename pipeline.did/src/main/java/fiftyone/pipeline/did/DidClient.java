@@ -300,7 +300,7 @@ public final class DidClient {
      *
      * @param fodId the identifier
      * @return the key in force, or null when the date precedes every key
-     * @throws IOException if no list is held and it cannot be fetched
+     * @throws IOException if the required key list cannot be fetched
      */
     public SigningKey publicKeyFor(FodId fodId) throws IOException {
         Objects.requireNonNull(fodId, "fodId");
@@ -309,8 +309,8 @@ public final class DidClient {
     }
 
     /**
-     * Fetches the key list and records when. A failure is the caller's to
-     * handle, and leaves whatever was held in place.
+     * Fetches the key list and records when. A failure propagates to the
+     * caller and leaves whatever was held in place.
      */
     private void fetchKeys() throws IOException {
         String url = endpoint + "id/key/" + encode(resourceKey);
@@ -339,9 +339,8 @@ public final class DidClient {
     /**
      * Reads the key list the cloud answers with. Each entry carries
      * {@code startsAt} and {@code publicKey}. Where {@code startsAt} is
-     * absent, {@code created} is read instead, because a host that predates
-     * the creator context emits {@code created} and {@code publicKey}
-     * only. {@code weekStart} is ignored.
+     * absent, the compatibility field {@code created} is read instead.
+     * {@code weekStart} is ignored.
      */
     static List<SigningKey> parseKeys(String body) {
         JSONArray array = new JSONArray(body);
@@ -376,20 +375,15 @@ public final class DidClient {
     /**
      * The key list to answer a question about the given date from,
      * refetching once first where the held list may not have the answer. A
-     * refetch that fails leaves the held list in place and answers from it,
-     * because the keys it holds are still genuine; only a first fetch that
-     * fails raises.
+     * failed fetch propagates because the held list may not contain the key
+     * needed for that date.
      */
     private List<SigningKey> keysFor(Instant date) throws IOException {
         synchronized (lock) {
             if (keys == null) {
                 fetchKeys();
             } else if (needsRefetch(date)) {
-                try {
-                    fetchKeys();
-                } catch (IOException unreachable) {
-                    // Answer from the held list.
-                }
+                fetchKeys();
             }
             return keys;
         }
@@ -463,7 +457,7 @@ public final class DidClient {
      *
      * @param fodId the identifier
      * @return true when the signature verifies
-     * @throws IOException if no key list is held and it cannot be fetched
+     * @throws IOException if the required key list cannot be fetched
      */
     public boolean verifySignature(FodId fodId) throws IOException {
         return verifySignatureDetailed(fodId) == SignatureCheck.VERIFIED;
@@ -479,7 +473,7 @@ public final class DidClient {
      *
      * @param fodId the identifier
      * @return the outcome
-     * @throws IOException if no key list is held and it cannot be fetched
+     * @throws IOException if the required key list cannot be fetched
      */
     public SignatureCheck verifySignatureDetailed(FodId fodId)
             throws IOException {
