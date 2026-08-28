@@ -561,12 +561,13 @@ public class DidClientTests {
 
         HttpTransport.Request request = transport.last();
         assertEquals("POST", request.getMethod());
-        assertEquals(ENDPOINT + "id/redeem/resource", request.getUrl());
+        assertEquals(ENDPOINT + "id/redeem", request.getUrl());
         assertFalse(request.getUrl().contains("licence"));
+        assertFalse(request.getUrl().contains("resource"));
         assertTrue(request.getHeaders().get("Content-Type")
             .startsWith("application/x-www-form-urlencoded"));
         String form = new String(request.getBody(), StandardCharsets.UTF_8);
-        assertTrue(form.startsWith("51did="
+        assertTrue(form.startsWith("resource=resource&51did="
             + DidClient.encode(fodId.asBase64()) + "&"));
         assertTrue(form.contains("&result=sealed"));
         assertTrue(form.contains("&challenge=abc"));
@@ -744,7 +745,7 @@ public class DidClientTests {
 
         String form = new String(
             transport.last().getBody(), StandardCharsets.UTF_8);
-        assertTrue(form.startsWith("51did=AwAA%2B%2F%3D%3D&"));
+        assertTrue(form.startsWith("resource=resource&51did=AwAA%2B%2F%3D%3D&"));
         assertTrue(form.contains("&result=a+b%26c&"));
         assertTrue(form.contains("&challenge=x%3Dy&"));
     }

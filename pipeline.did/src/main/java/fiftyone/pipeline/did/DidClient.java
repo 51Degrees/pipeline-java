@@ -72,10 +72,11 @@ import java.util.Objects;
  * browser's own connection. The {@code verify-context} and
  * {@code verify-full} endpoints are browser calls for the same reason.
  * <p>
- * Credentials never appear in a URL. The resource key travels in the route
- * ({@code id/key/{resource}}, {@code id/verify/{resource}},
- * {@code id/redeem/{resource}}), and the licence key travels only in a POST
- * form body, because a query string is written to access logs.
+ * Credentials never appear in a query string, because a query string is
+ * written to access logs. The resource key travels in the route of the GET
+ * calls ({@code id/key/{resource}}, {@code id/verify/{resource}}) and in
+ * the form body of the POST to {@code id/redeem}, whose route has no
+ * resource segment, and the licence key travels only in that form body.
  * <p>
  * One instance is safe to share across threads. The key list is kept per
  * instance, so share the instance rather than creating one per request.
@@ -601,14 +602,17 @@ public final class DidClient {
     public RedeemResult redeem(String fodId, String result, String challenge)
             throws IOException {
         Objects.requireNonNull(fodId, "fodId");
+        // The POST route has no {resource} segment, so the resource key
+        // goes in the form with everything else.
         StringBuilder form = new StringBuilder()
-            .append("51did=").append(encode(fodId))
+            .append("resource=").append(encode(resourceKey))
+            .append("&51did=").append(encode(fodId))
             .append("&result=").append(encode(nullToEmpty(result)))
             .append("&challenge=").append(encode(nullToEmpty(challenge)));
         if (licenceKey != null) {
             form.append("&license=").append(encode(licenceKey));
         }
-        String url = endpoint + "id/redeem/" + encode(resourceKey);
+        String url = endpoint + "id/redeem";
         HttpTransport.Response response = send(
             "POST", url, form.toString().getBytes(StandardCharsets.UTF_8));
         int status = response.getStatusCode();

@@ -103,13 +103,15 @@ public class ExampleTests {
         assertEquals("verified", json.getString("serverSignature"));
         assertFalse(json.has("factors"));
 
-        // The keys were fetched once and the redeem was a POST carrying
-        // the licence key in the form, never in the URL.
+        // The keys were fetched once and the redeem was a POST to the bare
+        // path, carrying the resource and licence keys in the form, never
+        // in the URL.
         assertEquals(2, transport.requests.size());
         HttpTransport.Request redeem = transport.requests.get(1);
         assertEquals("POST", redeem.getMethod());
-        assertEquals(ENDPOINT + "id/redeem/resource", redeem.getUrl());
+        assertEquals(ENDPOINT + "id/redeem", redeem.getUrl());
         String form = new String(redeem.getBody(), StandardCharsets.UTF_8);
+        assertTrue(form.startsWith("resource=resource&51did="));
         assertTrue(form.contains("&result=sealed"));
         assertTrue(form.contains("&challenge=abc"));
         assertTrue(form.contains("&license=licence"));
