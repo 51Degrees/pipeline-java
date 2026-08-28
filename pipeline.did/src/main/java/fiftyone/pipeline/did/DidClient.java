@@ -109,9 +109,8 @@ public final class DidClient {
 
     private static final String USER_AGENT = "pipeline.did/" + version();
 
-    private static final int MAXIMUM_PAYLOAD_LENGTH = 56;
-    private static final int MAXIMUM_BYTE_LENGTH = 136;
-    private static final int MAXIMUM_BASE64_LENGTH = 184;
+    private static final int MAXIMUM_BASE64_LENGTH =
+        ((FodId.MAXIMUM_BYTE_LENGTH + 2) / 3) * 4;
 
     /** The outcome of an offline signature check, in detail. */
     public enum SignatureCheck {
@@ -664,17 +663,7 @@ public final class DidClient {
     }
 
     private static boolean isWithinMaximumLength(FodId fodId) {
-        if (fodId.payloadLength() > MAXIMUM_PAYLOAD_LENGTH
-                || fodId.getDomain() == null
-                || fodId.getDomain().length() > MAXIMUM_BYTE_LENGTH
-                || fodId.getSignature().length != 64) {
-            return false;
-        }
-        try {
-            return fodId.asByteArray().length <= MAXIMUM_BYTE_LENGTH;
-        } catch (OwidException invalid) {
-            return false;
-        }
+        return fodId.hasValidLength();
     }
 
     private static void ensureWithinMaximumLength(FodId fodId) {

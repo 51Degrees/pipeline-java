@@ -221,10 +221,8 @@ public class DidClientTests {
     @Test
     public void publicKeyFor_OversizedObjectIsRefusedBeforeKeyFetch()
             throws Exception {
-        FodId fodId = oversizedFodId(key2, WEEK2);
-
         assertThrows(IllegalArgumentException.class,
-            () -> client.publicKeyFor(fodId));
+            () -> oversizedFodId(key2, WEEK2));
         assertEquals(0, transport.requests.size());
     }
 
@@ -499,12 +497,9 @@ public class DidClientTests {
     @Test
     public void verifySignature_OversizedIdentifierIsRefusedBeforeKeyFetch()
             throws Exception {
-        FodId fodId = oversizedFodId(
-            key2, WEEK2.plus(Duration.ofDays(1)));
-
-        assertEquals(DidClient.SignatureCheck.MALFORMED_PAYLOAD,
-            client.verifySignatureDetailed(fodId));
-        assertFalse(client.verifySignature(fodId));
+        assertThrows(IllegalArgumentException.class,
+            () -> oversizedFodId(
+                key2, WEEK2.plus(Duration.ofDays(1))));
         assertEquals(0, transport.requests.size());
     }
 
@@ -566,10 +561,8 @@ public class DidClientTests {
     @Test
     public void verify_OversizedObjectIsRefusedBeforeTransport()
             throws Exception {
-        FodId fodId = oversizedFodId(key2, WEEK2);
-
         assertThrows(IllegalArgumentException.class,
-            () -> client.verify(fodId));
+            () -> oversizedFodId(key2, WEEK2));
         assertEquals(0, transport.requests.size());
     }
 
@@ -766,13 +759,11 @@ public class DidClientTests {
     @Test
     public void redeem_OversizedInputsAreRefusedBeforeTransport()
             throws Exception {
-        FodId fodId = oversizedFodId(key2, WEEK2);
-
         assertThrows(IllegalArgumentException.class,
             () -> client.redeem(
                 repeat('A', MAXIMUM_BASE64_LENGTH + 1), "sealed", "abc"));
         assertThrows(IllegalArgumentException.class,
-            () -> client.redeem(fodId, "sealed", "abc"));
+            () -> oversizedFodId(key2, WEEK2));
         assertEquals(0, transport.requests.size());
     }
 

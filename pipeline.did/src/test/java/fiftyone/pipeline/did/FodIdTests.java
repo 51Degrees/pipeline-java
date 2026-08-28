@@ -25,6 +25,7 @@ package fiftyone.pipeline.did;
 import com.swancommunity.owid.Crypto;
 import com.swancommunity.owid.Owid;
 import com.swancommunity.owid.OwidException;
+import com.swancommunity.owid.Version;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -67,6 +68,7 @@ public class FodIdTests {
         assertEquals(FodId.PAYLOAD_LENGTH, FodId.HASH_OFFSET + FodId.HASH_LENGTH);
         assertEquals(FodId.HASH_OFFSET, FodId.LICENSE_ID_OFFSET + FodId.LICENSE_ID_LENGTH);
         assertEquals(FodId.RANDOM_PAYLOAD_LENGTH, FodId.HASH_OFFSET + FodId.GUID_LENGTH);
+        assertEquals(136, FodId.MAXIMUM_BYTE_LENGTH);
     }
 
     @Test
@@ -225,19 +227,69 @@ public class FodIdTests {
     }
 
     @Test
-    public void constructor_PayloadLargerThanSpec_UsesFirst37Bytes() throws Exception {
-        byte[] payload = new byte[64];
+    public void constructor_MaximumLength_UsesFirst37Bytes() throws Exception {
+        byte[] payload = new byte[56];
         System.arraycopy(canonicalPayload(), 0, payload, 0, FodId.PAYLOAD_LENGTH);
         for (int i = FodId.PAYLOAD_LENGTH; i < payload.length; i++) {
             payload[i] = (byte) 0xCC;
         }
 
-        FodId fodId = FodId.fromBase64(factory.signedOwidBase64(payload));
+        Owid owid = factory.signedOwidAt(
+            payload, Instant.now(), Version.VERSION3, "51d.es");
+        byte[] bytes = owid.asByteArray();
+        assertEquals(FodId.MAXIMUM_BYTE_LENGTH, bytes.length);
+        FodId fodId = FodId.fromByteArray(bytes);
 
         assertEquals(CANONICAL_FLAGS, fodId.getFlags());
         assertEquals(CANONICAL_LICENSE_ID, fodId.getLicenseId());
         assertArrayEquals(CANONICAL_HASH, fodId.getHash());
         assertEquals(FodId.HASH_LENGTH, fodId.getHash().length);
+    }
+
+    @Test
+    public void constructor_OneByteBeyondMaximum_ThrowsForEveryInput()
+            throws Exception {
+        byte[] payload = new byte[57];
+        System.arraycopy(canonicalPayload(), 0, payload, 0, FodId.PAYLOAD_LENGTH);
+        Owid owid = factory.signedOwidAt(
+            payload, Instant.now(), Version.VERSION3, "51d.es");
+        byte[] bytes = owid.asByteArray();
+        assertEquals(FodId.MAXIMUM_BYTE_LENGTH + 1, bytes.length);
+
+        assertThrows(IllegalArgumentException.class,
+            () -> FodId.fromBase64(owid.asBase64()));
+        assertThrows(IllegalArgumentException.class,
+            () -> FodId.fromByteArray(bytes));
+        assertThrows(IllegalArgumentException.class,
+            () -> FodId.fromOwid(owid));
+    }
+
+    @Test
+    public void constructor_OversizedPayloadInShortEnvelope_ExplainsPayload()
+            throws Exception {
+        byte[] payload = new byte[57];
+        System.arraycopy(canonicalPayload(), 0, payload, 0, FodId.PAYLOAD_LENGTH);
+        Owid owid = factory.signedOwidAt(
+            payload, Instant.now(), Version.VERSION3, "x");
+        byte[] bytes = owid.asByteArray();
+        assertTrue(bytes.length <= FodId.MAXIMUM_BYTE_LENGTH);
+
+        IllegalArgumentException fromBase64 = assertThrows(
+            IllegalArgumentException.class,
+            () -> FodId.fromBase64(owid.asBase64()));
+        IllegalArgumentException fromBytes = assertThrows(
+            IllegalArgumentException.class,
+            () -> FodId.fromByteArray(bytes));
+        IllegalArgumentException fromOwid = assertThrows(
+            IllegalArgumentException.class,
+            () -> FodId.fromOwid(owid));
+        for (IllegalArgumentException error
+                : new IllegalArgumentException[] {
+                    fromBase64, fromBytes, fromOwid
+                }) {
+            assertTrue(error.getMessage().contains("payload"));
+            assertTrue(error.getMessage().contains("56 bytes"));
+        }
     }
 
     @Test

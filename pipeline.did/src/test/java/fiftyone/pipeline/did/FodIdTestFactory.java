@@ -173,7 +173,7 @@ final class FodIdTestFactory {
         return signedOwidAt(payload, date, version, TEST_DOMAIN);
     }
 
-    private Owid signedOwidAt(
+    Owid signedOwidAt(
             byte[] payload, Instant date, Version version, String domainName)
             throws OwidException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
