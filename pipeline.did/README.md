@@ -47,12 +47,6 @@ such an identifier the four License Id bytes hold an encrypted value that
 only 51Degrees can turn back into a licence identifier, so `getLicenseId()`
 is the field's raw value and identifies nothing outside 51Degrees.
 
-The complete serialized envelope of a valid 51Did is at most 136 bytes.
-`FodId.MAXIMUM_BYTE_LENGTH` exposes that boundary for callers that want to
-check raw input before parsing; every `FodId` factory also enforces it and
-rejects a longer value for its length. This is a limit on the identifier
-itself, not on an HTTP response that happens to carry one.
-
 ## OWID dependency
 
 `FodId` builds on the OWID envelope library

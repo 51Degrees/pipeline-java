@@ -114,16 +114,6 @@ public final class FodId {
     public static final int PAYLOAD_LENGTH = HASH_OFFSET + HASH_LENGTH;
 
     /**
-     * Largest possible byte length of a serialized 51Did envelope, including
-     * its signature. Every factory method enforces this boundary.
-     */
-    public static final int MAXIMUM_BYTE_LENGTH = 136;
-
-    private static final int MAXIMUM_PAYLOAD_LENGTH = 56;
-    private static final int MAXIMUM_BASE64_LENGTH =
-        ((MAXIMUM_BYTE_LENGTH + 2) / 3) * 4;
-
-    /**
      * The origin the envelope's date counts from, 2020-01-01T00:00:00Z, as
      * epoch seconds. See {@link #getDateMinutes()}.
      */
@@ -133,20 +123,10 @@ public final class FodId {
     private final int flags;
     private final long licenseId;
     private final byte[] hash;
-    private final int payloadLength;
-    private final int byteLength;
 
-    private FodId(Owid owid, String paramName, int byteLength) {
+    private FodId(Owid owid, String paramName) {
         this.owid = owid;
         byte[] payload = owid.getPayload();
-        this.payloadLength = payload == null ? 0 : payload.length;
-        this.byteLength = byteLength;
-        if (byteLength > MAXIMUM_BYTE_LENGTH) {
-            throw tooLong(paramName, byteLength);
-        }
-        if (this.payloadLength > MAXIMUM_PAYLOAD_LENGTH) {
-            throw payloadTooLong(paramName, this.payloadLength);
-        }
         if (payload == null || payload.length < HEADER_LENGTH) {
             throw new IllegalArgumentException(
                 "51Did payload must be at least " + HEADER_LENGTH
@@ -194,40 +174,41 @@ public final class FodId {
      * The URL-safe form is restored to the standard one here, before the
      * envelope library sees it, because that library's decoder ignores
      * characters outside the standard alphabet rather than refusing them,
-     * which would silently drop bytes from a URL-safe value.
+     * which would silently drop bytes from a URL-safe value. Leading and
+     * trailing whitespace is removed at the same point, so a value that
+     * arrives with a newline or a space around it reads as the same
+     * identifier as the clean form.
      *
      * @param base64 base64 of the full OWID envelope
      * @return the parsed 51Did
      * @throws NullPointerException if {@code base64} is null
      * @throws OwidException        if the string is not valid base64 or not a
      *                              valid OWID
-     * @throws IllegalArgumentException if the envelope exceeds
-     *                              {@link #MAXIMUM_BYTE_LENGTH}, or its
-     *                              payload length is outside the range a
-     *                              51Did can have
+     * @throws IllegalArgumentException if the payload is shorter than the
+     *                              minimum for its identifier type
      */
     public static FodId fromBase64(String base64) throws OwidException {
         Objects.requireNonNull(base64, "base64");
-        String standard = toStandardBase64(base64);
-        if (standard.length() > MAXIMUM_BASE64_LENGTH) {
-            throw tooLong("base64", -1);
-        }
-        Owid parsed = Owid.fromBase64(standard);
-        return new FodId(parsed, "base64", parsed.asByteArray().length);
+        return new FodId(Owid.fromBase64(toStandardBase64(base64)), "base64");
     }
 
     /**
      * Restores a base64 string that may use the URL-safe alphabet, with or
-     * without padding, to the standard alphabet with padding: {@code -}
+     * without padding, to the standard alphabet with padding. Leading and
+     * trailing whitespace is removed first, because a value read from a
+     * header, a file or a form field often carries a newline or a space
+     * around it and neither belongs to the identifier. Then {@code -}
      * becomes {@code +}, {@code _} becomes {@code /}, and {@code ==} or
-     * {@code =} is appended when the length modulo 4 is 2 or 3. A value
-     * already in the standard padded form is returned unchanged.
+     * {@code =} is appended when the length modulo 4 is 2 or 3. That
+     * padding is worked out from the trimmed length, so whitespace cannot
+     * push the value into the wrong case. A value already in the standard
+     * padded form with no whitespace around it is returned unchanged.
      *
      * @param value the base64 text in either alphabet
      * @return the same value in the standard alphabet with padding
      */
     static String toStandardBase64(String value) {
-        String standard = value.replace('-', '+').replace('_', '/');
+        String standard = value.trim().replace('-', '+').replace('_', '/');
         switch (standard.length() % 4) {
             case 2:
                 return standard + "==";
@@ -245,14 +226,12 @@ public final class FodId {
      * @return the parsed 51Did
      * @throws NullPointerException if {@code buffer} is null
      * @throws OwidException        if the bytes are not a valid OWID
-     * @throws IllegalArgumentException if the envelope exceeds
-     *                              {@link #MAXIMUM_BYTE_LENGTH}, or its
-     *                              payload length is outside the range a
-     *                              51Did can have
+     * @throws IllegalArgumentException if the payload is shorter than the
+     *                              minimum for its identifier type
      */
     public static FodId fromByteArray(byte[] buffer) throws OwidException {
         Objects.requireNonNull(buffer, "buffer");
-        return fromByteArray(buffer, "buffer");
+        return new FodId(Owid.fromByteArray(buffer), "buffer");
     }
 
     /**
@@ -267,37 +246,12 @@ public final class FodId {
      * @throws NullPointerException if {@code owid} is null
      * @throws OwidException        if {@code owid} cannot be serialized (e.g.
      *                              it has not been signed)
-     * @throws IllegalArgumentException if the envelope exceeds
-     *                              {@link #MAXIMUM_BYTE_LENGTH}, or its
-     *                              payload length is outside the range a
-     *                              51Did can have
+     * @throws IllegalArgumentException if the payload is shorter than the
+     *                              minimum for its identifier type
      */
     public static FodId fromOwid(Owid owid) throws OwidException {
         Objects.requireNonNull(owid, "owid");
-        return fromByteArray(owid.asByteArray(), "owid");
-    }
-
-    private static FodId fromByteArray(byte[] buffer, String paramName)
-            throws OwidException {
-        if (buffer.length > MAXIMUM_BYTE_LENGTH) {
-            throw tooLong(paramName, buffer.length);
-        }
-        return new FodId(Owid.fromByteArray(buffer), paramName, buffer.length);
-    }
-
-    private static IllegalArgumentException tooLong(
-            String paramName, int actual) {
-        String detail = actual >= 0 ? "; got " + actual : "";
-        return new IllegalArgumentException(
-            "A 51Did must not exceed " + MAXIMUM_BYTE_LENGTH + " bytes"
-            + detail + " (" + paramName + ").");
-    }
-
-    private static IllegalArgumentException payloadTooLong(
-            String paramName, int actual) {
-        return new IllegalArgumentException(
-            "A 51Did payload must not exceed " + MAXIMUM_PAYLOAD_LENGTH
-            + " bytes; got " + actual + " (" + paramName + ").");
+        return new FodId(Owid.fromByteArray(owid.asByteArray()), "owid");
     }
 
     /**
@@ -377,13 +331,6 @@ public final class FodId {
     /** @return a copy of the OWID payload bytes. */
     public byte[] getPayload() {
         return owid.getPayload();
-    }
-
-    /** Package-private defensive check used by the cloud client. */
-    boolean hasValidLength() {
-        return payloadLength <= MAXIMUM_PAYLOAD_LENGTH
-            && byteLength <= MAXIMUM_BYTE_LENGTH
-            && owid.getSignature().length == Owid.SIGNATURE_LENGTH;
     }
 
     /** @return a copy of the 64-byte OWID signature. */

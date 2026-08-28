@@ -39,6 +39,7 @@ import static fiftyone.pipeline.did.FodIdTestFactory.CANONICAL_HASH;
 import static fiftyone.pipeline.did.FodIdTestFactory.CANONICAL_LICENSE_ID;
 import static fiftyone.pipeline.did.FodIdTestFactory.TEST_DOMAIN;
 import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayload;
+import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayloadWithSection;
 import static fiftyone.pipeline.did.FodIdTestFactory.canonicalRandomPayload;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -68,7 +69,6 @@ public class FodIdTests {
         assertEquals(FodId.PAYLOAD_LENGTH, FodId.HASH_OFFSET + FodId.HASH_LENGTH);
         assertEquals(FodId.HASH_OFFSET, FodId.LICENSE_ID_OFFSET + FodId.LICENSE_ID_LENGTH);
         assertEquals(FodId.RANDOM_PAYLOAD_LENGTH, FodId.HASH_OFFSET + FodId.GUID_LENGTH);
-        assertEquals(136, FodId.MAXIMUM_BYTE_LENGTH);
     }
 
     @Test
@@ -227,18 +227,14 @@ public class FodIdTests {
     }
 
     @Test
-    public void constructor_MaximumLength_UsesFirst37Bytes() throws Exception {
-        byte[] payload = new byte[56];
+    public void constructor_PayloadLargerThanSpec_UsesFirst37Bytes() throws Exception {
+        byte[] payload = new byte[64];
         System.arraycopy(canonicalPayload(), 0, payload, 0, FodId.PAYLOAD_LENGTH);
         for (int i = FodId.PAYLOAD_LENGTH; i < payload.length; i++) {
             payload[i] = (byte) 0xCC;
         }
 
-        Owid owid = factory.signedOwidAt(
-            payload, Instant.now(), Version.VERSION3, "51d.es");
-        byte[] bytes = owid.asByteArray();
-        assertEquals(FodId.MAXIMUM_BYTE_LENGTH, bytes.length);
-        FodId fodId = FodId.fromByteArray(bytes);
+        FodId fodId = FodId.fromBase64(factory.signedOwidBase64(payload));
 
         assertEquals(CANONICAL_FLAGS, fodId.getFlags());
         assertEquals(CANONICAL_LICENSE_ID, fodId.getLicenseId());
@@ -247,48 +243,28 @@ public class FodIdTests {
     }
 
     @Test
-    public void constructor_OneByteBeyondMaximum_ThrowsForEveryInput()
+    public void constructor_LongContextSectionAndLongDomain_Parses()
             throws Exception {
-        byte[] payload = new byte[57];
-        System.arraycopy(canonicalPayload(), 0, payload, 0, FodId.PAYLOAD_LENGTH);
+        // The creator context section has no length this package knows, and
+        // the creator domain is a deployment parameter, so a self-hosted
+        // container may sign with a longer one. Both must read back, and
+        // the cloud stays the judge of what the section means.
+        String longDomain = "a-rather-long-self-hosted-creator."
+            + "identifier.example.internal.51degrees.com";
+        byte[] payload = canonicalPayloadWithSection(512);
+
         Owid owid = factory.signedOwidAt(
-            payload, Instant.now(), Version.VERSION3, "51d.es");
-        byte[] bytes = owid.asByteArray();
-        assertEquals(FodId.MAXIMUM_BYTE_LENGTH + 1, bytes.length);
+            payload, Instant.now(), Version.VERSION3, longDomain);
+        FodId fromBytes = FodId.fromByteArray(owid.asByteArray());
+        FodId fromBase64 = FodId.fromBase64(owid.asBase64());
+        FodId fromOwid = FodId.fromOwid(owid);
 
-        assertThrows(IllegalArgumentException.class,
-            () -> FodId.fromBase64(owid.asBase64()));
-        assertThrows(IllegalArgumentException.class,
-            () -> FodId.fromByteArray(bytes));
-        assertThrows(IllegalArgumentException.class,
-            () -> FodId.fromOwid(owid));
-    }
-
-    @Test
-    public void constructor_OversizedPayloadInShortEnvelope_ExplainsPayload()
-            throws Exception {
-        byte[] payload = new byte[57];
-        System.arraycopy(canonicalPayload(), 0, payload, 0, FodId.PAYLOAD_LENGTH);
-        Owid owid = factory.signedOwidAt(
-            payload, Instant.now(), Version.VERSION3, "x");
-        byte[] bytes = owid.asByteArray();
-        assertTrue(bytes.length <= FodId.MAXIMUM_BYTE_LENGTH);
-
-        IllegalArgumentException fromBase64 = assertThrows(
-            IllegalArgumentException.class,
-            () -> FodId.fromBase64(owid.asBase64()));
-        IllegalArgumentException fromBytes = assertThrows(
-            IllegalArgumentException.class,
-            () -> FodId.fromByteArray(bytes));
-        IllegalArgumentException fromOwid = assertThrows(
-            IllegalArgumentException.class,
-            () -> FodId.fromOwid(owid));
-        for (IllegalArgumentException error
-                : new IllegalArgumentException[] {
-                    fromBase64, fromBytes, fromOwid
-                }) {
-            assertTrue(error.getMessage().contains("payload"));
-            assertTrue(error.getMessage().contains("56 bytes"));
+        for (FodId fodId : new FodId[] { fromBytes, fromBase64, fromOwid }) {
+            assertEquals(longDomain, fodId.getDomain());
+            assertEquals(CANONICAL_FLAGS, fodId.getFlags());
+            assertArrayEquals(CANONICAL_HASH, fodId.getHash());
+            assertArrayEquals(payload, fodId.getPayload());
+            assertTrue(fodId.verify(factory.publicPem));
         }
     }
 
@@ -485,11 +461,43 @@ public class FodIdTests {
     }
 
     @Test
+    public void fromBase64_IgnoresSurroundingWhitespace() throws Exception {
+        String clean = factory.signedOwidBase64(canonicalPayload());
+        byte[] expected = FodId.fromBase64(clean).asByteArray();
+        String urlSafe = clean.replace('+', '-').replace('/', '_')
+            .replace("=", "");
+
+        // A value read from a header, a file or a form field often arrives
+        // with a newline or a space around it, and every one of these is
+        // the same identifier.
+        assertArrayEquals(
+            expected, FodId.fromBase64(clean + "\n").asByteArray());
+        assertArrayEquals(
+            expected, FodId.fromBase64(clean + "\r\n").asByteArray());
+        assertArrayEquals(
+            expected, FodId.fromBase64(" " + clean).asByteArray());
+        assertArrayEquals(
+            expected, FodId.fromBase64(clean + " ").asByteArray());
+        assertArrayEquals(
+            expected, FodId.fromBase64("  " + clean + "  ").asByteArray());
+        assertArrayEquals(
+            expected, FodId.fromBase64(urlSafe + "\n").asByteArray());
+        assertArrayEquals(
+            expected, FodId.fromBase64(" " + urlSafe + " ").asByteArray());
+    }
+
+    @Test
     public void toStandardBase64_RestoresAlphabetAndPadding() {
         assertEquals("+/8=", FodId.toStandardBase64("-_8"));
         assertEquals("+/==", FodId.toStandardBase64("-_"));
         assertEquals("+/8=", FodId.toStandardBase64("+/8="));
         assertEquals("abcd", FodId.toStandardBase64("abcd"));
+        // The padding comes from the trimmed length, so whitespace cannot
+        // push the value into the wrong case.
+        assertEquals("+/8=", FodId.toStandardBase64("-_8\n"));
+        assertEquals("+/8=", FodId.toStandardBase64(" -_8 "));
+        assertEquals("+/==", FodId.toStandardBase64("-_\r\n"));
+        assertEquals("abcd", FodId.toStandardBase64("  abcd  "));
     }
 
     @Test

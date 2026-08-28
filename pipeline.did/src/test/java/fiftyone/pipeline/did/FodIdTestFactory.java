@@ -173,6 +173,11 @@ final class FodIdTestFactory {
         return signedOwidAt(payload, date, version, TEST_DOMAIN);
     }
 
+    /**
+     * As {@link #signedOwidAt(byte[], Instant, Version)} with the creator
+     * domain given, because the domain is a deployment parameter and a
+     * self-hosted container may sign with a longer one than the cloud does.
+     */
     Owid signedOwidAt(
             byte[] payload, Instant date, Version version, String domainName)
             throws OwidException {
@@ -195,6 +200,7 @@ final class FodIdTestFactory {
         return FodId.fromOwid(signedOwidAt(payload, date));
     }
 
+    /** As {@link #fodIdAt(byte[], Instant)} with the creator domain given. */
     FodId fodIdAt(byte[] payload, Instant date, String domain)
             throws OwidException {
         return FodId.fromOwid(

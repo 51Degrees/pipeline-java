@@ -109,8 +109,15 @@ public final class DidClient {
 
     private static final String USER_AGENT = "pipeline.did/" + version();
 
-    private static final int MAXIMUM_BASE64_LENGTH =
-        ((FodId.MAXIMUM_BYTE_LENGTH + 2) / 3) * 4;
+    /**
+     * Longest encoded identifier this client will take from a caller. The
+     * figure is arbitrary and deliberately generous, far above anything the
+     * cloud issues, because its only job is to turn away obviously
+     * malformed input before the client decodes it, fetches a key or calls
+     * the cloud. It says nothing about how long a 51Did is, and the cloud
+     * remains the judge of that.
+     */
+    private static final int MAXIMUM_ENCODED_LENGTH = 4096;
 
     /** The outcome of an offline signature check, in detail. */
     public enum SignatureCheck {
@@ -122,7 +129,7 @@ public final class DidClient {
         NO_KEY_COVERS_DATE,
         /** The envelope version is not 3. */
         UNSUPPORTED_VERSION,
-        /** The identifier's payload or envelope length is not valid. */
+        /** The payload is shorter than the base length for its type. */
         MALFORMED_PAYLOAD,
     }
 
@@ -307,7 +314,6 @@ public final class DidClient {
      */
     public SigningKey publicKeyFor(FodId fodId) throws IOException {
         Objects.requireNonNull(fodId, "fodId");
-        ensureWithinMaximumLength(fodId);
         Instant date = fodId.getDate();
         return inForceAt(keysFor(date), date);
     }
@@ -470,7 +476,8 @@ public final class DidClient {
     /**
      * Checks the identifier's signature offline, mirroring the cloud's own
      * verify endpoint: the envelope version must be 3, the payload must be
-     * within the supported length for its type, and the signature must
+     * at least the base length for its type (a longer payload carries a
+     * creator context section and is accepted), and the signature must
      * verify with the key in force at the identifier's date or, within a
      * short tolerance either side of a key boundary, the neighbouring key.
      *
@@ -483,9 +490,6 @@ public final class DidClient {
         Objects.requireNonNull(fodId, "fodId");
         if (fodId.getVersion() != Version.VERSION3) {
             return SignatureCheck.UNSUPPORTED_VERSION;
-        }
-        if (!isWithinMaximumLength(fodId)) {
-            return SignatureCheck.MALFORMED_PAYLOAD;
         }
         boolean isRandom = fodId.getType() == IdType.RANDOM;
         int baseLength = FodId.HEADER_LENGTH
@@ -525,7 +529,6 @@ public final class DidClient {
      */
     public boolean verify(FodId fodId) throws IOException {
         Objects.requireNonNull(fodId, "fodId");
-        ensureWithinMaximumLength(fodId);
         return verify(base64Url(fodId));
     }
 
@@ -538,8 +541,10 @@ public final class DidClient {
      * @param fodId the identifier as base64
      * @return true when the cloud answers valid, false when it answers
      *         invalid
-     * @throws IllegalArgumentException if the cloud says the value is not a
-     *                                  51Did, with the cloud's message
+     * @throws IllegalArgumentException if the value is too long to be an
+     *                                  identifier at all, or if the cloud
+     *                                  says it is not a 51Did, with the
+     *                                  cloud's message
      * @throws IOException if the cloud cannot be reached, or answers with a
      *                     status the client does not map
      */
@@ -594,7 +599,6 @@ public final class DidClient {
     public RedeemResult redeem(FodId fodId, String result, String challenge)
             throws IOException {
         Objects.requireNonNull(fodId, "fodId");
-        ensureWithinMaximumLength(fodId);
         return redeem(base64(fodId), result, challenge);
     }
 
@@ -606,6 +610,9 @@ public final class DidClient {
      * @param result    the sealed result
      * @param challenge the challenge, or null
      * @return the typed result, for a 200 or a 503 answer
+     * @throws IllegalArgumentException if the value is too long to be an
+     *                                  identifier at all, or as
+     *                                  {@link #redeem(FodId, String, String)}
      * @throws IOException as {@link #redeem(FodId, String, String)}
      */
     public RedeemResult redeem(String fodId, String result, String challenge)
@@ -662,21 +669,14 @@ public final class DidClient {
             new HttpTransport.Request(method, url, headers, body));
     }
 
-    private static boolean isWithinMaximumLength(FodId fodId) {
-        return fodId.hasValidLength();
-    }
-
-    private static void ensureWithinMaximumLength(FodId fodId) {
-        if (!isWithinMaximumLength(fodId)) {
-            throw new IllegalArgumentException(
-                "The value is larger than a 51Did can be.");
-        }
-    }
-
+    /**
+     * Refuses input that cannot be an identifier at all, before any work is
+     * done on it. See {@link #MAXIMUM_ENCODED_LENGTH}.
+     */
     private static void ensureEncodedLength(String fodId) {
-        if (fodId.length() > MAXIMUM_BASE64_LENGTH) {
+        if (fodId.length() > MAXIMUM_ENCODED_LENGTH) {
             throw new IllegalArgumentException(
-                "The value is larger than a 51Did can be.");
+                "The value is too long to be a 51Did.");
         }
     }
 
