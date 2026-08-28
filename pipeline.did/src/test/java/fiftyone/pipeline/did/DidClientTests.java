@@ -65,6 +65,12 @@ public class DidClientTests {
     private static final Instant WEEK2 = WEEK1.plus(Duration.ofDays(7));
     private static final Instant WEEK3 = WEEK2.plus(Duration.ofDays(7));
 
+    // Offsets either side of a key boundary, chosen far apart so that each
+    // one is plainly on its own side of the tolerance whatever the
+    // tolerance is set to.
+    private static final Duration JUST_INSIDE = Duration.ofMinutes(1);
+    private static final Duration WELL_OUTSIDE = Duration.ofHours(1);
+
     private FodIdTestFactory key1;
     private FodIdTestFactory key2;
     private FodIdTestFactory key3;
@@ -323,7 +329,7 @@ public class DidClientTests {
         List<SigningKey> keys = DidClient.parseKeys(keyList("startsAt", false));
 
         List<SigningKey> candidates = DidClient.candidatesFor(
-            keys, WEEK2.plus(Duration.ofMinutes(5)));
+            keys, WEEK2.plus(JUST_INSIDE));
 
         assertEquals(2, candidates.size());
         assertEquals(WEEK2, candidates.get(0).getStartsAt());
@@ -335,7 +341,7 @@ public class DidClientTests {
         List<SigningKey> keys = DidClient.parseKeys(keyList("startsAt", false));
 
         List<SigningKey> candidates = DidClient.candidatesFor(
-            keys, WEEK2.minus(Duration.ofMinutes(5)));
+            keys, WEEK2.minus(JUST_INSIDE));
 
         assertEquals(2, candidates.size());
         assertEquals(WEEK1, candidates.get(0).getStartsAt());
@@ -350,7 +356,7 @@ public class DidClientTests {
             keys, WEEK1.minus(Duration.ofDays(1))).isEmpty());
         // Within the tolerance of the first start, the first key applies.
         assertEquals(1, DidClient.candidatesFor(
-            keys, WEEK1.minus(Duration.ofMinutes(5))).size());
+            keys, WEEK1.minus(JUST_INSIDE)).size());
     }
 
     // ----- Offline signature verification -----
@@ -410,9 +416,9 @@ public class DidClientTests {
             throws Exception {
         transport.queue(200, keyList("startsAt", false));
         FodId inside = key1.fodIdAt(
-            canonicalPayload(), WEEK2.plus(Duration.ofMinutes(5)));
+            canonicalPayload(), WEEK2.plus(JUST_INSIDE));
         FodId outside = key1.fodIdAt(
-            canonicalPayload(), WEEK2.plus(Duration.ofMinutes(20)));
+            canonicalPayload(), WEEK2.plus(WELL_OUTSIDE));
 
         assertTrue(client.verifySignature(inside));
         assertFalse(client.verifySignature(outside));
@@ -423,9 +429,9 @@ public class DidClientTests {
             throws Exception {
         transport.queue(200, keyList("startsAt", false));
         FodId inside = key2.fodIdAt(
-            canonicalPayload(), WEEK2.minus(Duration.ofMinutes(5)));
+            canonicalPayload(), WEEK2.minus(JUST_INSIDE));
         FodId outside = key2.fodIdAt(
-            canonicalPayload(), WEEK2.minus(Duration.ofMinutes(20)));
+            canonicalPayload(), WEEK2.minus(WELL_OUTSIDE));
 
         assertTrue(client.verifySignature(inside));
         assertFalse(client.verifySignature(outside));
