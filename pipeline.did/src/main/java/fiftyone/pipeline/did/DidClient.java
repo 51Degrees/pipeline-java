@@ -544,10 +544,9 @@ public final class DidClient {
      */
     public boolean verify(String fodId) throws IOException {
         Objects.requireNonNull(fodId, "fodId");
-        // Under both names. The verify endpoint reads the identifier as
-        // 51did and keeps owid as an alias, but a cloud that has not
-        // taken the creator context release reads owid only and answers
-        // 400 to a request carrying 51did alone.
+        // Under both names so the request works with hosts that read either
+        // parameter. Hosts that recognise both prefer 51did and keep owid as
+        // a compatibility alias.
         String encoded = encode(fodId);
         String url = endpoint + "id/verify/" + encode(resourceKey)
             + "?51did=" + encoded + "&owid=" + encoded;
