@@ -488,7 +488,8 @@ public class DidClientTests {
         HttpTransport.Request request = transport.last();
         assertEquals("GET", request.getMethod());
         assertEquals(ENDPOINT + "id/verify/resource?51did="
-            + fodId.asBase64Url(), request.getUrl());
+            + fodId.asBase64Url() + "&owid=" + fodId.asBase64Url(),
+            request.getUrl());
         assertFalse(request.getUrl().contains("licence"));
         assertNull(request.getBody());
     }

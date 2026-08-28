@@ -530,7 +530,9 @@ public final class DidClient {
 
     /**
      * Whether the identifier's signature verifies according to the cloud's
-     * verify endpoint. The identifier may be in either base64 alphabet.
+     * verify endpoint. The identifier may be in either base64 alphabet. It
+     * is sent under both parameter names the endpoint accepts, {@code 51did}
+     * and {@code owid}, so a cloud that reads only the older name answers.
      *
      * @param fodId the identifier as base64
      * @return true when the cloud answers valid, false when it answers
@@ -542,8 +544,13 @@ public final class DidClient {
      */
     public boolean verify(String fodId) throws IOException {
         Objects.requireNonNull(fodId, "fodId");
+        // Under both names. The verify endpoint reads the identifier as
+        // 51did and keeps owid as an alias, but a cloud that has not
+        // taken the creator context release reads owid only and answers
+        // 400 to a request carrying 51did alone.
+        String encoded = encode(fodId);
         String url = endpoint + "id/verify/" + encode(resourceKey)
-            + "?51did=" + encode(fodId);
+            + "?51did=" + encoded + "&owid=" + encoded;
         HttpTransport.Response response = send("GET", url, null);
         JSONObject json = asObject(response.getBody());
         int status = response.getStatusCode();
