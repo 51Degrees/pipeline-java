@@ -7,7 +7,7 @@ This module holds the developer examples for the 51Did package
 | Program | What it shows |
 | --- | --- |
 | `Main` | Reads a 51Did offline. Builds a sample identifier in process, parses it back with `FodId` and shows that the value is stable while the envelope changes on every issue. Needs no cloud access. |
-| `CreatorContextDemoServer` | Serves a small web page that creates a 51Did in the browser, verifies it from the browser, and redeems the encrypted creator context result on this server, which is the only place the licence key lives. |
+| `CreatorContextDemoServer` | Serves a small web page that creates a 51Did in the browser, verifies it from the browser, and redeems the encrypted creator context result on this server with `DidClient`, which is the only place the licence key lives. |
 
 ## Creator context
 
@@ -34,31 +34,44 @@ your server. Step 3 runs on your server, which is the party holding
 the licence key. A single-use `challenge` issued by the server per page
 load is bound through both steps by the cloud.
 
-The demo server uses nothing outside the standard library. Production
-code should use a JSON library rather than the small regex helper the
-page and server keep for the demo.
+The demo server uses the web server that ships with the JDK, the
+`pipeline.did` package from this repository for the 51Did handling, and
+`org.json` to build the JSON it answers the page with.
 
 ### What you copy into your own server
 
 The only server-side part of the flow is the redeem call, which adds
-the licence key the browser never sees. The `redeem` handler in
+the licence key the browser never sees. The `redeem` method in
 `CreatorContextDemoServer.java` is that call, and these are its
-essential lines, where `API` is the cloud API base, `RESOURCE` the
-resource key, `LICENCE` the licence key, and the three query values
-are what the page passed on from `verify-full`:
+essential lines. `DidClient` is built once at start-up from the
+resource key and the licence key (it reads `FOD_CLOUD_API_URL` itself
+and falls back to the public cloud), and `did`, `result` and
+`challenge` are what the page passed on from `verify-full`:
 
 ```java
-String upstream = API + "id/redeem/" + RESOURCE
-    + "?51did=" + valueOr(query, "51did")
-    + "&result=" + valueOr(query, "result")
-    + "&challenge=" + valueOr(query, "challenge")
-    + "&license=" + encode(LICENCE == null ? "" : LICENCE);
+DidClient client = new DidClient(resourceKey, licenceKey);
 ```
 
-The handler fetches that URL and relays the status, content type and
-body of the answer to the page exactly as received. The answer carries
-`signature`, `context`, `verifiedAt` and `secondsSinceVerified`. A
-production server would also remember the challenge it issued and
+```java
+// The 51Did arrives from the page in the URL-safe base64 alphabet.
+FodId fodId = FodId.fromBase64(did);
+
+// Offline, against the cloud's published key for the identifier's date.
+// No use is charged, because the client holds the keys.
+boolean genuine = client.verifySignature(fodId);
+
+// Server side, with the licence key. One use.
+RedeemResult redeemed = client.redeem(fodId, result, challenge);
+RedeemResult.Context context = redeemed.getContext();
+```
+
+The handler answers the page in the cloud's own shape, `signature`,
+`context`, `factors` when present, `verifiedAt` and
+`secondsSinceVerified`, built from the typed result, with one field
+added, `serverSignature`, being the offline check. A malformed 51Did
+answers 400, a host without the creator context answers 404 with a
+text body, and an unreachable cloud answers 502 with `{ "error": ... }`.
+A production server would also remember the challenge it issued and
 reject a redemption carrying any other, which the demo keeps out of
 scope.
 
@@ -68,7 +81,7 @@ scope.
 | --- | --- |
 | `_51DEGREES_RESOURCE_KEY` | Required. The resource key of the page, public by nature. The older name `RESOURCE_KEY` is read when this one is not set. |
 | `_51DEGREES_LICENSE_KEY` | Optional. A licence key of the same account, server side only. The older name `LICENSE_KEY` is read when this one is not set. Only an account that holds licence keys needs one to redeem, because the licence key is what keeps redemption to the acting party's own servers, so an account holding none redeems without one. |
-| `FOD_CLOUD_API_URL` | Optional. The cloud API base including the `/api/v4/` segment, defaulting to `https://cloud.51degrees.com/api/v4/`. This is the same variable the cloud request engine in this repository honours, so setting it once points every 51Degrees example at the same place. A host other than cloud.51degrees.com would be used to (a) use an on premise web server, or (b) use a privately hosted version of the 51Degrees cloud for performance reasons, which is the private hosting option of the cloud service. Both run the same service, so the examples work unchanged. |
+| `FOD_CLOUD_API_URL` | Optional. The cloud API base including the `/api/v4/` segment, defaulting to `https://cloud.51degrees.com/api/v4/`. This is the same variable the cloud request engine in this repository honours, so setting it once points every 51Degrees example at the same place. A trailing slash is added where missing. A host other than cloud.51degrees.com would be used to (a) use an on premise web server, or (b) use a privately hosted version of the 51Degrees cloud for performance reasons, which is the private hosting option of the cloud service. Both run the same service, so the examples work unchanged. |
 | `PORT` | The port to listen on, defaulting to `5100`. |
 
 ### How to run
@@ -81,17 +94,8 @@ mvn -pl pipeline.developer-examples/pipeline.developer-examples.fodid -am -Dskip
 mvn -pl pipeline.developer-examples/pipeline.developer-examples.fodid exec:java -Dexec.mainClass=pipeline.developerexamples.fodid.CreatorContextDemoServer
 ```
 
-Because the demo server uses nothing outside the standard library, it
-can also be compiled and run with the JDK alone from this module's
-folder. It needs `src/main/resources` on the classpath, where the page
-and stylesheet live under `fodid/creator-context/`:
-
-```sh
-javac -d target/classes src/main/java/pipeline/developerexamples/fodid/CreatorContextDemoServer.java
-java -cp "target/classes;src/main/resources" pipeline.developerexamples.fodid.CreatorContextDemoServer
-```
-
-On Linux and macOS the classpath separator is `:` rather than `;`.
+The module depends on `pipeline.did` from this repository, so the
+first command builds that package too.
 
 The demo server prints the address to open, `http://localhost:5100/`
 by default. A creator context verdict of `nocontext` is a normal
@@ -110,7 +114,9 @@ Every call the demo makes to the cloud is one use against the
 subscription behind the resource key. Checking a 51Did from the
 browser makes two, verify-full from the page and redeem from the
 server, so a browser-based context check is two uses every time.
-Checking only the signature with `verify` is one use.
+Checking only the signature with `verify` is one use. The server's
+offline signature check costs nothing beyond the one fetch of the
+public keys the client makes on first use.
 
 ### The web demo, and the copy-and-paste proof
 

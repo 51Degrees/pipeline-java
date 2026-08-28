@@ -26,7 +26,11 @@ import com.swancommunity.owid.Creator;
 import com.swancommunity.owid.Crypto;
 import com.swancommunity.owid.Owid;
 import com.swancommunity.owid.OwidException;
+import com.swancommunity.owid.Version;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 
 /**
@@ -51,13 +55,23 @@ final class FodIdTestFactory {
     /** The canonical 32-byte hash value, bytes 0x20..0x3F. */
     static final byte[] CANONICAL_HASH = canonicalHash();
 
+    /** The origin the envelope date counts minutes from. */
+    static final Instant DATE_ORIGIN = Instant.parse("2020-01-01T00:00:00Z");
+
     private final Creator creator;
+
+    /** The key pair behind {@link #publicPem}. */
+    final Crypto crypto;
 
     /** The PEM-encoded public key matching the signing key. */
     final String publicPem;
 
     FodIdTestFactory() throws OwidException {
-        Crypto crypto = Crypto.generate();
+        this(Crypto.generate());
+    }
+
+    FodIdTestFactory(Crypto crypto) throws OwidException {
+        this.crypto = crypto;
         this.publicPem = crypto.publicKeyPem();
         this.creator = Creator.create(TEST_DOMAIN, crypto);
     }
@@ -98,6 +112,20 @@ final class FodIdTestFactory {
         return payload;
     }
 
+    /**
+     * The canonical payload followed by a context section of the given
+     * length, as an identifier carrying a creator context is laid out.
+     */
+    static byte[] canonicalPayloadWithSection(int sectionLength) {
+        byte[] payload = new byte[FodId.PAYLOAD_LENGTH + sectionLength];
+        System.arraycopy(
+            canonicalPayload(), 0, payload, 0, FodId.PAYLOAD_LENGTH);
+        for (int i = FodId.PAYLOAD_LENGTH; i < payload.length; i++) {
+            payload[i] = (byte) 0xCC;
+        }
+        return payload;
+    }
+
     private static void writeCanonicalLicenseId(byte[] payload) {
         // Little-endian: low byte first.
         payload[FodId.LICENSE_ID_OFFSET] = 0x78;
@@ -120,5 +148,51 @@ final class FodIdTestFactory {
     /** Signs the given payload and returns the OWID as base64. */
     String signedOwidBase64(byte[] payload) throws OwidException {
         return signedOwid(payload).asBase64();
+    }
+
+    /**
+     * Signs the given payload with the envelope dated at the given moment,
+     * which {@code Creator.sign} cannot do because it stamps the current
+     * time. The envelope is built by hand in the OWID wire layout (version
+     * byte, null-terminated domain, four little-endian bytes of minutes
+     * since 2020, four little-endian bytes of payload length, the payload)
+     * and signed over exactly those bytes, so the result verifies with
+     * {@link #publicPem} and reads back with the chosen date.
+     */
+    Owid signedOwidAt(byte[] payload, Instant date) throws OwidException {
+        return signedOwidAt(payload, date, Version.VERSION3);
+    }
+
+    /**
+     * As {@link #signedOwidAt(byte[], Instant)} with the version byte given,
+     * so a test can produce a version 2 envelope. Versions 2 and 3 share the
+     * wire layout.
+     */
+    Owid signedOwidAt(byte[] payload, Instant date, Version version)
+            throws OwidException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        out.write(version.asByte());
+        byte[] domain = TEST_DOMAIN.getBytes(StandardCharsets.UTF_8);
+        out.write(domain, 0, domain.length);
+        out.write(0);
+        writeUInt32(out, Duration.between(DATE_ORIGIN, date).toMinutes());
+        writeUInt32(out, payload.length);
+        out.write(payload, 0, payload.length);
+        byte[] unsigned = out.toByteArray();
+        byte[] signature = crypto.signByteArray(unsigned);
+        out.write(signature, 0, signature.length);
+        return Owid.fromByteArray(out.toByteArray());
+    }
+
+    /** Signs the payload dated at the moment and parses it as a 51Did. */
+    FodId fodIdAt(byte[] payload, Instant date) throws OwidException {
+        return FodId.fromOwid(signedOwidAt(payload, date));
+    }
+
+    private static void writeUInt32(ByteArrayOutputStream out, long value) {
+        out.write((int) (value & 0xFF));
+        out.write((int) ((value >> 8) & 0xFF));
+        out.write((int) ((value >> 16) & 0xFF));
+        out.write((int) ((value >> 24) & 0xFF));
     }
 }

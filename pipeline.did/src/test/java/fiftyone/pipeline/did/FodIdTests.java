@@ -28,6 +28,7 @@ import com.swancommunity.owid.OwidException;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
@@ -408,5 +409,83 @@ public class FodIdTests {
         assertEquals(fodId1.getLicenseId(), fodId2.getLicenseId());
         assertArrayEquals(fodId1.getHash(), fodId2.getHash());
         assertEquals(fodId1.getDomain(), fodId2.getDomain());
+    }
+
+    // ----- Base64 alphabets and the envelope date -----
+
+    @Test
+    public void fromBase64_AcceptsStandardUrlSafeAndUnpadded() throws Exception {
+        String standard = factory.signedOwidBase64(canonicalPayload());
+        String urlSafe = standard.replace('+', '-').replace('/', '_');
+        String unpadded = urlSafe.replace("=", "");
+        // The envelope is 124 bytes, so the standard form always ends in
+        // padding and the unpadded form always differs from it.
+        assertTrue(standard.endsWith("="));
+        assertFalse(unpadded.endsWith("="));
+
+        FodId fromStandard = FodId.fromBase64(standard);
+        FodId fromUrlSafe = FodId.fromBase64(urlSafe);
+        FodId fromUnpadded = FodId.fromBase64(unpadded);
+
+        assertArrayEquals(fromStandard.asByteArray(), fromUrlSafe.asByteArray());
+        assertArrayEquals(fromStandard.asByteArray(), fromUnpadded.asByteArray());
+        assertArrayEquals(CANONICAL_HASH, fromUnpadded.getHash());
+    }
+
+    @Test
+    public void toStandardBase64_RestoresAlphabetAndPadding() {
+        assertEquals("+/8=", FodId.toStandardBase64("-_8"));
+        assertEquals("+/==", FodId.toStandardBase64("-_"));
+        assertEquals("+/8=", FodId.toStandardBase64("+/8="));
+        assertEquals("abcd", FodId.toStandardBase64("abcd"));
+    }
+
+    @Test
+    public void asBase64Url_RoundTrips() throws Exception {
+        FodId fodId = FodId.fromBase64(factory.signedOwidBase64(canonicalPayload()));
+
+        String url = fodId.asBase64Url();
+
+        assertFalse(url.contains("+"));
+        assertFalse(url.contains("/"));
+        assertFalse(url.contains("="));
+        assertEquals(fodId.asBase64(), FodId.toStandardBase64(url));
+        assertArrayEquals(fodId.asByteArray(), FodId.fromBase64(url).asByteArray());
+    }
+
+    @Test
+    public void dateMinutes_IsTheEnvelopeDateField() throws Exception {
+        Instant date = Instant.parse("2026-01-01T00:00:00Z");
+
+        FodId fodId = factory.fodIdAt(canonicalPayload(), date);
+
+        // 2020 through 2025 is 2192 days, 2020 and 2024 being leap years.
+        assertEquals(2192L * 24 * 60, fodId.getDateMinutes());
+        assertEquals(3_156_480L, fodId.getDateMinutes());
+        assertEquals(date, fodId.getDate());
+    }
+
+    @Test
+    public void dateMinutes_HighBitStaysUnsigned() throws Exception {
+        // 0x80000000 minutes after 2020 is the year 6103, inside the uint32
+        // range the envelope stores, and must not read back negative.
+        Instant date = FodIdTestFactory.DATE_ORIGIN.plus(
+            Duration.ofMinutes(0x80000000L));
+
+        FodId fodId = factory.fodIdAt(canonicalPayload(), date);
+
+        assertEquals(0x80000000L, fodId.getDateMinutes());
+    }
+
+    @Test
+    public void factory_SignedAtChosenDate_VerifiesWithItsKey() throws Exception {
+        // The hand-built envelope the client tests rely on is signed over
+        // exactly the bytes the library verifies, or every selection test
+        // would pass for the wrong reason.
+        FodId fodId = factory.fodIdAt(
+            canonicalPayload(), Instant.parse("2026-08-05T12:00:00Z"));
+
+        assertTrue(fodId.verify(factory.publicPem));
+        assertFalse(fodId.verify(Crypto.generate().publicKeyPem()));
     }
 }

@@ -41,6 +41,13 @@
             <version>${project.version}</version>
             <artifactId>pipeline.did</artifactId>
         </dependency>
+        <!-- Used directly by the demo server to build the JSON it answers
+             the page with. Managed by the root pom at the version the
+             pipeline uses. -->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
