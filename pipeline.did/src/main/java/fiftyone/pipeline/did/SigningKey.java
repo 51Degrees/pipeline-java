@@ -20,21 +20,44 @@
  * such notice(s) shall fulfill the requirements of that article.
  * ********************************************************************* */
 
-/**
- * Strongly typed reader and cloud client for the 51Did (51Degrees
- * Identifier) value.
- * <p>
- * {@link fiftyone.pipeline.did.FodId} parses a 51Did from its base64 OWID
- * form, in either base64 alphabet, exposes the three payload fields (Flags,
- * License Id and the value Hash) and the identifier
- * {@link fiftyone.pipeline.did.IdType}, and delegates OWID-level concerns to
- * the wrapped envelope. Compare 51Dids by their value ({@code getHash()}),
- * never by their envelopes.
- * <p>
- * {@link fiftyone.pipeline.did.DidClient} is what a server uses against the
- * 51Degrees cloud: it fetches and holds the published signing keys, verifies
- * a 51Did's signature offline or through the cloud, and redeems a sealed
- * creator context result into a typed
- * {@link fiftyone.pipeline.did.RedeemResult}.
- */
 package fiftyone.pipeline.did;
+
+import java.time.Instant;
+import java.util.Objects;
+
+/**
+ * One entry of the cloud's published signing key schedule: the public key
+ * and the moment it came, or comes, into force. A key stays in force until
+ * the next one starts, so the schedule never has a gap, and keys are
+ * published ahead of their start.
+ */
+public final class SigningKey {
+
+    private final Instant startsAt;
+    private final String publicKeyPem;
+
+    /**
+     * @param startsAt     when the key comes into force, UTC
+     * @param publicKeyPem the public key in SPKI PEM form
+     */
+    public SigningKey(Instant startsAt, String publicKeyPem) {
+        this.startsAt = Objects.requireNonNull(startsAt, "startsAt");
+        this.publicKeyPem = Objects.requireNonNull(
+            publicKeyPem, "publicKeyPem");
+    }
+
+    /** @return when the key comes into force, UTC */
+    public Instant getStartsAt() {
+        return startsAt;
+    }
+
+    /** @return the public key in SPKI PEM form */
+    public String getPublicKeyPem() {
+        return publicKeyPem;
+    }
+
+    @Override
+    public String toString() {
+        return "SigningKey from " + startsAt;
+    }
+}

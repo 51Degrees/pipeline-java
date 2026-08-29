@@ -131,8 +131,15 @@ and on our [website](https://51degrees.com/documentation/_examples__device_detec
 | pipeline.developer-examples.onpremise-engine       | Shows how to modify SimpleFlowElement to make use of the 'engine' functionality and use a custom data file to map dates to star signs rather than relying on hard coded data. |
 | pipeline.developer-examples.clientside-element     | Shows how to modify SimpleFlowElement to request the data of birth from the user using client-side JavaScript. |
 | pipeline.developer-examples.clientside-element-mvc | An example project showing how to use the code from SimpleClientSideElement in a Java web application using the Model-View-Controller Pattern. |
-| pipeline.developer-examples.cloud-engine           | Shows how to modify SimpleFlowElement to perform the star sign lookup via a cloud service rather than locally. |
+| pipeline.developer-examples.cloud-engine           | Shows how to modify SimpleFlowElement to perform the star sign lookup via a cloud service rather than locally. The endpoint and resource key come from `FOD_CLOUD_API_URL` and `_51DEGREES_RESOURCE_KEY` when set, otherwise the star sign service the example was written for. |
 | pipeline.developer-examples.usage-sharing          | Shows how to share usage with 51Degrees. This helps us to keep our products up to date and accurate. |
+| pipeline.developer-examples.fodid                  | Shows how to read a 51Did, and, in a web demo, how a browser creates and verifies one against the 51Degrees cloud and the server redeems the encrypted result, so that the creator context proves the identifier is being presented by the browser it was created on. The module README describes the flow, the environment variables, what a run costs and the redeem call to copy into your own server. |
+
+### Pointing the cloud examples at another host
+
+Every example that calls the 51Degrees cloud takes its endpoint from the `FOD_CLOUD_API_URL` environment variable, which is the cloud API base including the `/api/v4/` segment and defaults to `https://cloud.51degrees.com/api/v4/` (the cloud-engine example defaults to the star sign service it was written for, as its row above says). This is the same variable the cloud request engine in this repository honours, so setting it once points every example, and any pipeline built with the engine, at the same place. The resource key comes from `_51DEGREES_RESOURCE_KEY`, or the older `RESOURCE_KEY`.
+
+A host other than cloud.51degrees.com would be used to (a) use an on premise web server, or (b) use a privately hosted version of the 51Degrees cloud for performance reasons. This is the private hosting option of the cloud service. Both run the same service, so the examples work unchanged.
 
 
 

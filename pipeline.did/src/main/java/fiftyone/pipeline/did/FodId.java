@@ -26,8 +26,10 @@ import com.swancommunity.owid.Owid;
 import com.swancommunity.owid.OwidException;
 import com.swancommunity.owid.Version;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Objects;
 
@@ -52,7 +54,15 @@ import java.util.Objects;
  *   <li>offset 1, length 4: License Id (uint32, little-endian)</li>
  *   <li>offset 5: value - 32-byte SHA-256 (Probabilistic, HashedEmail) or
  *       16 GUID bytes (Random)</li>
+ *   <li>after the value, optionally: a creator context section, which binds
+ *       the identifier to the browser and connection it was created on.
+ *       Only 51Degrees can read it, so this reader exposes it only as the
+ *       part of {@link #getPayload()} beyond the value.</li>
  * </ul>
+ * <p>
+ * The cloud issues a 51Did in standard base64 with padding, and a page that
+ * puts one in a link converts it to the URL-safe alphabet without padding.
+ * {@link #fromBase64(String)} accepts either form.
  * <p>
  * Java's {@link Owid} is {@code final}, so this type <b>composes</b> an OWID
  * rather than inheriting from it: it holds the wrapped envelope and delegates
@@ -60,7 +70,9 @@ import java.util.Objects;
  * verification) to it, adding the strongly typed 51Did accessors on top.
  * <p>
  * Constructing a {@code FodId} does <b>not</b> verify the OWID signature. Call
- * {@link #verify(String)} explicitly when cryptographic verification is needed.
+ * {@link #verify(String)} explicitly when cryptographic verification is
+ * needed, or use {@link DidClient} to verify against the cloud's published
+ * keys.
  */
 public final class FodId {
 
@@ -100,6 +112,12 @@ public final class FodId {
      * {@link #RANDOM_PAYLOAD_LENGTH}.
      */
     public static final int PAYLOAD_LENGTH = HASH_OFFSET + HASH_LENGTH;
+
+    /**
+     * The origin the envelope's date counts from, 2020-01-01T00:00:00Z, as
+     * epoch seconds. See {@link #getDateMinutes()}.
+     */
+    private static final long DATE_ORIGIN_EPOCH_SECONDS = 1_577_836_800L;
 
     private final Owid owid;
     private final int flags;
@@ -148,7 +166,18 @@ public final class FodId {
     }
 
     /**
-     * Parses a 51Did from its base64-encoded OWID string.
+     * Parses a 51Did from its base64-encoded OWID string, in either the
+     * standard alphabet ({@code +} and {@code /}, as the cloud issues it) or
+     * the URL-safe alphabet ({@code -} and {@code _}, as a page puts it in a
+     * link), with or without padding.
+     * <p>
+     * The URL-safe form is restored to the standard one here, before the
+     * envelope library sees it, because that library's decoder ignores
+     * characters outside the standard alphabet rather than refusing them,
+     * which would silently drop bytes from a URL-safe value. Leading and
+     * trailing whitespace is removed at the same point, so a value that
+     * arrives with a newline or a space around it reads as the same
+     * identifier as the clean form.
      *
      * @param base64 base64 of the full OWID envelope
      * @return the parsed 51Did
@@ -160,7 +189,34 @@ public final class FodId {
      */
     public static FodId fromBase64(String base64) throws OwidException {
         Objects.requireNonNull(base64, "base64");
-        return new FodId(Owid.fromBase64(base64), "base64");
+        return new FodId(Owid.fromBase64(toStandardBase64(base64)), "base64");
+    }
+
+    /**
+     * Restores a base64 string that may use the URL-safe alphabet, with or
+     * without padding, to the standard alphabet with padding. Leading and
+     * trailing whitespace is removed first, because a value read from a
+     * header, a file or a form field often carries a newline or a space
+     * around it and neither belongs to the identifier. Then {@code -}
+     * becomes {@code +}, {@code _} becomes {@code /}, and {@code ==} or
+     * {@code =} is appended when the length modulo 4 is 2 or 3. That
+     * padding is worked out from the trimmed length, so whitespace cannot
+     * push the value into the wrong case. A value already in the standard
+     * padded form with no whitespace around it is returned unchanged.
+     *
+     * @param value the base64 text in either alphabet
+     * @return the same value in the standard alphabet with padding
+     */
+    static String toStandardBase64(String value) {
+        String standard = value.trim().replace('-', '+').replace('_', '/');
+        switch (standard.length() % 4) {
+            case 2:
+                return standard + "==";
+            case 3:
+                return standard + "=";
+            default:
+                return standard;
+        }
     }
 
     /**
@@ -213,7 +269,14 @@ public final class FodId {
     }
 
     /**
-     * @return the 4-byte little-endian License Id (0 to 4294967295)
+     * The 4-byte little-endian License Id field (0 to 4294967295).
+     * <p>
+     * On an identifier carrying a creator context, the four bytes at offset
+     * 1 hold an encrypted value that only 51Degrees can turn back into a
+     * licence identifier. This property is therefore the field's raw value,
+     * and on such an identifier it identifies nothing outside 51Degrees.
+     *
+     * @return the raw License Id field
      */
     public long getLicenseId() {
         return licenseId;
@@ -241,9 +304,28 @@ public final class FodId {
         return owid.getDomain();
     }
 
-    /** @return the OWID creation date. */
+    /**
+     * The envelope's creation date, to the minute. See
+     * {@link #getDateMinutes()} for the same date as the envelope stores it.
+     *
+     * @return the OWID creation date
+     */
     public Instant getDate() {
         return owid.getDate();
+    }
+
+    /**
+     * The envelope's own date field, the unsigned 32-bit count of minutes
+     * since 2020-01-01T00:00:00Z. It is the value the OWID
+     * {@code public-key?date=} parameter takes, and the integer a caller
+     * comparing creation times wants rather than a converted date.
+     *
+     * @return minutes since 2020-01-01T00:00:00Z, 0 to 4294967295
+     */
+    public long getDateMinutes() {
+        return Duration.between(
+            Instant.ofEpochSecond(DATE_ORIGIN_EPOCH_SECONDS),
+            owid.getDate()).toMinutes();
     }
 
     /** @return a copy of the OWID payload bytes. */
@@ -257,11 +339,26 @@ public final class FodId {
     }
 
     /**
-     * @return the OWID as a base64 string
+     * @return the OWID as a base64 string in the standard alphabet with
+     *         padding, the form the cloud issues
      * @throws OwidException if the OWID has not been signed or cannot be encoded
      */
     public String asBase64() throws OwidException {
         return owid.asBase64();
+    }
+
+    /**
+     * The OWID as a base64 string in the URL-safe alphabet ({@code -} and
+     * {@code _}) without padding, the inverse of what
+     * {@link #fromBase64(String)} restores, so the identifier can go into a
+     * URL without any conversion by the caller.
+     *
+     * @return the URL-safe base64 form without padding
+     * @throws OwidException if the OWID has not been signed or cannot be encoded
+     */
+    public String asBase64Url() throws OwidException {
+        return Base64.getUrlEncoder().withoutPadding()
+            .encodeToString(asByteArray());
     }
 
     /**

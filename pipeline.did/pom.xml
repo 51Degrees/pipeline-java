@@ -51,6 +51,14 @@
     </properties>
 
     <dependencies>
+        <!-- The cloud client reads the JSON the 51Did endpoints answer
+             with. The version is the one pipeline.cloudrequestengine uses,
+             managed by the parent, so the did package adds no dependency
+             the pipeline does not already carry. -->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+        </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

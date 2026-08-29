@@ -90,11 +90,19 @@ public class SimpleCloudEngine extends CloudAspectEngineBase<StarSignData> {
         CloudRequestData requestData = data.getFromElement(cloudRequestEngine);
         String json = requestData.getJsonResponse();
 
-        // Extract data from json to the aspectData instance.
+        // Extract data from json to the aspectData instance. A cloud
+        // service answers only for the products the resource key covers,
+        // so a response without the star sign product leaves the value
+        // unset rather than failing the request, in the same way the
+        // 51Degrees cloud engines report a property the key does not
+        // cover as not available.
         JSONObject jsonObj = new JSONObject(json);
-        JSONObject deviceObj = jsonObj.getJSONObject("starsign");
-
-        starSignData.setStarSign(deviceObj.getString("starsign"));
+        if (jsonObj.has("starsign")) {
+            JSONObject starSignObj = jsonObj.getJSONObject("starsign");
+            starSignData.setStarSign(starSignObj.optString("starsign", null));
+        } else {
+            starSignData.setStarSign(null);
+        }
     }
 
     @Override

@@ -20,21 +20,24 @@
  * such notice(s) shall fulfill the requirements of that article.
  * ********************************************************************* */
 
-/**
- * Strongly typed reader and cloud client for the 51Did (51Degrees
- * Identifier) value.
- * <p>
- * {@link fiftyone.pipeline.did.FodId} parses a 51Did from its base64 OWID
- * form, in either base64 alphabet, exposes the three payload fields (Flags,
- * License Id and the value Hash) and the identifier
- * {@link fiftyone.pipeline.did.IdType}, and delegates OWID-level concerns to
- * the wrapped envelope. Compare 51Dids by their value ({@code getHash()}),
- * never by their envelopes.
- * <p>
- * {@link fiftyone.pipeline.did.DidClient} is what a server uses against the
- * 51Degrees cloud: it fetches and holds the published signing keys, verifies
- * a 51Did's signature offline or through the cloud, and redeems a sealed
- * creator context result into a typed
- * {@link fiftyone.pipeline.did.RedeemResult}.
- */
 package fiftyone.pipeline.did;
+
+/**
+ * The host the client is pointed at does not offer the creator context. It
+ * answered 404 to a redeem request, which the cloud's creator context
+ * endpoints never do, so the caller should point the client at a host that
+ * carries the feature rather than retry.
+ */
+public class DidNotSupportedException extends DidHttpException {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * @param endpoint the API base the client was pointed at
+     * @param body     the body the host answered with
+     */
+    public DidNotSupportedException(String endpoint, String body) {
+        super("The service at " + endpoint + " does not support the "
+            + "creator context.", 404, body);
+    }
+}
