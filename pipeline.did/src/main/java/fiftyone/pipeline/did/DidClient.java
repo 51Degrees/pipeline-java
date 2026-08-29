@@ -99,12 +99,6 @@ public final class DidClient {
      */
     public static final Duration KEY_LIST_MAX_AGE = Duration.ofDays(1);
 
-    /**
-     * How far outside its own period a key may be used, at either end,
-     * matching the cloud's own verification. A key belongs to its own
-     * period; this allowance exists only for the small ways a creation time
-     * can land a moment outside the period whose key made it.
-     */
     static final Duration BOUNDARY_TOLERANCE = Duration.ofMinutes(15);
 
     private static final String USER_AGENT = "pipeline.did/" + version();
@@ -430,12 +424,10 @@ public final class DidClient {
 
     /**
      * The entries that may have signed something created at the moment,
-     * best first: the entry in force, then the entry in force a tolerance
-     * earlier and the entry in force a tolerance later where those differ.
-     * Deliberately not every earlier entry, because accepting any earlier
-     * entry would mean one leaked period of key material could sign
-     * something dated in any later period, and rotating the key would then
-     * bound nothing.
+     * best first, being the entry in force and then the neighbouring entry
+     * either side of a nearby key boundary where those differ.
+     * Deliberately not every earlier entry, and not a rule to relax here,
+     * because the cloud applies the same one.
      */
     static List<SigningKey> candidatesFor(
             List<SigningKey> entries, Instant at) {
