@@ -24,6 +24,8 @@ package fiftyone.pipeline.did;
 
 import com.swancommunity.owid.Owid;
 import com.swancommunity.owid.OwidException;
+import com.swancommunity.owid.OwidParseResult;
+import com.swancommunity.owid.OwidVerificationResult;
 import com.swancommunity.owid.Version;
 
 import java.time.Duration;
@@ -57,22 +59,30 @@ import java.util.Objects;
  *   <li>after the value, optionally: a creator context section, which binds
  *       the identifier to the browser and connection it was created on.
  *       Only 51Degrees can read it, so this reader exposes it only as the
- *       part of {@link #getPayload()} beyond the value.</li>
+ *       part of {@link #getPayload()} beyond the value. Its lengths belong
+ *       to the cloud, so this reader puts no upper bound on a payload.</li>
  * </ul>
+ * <p>
+ * Reading and verifying are two separate steps. {@link #tryFromBase64(String)}
+ * and {@link #tryFromByteArray(byte[])} read a 51Did from external input
+ * without throwing, answering with a {@link FodIdParseResult} that says
+ * whether the input was a 51Did and, when it was not, a
+ * {@link FodIdParseStatus} naming the reason. {@link #fromBase64(String)},
+ * {@link #fromByteArray(byte[])} and {@link #fromOwid(Owid)} do the same read
+ * and throw instead for a caller who prefers an exception. A 51Did that
+ * reads successfully is structurally valid and nothing more. Its signature
+ * has not been checked, so call {@link #verify(String)} or
+ * {@link #verifyDetailed(String)} explicitly, or use {@link DidClient} to
+ * verify against the cloud's published keys.
  * <p>
  * The cloud issues a 51Did in standard base64 with padding, and a page that
  * puts one in a link converts it to the URL-safe alphabet without padding.
- * {@link #fromBase64(String)} accepts either form.
+ * Both readers of a string accept either form.
  * <p>
  * Java's {@link Owid} is {@code final}, so this type <b>composes</b> an OWID
- * rather than inheriting from it: it holds the wrapped envelope and delegates
+ * rather than inheriting from it: it holds the envelope and delegates
  * OWID-level concerns (domain, date, payload, signature, base64 round-trip,
  * verification) to it, adding the strongly typed 51Did accessors on top.
- * <p>
- * Constructing a {@code FodId} does <b>not</b> verify the OWID signature. Call
- * {@link #verify(String)} explicitly when cryptographic verification is
- * needed, or use {@link DidClient} to verify against the cloud's published
- * keys.
  */
 public final class FodId {
 
@@ -124,29 +134,93 @@ public final class FodId {
     private final long licenseId;
     private final byte[] hash;
 
-    private FodId(Owid owid, String paramName) {
+    /**
+     * Built only by {@link #read(Owid)} once the payload has passed the
+     * 51Did rules, so an instance never exists for a payload that failed
+     * them.
+     */
+    private FodId(Owid owid, int flags, long licenseId, byte[] hash) {
         this.owid = owid;
-        byte[] payload = owid.getPayload();
-        if (payload == null || payload.length < HEADER_LENGTH) {
-            throw new IllegalArgumentException(
-                "51Did payload must be at least " + HEADER_LENGTH
-                + " bytes; got " + (payload == null ? 0 : payload.length)
-                + " (" + paramName + ").");
+        this.flags = flags;
+        this.licenseId = licenseId;
+        this.hash = hash;
+    }
+
+    // ----- Reading without throwing -----
+
+    /**
+     * Reads a 51Did from its base64 form without throwing, in either the
+     * standard alphabet ({@code +} and {@code /}, as the cloud issues it) or
+     * the URL-safe alphabet ({@code -} and {@code _}, as a page puts it in a
+     * link), with or without padding, and with or without whitespace around
+     * it.
+     * <p>
+     * The value may be anything at all, because it is external data and
+     * failing to be a 51Did is an ordinary outcome rather than an error. The
+     * result reports whether the read worked, the 51Did only when it did,
+     * and a named reason either way. An envelope failure carries the OWID
+     * library's own status unchanged, and a payload failure is one of the
+     * two 51Did statuses. See {@link FodIdParseStatus}.
+     * <p>
+     * Success means the input is structurally a 51Did. The signature has
+     * not been checked.
+     *
+     * @param base64 the encoded 51Did, which may be null
+     * @return the 51Did and {@link FodIdParseStatus#PARSED}, or no value and
+     *         the reason the string is not a 51Did
+     */
+    public static FodIdParseResult tryFromBase64(String base64) {
+        if (base64 == null) {
+            return FodIdParseResult.failed(FodIdParseStatus.MISSING_INPUT);
         }
-        this.flags = payload[FLAGS_OFFSET] & 0xFF;
-        // Little-endian uint32, kept unsigned in a long so the high bit does
-        // not sign-extend into a negative value.
-        this.licenseId =
-              (payload[LICENSE_ID_OFFSET] & 0xFFL)
-            | ((payload[LICENSE_ID_OFFSET + 1] & 0xFFL) << 8)
-            | ((payload[LICENSE_ID_OFFSET + 2] & 0xFFL) << 16)
-            | ((payload[LICENSE_ID_OFFSET + 3] & 0xFFL) << 24);
+        return read(Owid.parse(toStandardBase64(base64)));
+    }
+
+    /**
+     * Reads a 51Did from the raw bytes of an OWID envelope without throwing.
+     * The buffer must hold exactly one envelope. See
+     * {@link #tryFromBase64(String)} for what the result reports.
+     *
+     * @param buffer the envelope bytes, which may be null
+     * @return the 51Did and {@link FodIdParseStatus#PARSED}, or no value and
+     *         the reason the bytes are not a 51Did
+     */
+    public static FodIdParseResult tryFromByteArray(byte[] buffer) {
+        return read(Owid.parse(buffer));
+    }
+
+    private static FodIdParseResult read(OwidParseResult envelope) {
+        if (envelope.isSuccess() == false) {
+            return FodIdParseResult.failed(
+                FodIdParseStatus.fromOwid(envelope.getStatus()));
+        }
+        return read(envelope.getValue());
+    }
+
+    /**
+     * Applies the 51Did payload rules to an envelope the OWID library has
+     * already read or signed. This is the one walk of the payload that every
+     * reader, throwing or not, goes through.
+     * <p>
+     * The rules are lower bounds only. The header must be present before the
+     * type can be read, and the type then sets the least the payload can
+     * hold. Anything longer is accepted as it stands, because the bytes past
+     * the value are a creator context section whose shape the cloud judges.
+     */
+    private static FodIdParseResult read(Owid owid) {
+        byte[] payload = owid.getPayload();
+        if (payload.length < HEADER_LENGTH) {
+            return FodIdParseResult.failed(FodIdParseStatus.PAYLOAD_TOO_SHORT);
+        }
+        int flags = payload[FLAGS_OFFSET] & 0xFF;
         int valueLength;
         switch (IdType.fromFlags(flags)) {
             case RANDOM:
                 valueLength = GUID_LENGTH;
                 break;
             case RESERVED:
+                // Not yet assigned, so read best-effort. The header fields
+                // are unpacked and whatever follows is exposed as the value.
                 valueLength = payload.length - HEADER_LENGTH;
                 break;
             default:
@@ -154,55 +228,59 @@ public final class FodId {
                 break;
         }
         if (payload.length < HEADER_LENGTH + valueLength) {
-            throw new IllegalArgumentException(
-                "51Did payload for the " + IdType.fromFlags(flags)
-                + " type must be at least " + (HEADER_LENGTH + valueLength)
-                + " bytes; got " + payload.length + " (" + paramName + ").");
+            return FodIdParseResult.failed(
+                FodIdParseStatus.INVALID_TYPE_PAYLOAD_LENGTH);
         }
-        // Defensive copy: mutating the returned hash must not change the
-        // underlying OWID payload bytes.
-        this.hash = Arrays.copyOfRange(
+        // Little-endian uint32, kept unsigned in a long so the high bit does
+        // not sign-extend into a negative value.
+        long licenseId =
+              (payload[LICENSE_ID_OFFSET] & 0xFFL)
+            | ((payload[LICENSE_ID_OFFSET + 1] & 0xFFL) << 8)
+            | ((payload[LICENSE_ID_OFFSET + 2] & 0xFFL) << 16)
+            | ((payload[LICENSE_ID_OFFSET + 3] & 0xFFL) << 24);
+        // The value is copied out so that mutating the array a caller gets
+        // back from getHash() can never reach the envelope's own bytes.
+        byte[] hash = Arrays.copyOfRange(
             payload, HASH_OFFSET, HASH_OFFSET + valueLength);
+        return FodIdParseResult.parsed(
+            new FodId(owid, flags, licenseId, hash));
     }
 
+    // ----- Reading with exceptions -----
+
     /**
-     * Parses a 51Did from its base64-encoded OWID string, in either the
-     * standard alphabet ({@code +} and {@code /}, as the cloud issues it) or
-     * the URL-safe alphabet ({@code -} and {@code _}, as a page puts it in a
-     * link), with or without padding.
-     * <p>
-     * The URL-safe form is restored to the standard one here, before the
-     * envelope library sees it, because that library's decoder ignores
-     * characters outside the standard alphabet rather than refusing them,
-     * which would silently drop bytes from a URL-safe value. Leading and
-     * trailing whitespace is removed at the same point, so a value that
-     * arrives with a newline or a space around it reads as the same
-     * identifier as the clean form.
+     * Parses a 51Did from its base64 form, accepting the same inputs as
+     * {@link #tryFromBase64(String)}, and throws when the input is not a
+     * 51Did. The read is the same one, so the two never disagree about an
+     * input. Parsing does not check the signature.
      *
      * @param base64 base64 of the full OWID envelope
      * @return the parsed 51Did
      * @throws NullPointerException if {@code base64} is null
      * @throws OwidException        if the string is not valid base64 or not a
-     *                              valid OWID
+     *                              valid OWID envelope, with the
+     *                              {@link FodIdParseStatus} in the message
      * @throws IllegalArgumentException if the payload is shorter than the
      *                              minimum for its identifier type
      */
     public static FodId fromBase64(String base64) throws OwidException {
         Objects.requireNonNull(base64, "base64");
-        return new FodId(Owid.fromBase64(toStandardBase64(base64)), "base64");
+        return valueOrThrow(tryFromBase64(base64), "base64");
     }
 
     /**
      * Restores a base64 string that may use the URL-safe alphabet, with or
-     * without padding, to the standard alphabet with padding. Leading and
-     * trailing whitespace is removed first, because a value read from a
-     * header, a file or a form field often carries a newline or a space
-     * around it and neither belongs to the identifier. Then {@code -}
-     * becomes {@code +}, {@code _} becomes {@code /}, and {@code ==} or
-     * {@code =} is appended when the length modulo 4 is 2 or 3. That
-     * padding is worked out from the trimmed length, so whitespace cannot
-     * push the value into the wrong case. A value already in the standard
-     * padded form with no whitespace around it is returned unchanged.
+     * without padding, to the standard alphabet with padding, which is the
+     * only alphabet the envelope library reads. Leading and trailing
+     * whitespace is removed first, because a value read from a header, a
+     * file or a form field often carries a newline or a space around it and
+     * neither belongs to the identifier. Then {@code -} becomes {@code +},
+     * {@code _} becomes {@code /}, and {@code ==} or {@code =} is appended
+     * when the length modulo 4 is 2 or 3. That padding is worked out from
+     * the trimmed length, so whitespace cannot push the value into the wrong
+     * case. A value already in the standard padded form with no whitespace
+     * around it is returned unchanged. Nothing here decides whether the
+     * result is base64 at all, which is the envelope library's answer.
      *
      * @param value the base64 text in either alphabet
      * @return the same value in the standard alphabet with padding
@@ -220,39 +298,74 @@ public final class FodId {
     }
 
     /**
-     * Parses a 51Did from the raw bytes of an OWID envelope.
+     * Parses a 51Did from the raw bytes of an OWID envelope, accepting the
+     * same inputs as {@link #tryFromByteArray(byte[])}, and throws when the
+     * bytes are not a 51Did. Parsing does not check the signature.
      *
      * @param buffer the OWID envelope bytes
      * @return the parsed 51Did
      * @throws NullPointerException if {@code buffer} is null
      * @throws OwidException        if the bytes are not a valid OWID
+     *                              envelope, with the
+     *                              {@link FodIdParseStatus} in the message
      * @throws IllegalArgumentException if the payload is shorter than the
      *                              minimum for its identifier type
      */
     public static FodId fromByteArray(byte[] buffer) throws OwidException {
         Objects.requireNonNull(buffer, "buffer");
-        return new FodId(Owid.fromByteArray(buffer), "buffer");
+        return valueOrThrow(tryFromByteArray(buffer), "buffer");
     }
 
     /**
-     * Promotes an already-parsed OWID into a 51Did by unpacking its payload.
-     * The OWID is <b>copied</b> (round-tripped through its byte form), not
-     * aliased, so that a {@code FodId} can never desync from its envelope if
-     * the caller later mutates the OWID it passed in. The supplied OWID must
-     * therefore be signed (serializable).
+     * Promotes an OWID the envelope library has already read or signed into
+     * a 51Did by applying the payload rules to it. The OWID is held as it
+     * is, because the library hands out only immutable envelopes that came
+     * from a complete read or from a signer, so there is nothing a caller
+     * can later change underneath the 51Did.
      *
-     * @param owid the already-parsed OWID envelope
-     * @return a 51Did wrapping an independent copy of {@code owid}
+     * @param owid the envelope
+     * @return a 51Did over {@code owid}
      * @throws NullPointerException if {@code owid} is null
-     * @throws OwidException        if {@code owid} cannot be serialized (e.g.
-     *                              it has not been signed)
+     * @throws OwidException        never thrown by the current envelope
+     *                              library, which cannot hand out an
+     *                              envelope this method fails to read.
+     *                              Declared so that callers written against
+     *                              the earlier library keep compiling.
      * @throws IllegalArgumentException if the payload is shorter than the
      *                              minimum for its identifier type
      */
     public static FodId fromOwid(Owid owid) throws OwidException {
         Objects.requireNonNull(owid, "owid");
-        return new FodId(Owid.fromByteArray(owid.asByteArray()), "owid");
+        return valueOrThrow(read(owid), "owid");
     }
+
+    /**
+     * Turns a failed read into the exception the throwing readers document
+     * for it. A payload rule failure is an argument failure and an envelope
+     * failure is an OWID one, which is the split the readers have always
+     * made. The message names the status and the parameter, never the input.
+     */
+    private static FodId valueOrThrow(FodIdParseResult result, String paramName)
+            throws OwidException {
+        switch (result.getStatus()) {
+            case PARSED:
+                return result.getValue();
+            case PAYLOAD_TOO_SHORT:
+                throw new IllegalArgumentException(
+                    "51Did payload must be at least " + HEADER_LENGTH
+                    + " bytes to carry the header (" + paramName + ").");
+            case INVALID_TYPE_PAYLOAD_LENGTH:
+                throw new IllegalArgumentException(
+                    "51Did payload is shorter than the minimum for its "
+                    + "identifier type (" + paramName + ").");
+            default:
+                throw new OwidException(
+                    "The value is not an OWID envelope: "
+                    + result.getStatus() + " (" + paramName + ").");
+        }
+    }
+
+    // ----- Fields -----
 
     /**
      * @return the 1-byte usage flags bit-mask from the payload (0-255)
@@ -338,10 +451,12 @@ public final class FodId {
         return owid.getSignature();
     }
 
+    // ----- Encoding -----
+
     /**
      * @return the OWID as a base64 string in the standard alphabet with
      *         padding, the form the cloud issues
-     * @throws OwidException if the OWID has not been signed or cannot be encoded
+     * @throws OwidException if a field cannot be encoded
      */
     public String asBase64() throws OwidException {
         return owid.asBase64();
@@ -354,7 +469,7 @@ public final class FodId {
      * URL without any conversion by the caller.
      *
      * @return the URL-safe base64 form without padding
-     * @throws OwidException if the OWID has not been signed or cannot be encoded
+     * @throws OwidException if a field cannot be encoded
      */
     public String asBase64Url() throws OwidException {
         return Base64.getUrlEncoder().withoutPadding()
@@ -363,15 +478,17 @@ public final class FodId {
 
     /**
      * @return the OWID as a byte array including the signature
-     * @throws OwidException if the OWID has not been signed or cannot be encoded
+     * @throws OwidException if a field cannot be encoded
      */
     public byte[] asByteArray() throws OwidException {
         return owid.asByteArray();
     }
 
+    // ----- Signature verification -----
+
     /**
      * Verifies the OWID signature against the supplied public key. This is an
-     * explicit, separate step - construction never verifies.
+     * explicit, separate step, because reading a 51Did never verifies it.
      *
      * @param publicPem the creator's public key in SPKI PEM form
      * @return true if the signature verifies, false otherwise
@@ -380,5 +497,21 @@ public final class FodId {
      */
     public boolean verify(String publicPem) throws OwidException {
         return owid.verifyWithPublicKey(publicPem, Collections.<Owid>emptyList());
+    }
+
+    /**
+     * Verifies the OWID signature against the supplied public key and says
+     * why, keeping "the signature does not match" apart from "the signature
+     * could not be checked". A missing key reports
+     * {@code KEY_UNAVAILABLE} and an unreadable one {@code INVALID_KEY},
+     * and neither is {@code SIGNATURE_INVALID}, because reporting an outage
+     * as a forgery would be wrong in both directions.
+     *
+     * @param publicPem the creator's public key in SPKI PEM form, which may
+     *                  be null when no key could be obtained
+     * @return the outcome of the check
+     */
+    public OwidVerificationResult verifyDetailed(String publicPem) {
+        return owid.verify(publicPem, Collections.<Owid>emptyList());
     }
 }
