@@ -3,5 +3,5 @@
 	url = ../javascript-templates.git
 [submodule "owid-java"]
 	path = owid-java
-	url = ../owid-java.git
-	branch = main
+	url = https://github.com/SWAN-community/owid-java.git
+	branch = harden/parse-without-throwing
