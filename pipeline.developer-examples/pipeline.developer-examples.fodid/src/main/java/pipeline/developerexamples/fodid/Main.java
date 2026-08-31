@@ -24,10 +24,8 @@ package pipeline.developerexamples.fodid;
 
 import com.swancommunity.owid.Creator;
 import com.swancommunity.owid.Crypto;
-import com.swancommunity.owid.Owid;
 import fiftyone.pipeline.did.FodId;
 
-import java.time.Instant;
 import java.util.Arrays;
 
 /**
@@ -89,12 +87,14 @@ public class Main {
             }
         }
 
-        /** Issues (signs) a 51Did over the payload and returns it as base64. */
+        /**
+         * Issues (signs) a 51Did over the payload and returns it as base64.
+         * The creator stamps the date and signs in one step, which is the
+         * only way an OWID comes into being.
+         */
         private String issue(Creator creator, byte[] payload)
                 throws Exception {
-            Owid owid = new Owid(DOMAIN, Instant.now(), payload);
-            creator.sign(owid);
-            return owid.asBase64();
+            return creator.createBytes(payload).asBase64();
         }
 
         /**

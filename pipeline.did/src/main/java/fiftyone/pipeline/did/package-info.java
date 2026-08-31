@@ -24,11 +24,16 @@
  * Strongly typed reader and cloud client for the 51Did (51Degrees
  * Identifier) value.
  * <p>
- * {@link fiftyone.pipeline.did.FodId} parses a 51Did from its base64 OWID
- * form, in either base64 alphabet, exposes the three payload fields (Flags,
- * License Id and the value Hash) and the identifier
- * {@link fiftyone.pipeline.did.IdType}, and delegates OWID-level concerns to
- * the wrapped envelope. Compare 51Dids by their value ({@code getHash()}),
+ * {@link fiftyone.pipeline.did.FodId} reads a 51Did from its base64 OWID
+ * form, in either base64 alphabet, or from the envelope bytes. The
+ * {@code tryFrom} readers answer with a
+ * {@link fiftyone.pipeline.did.FodIdParseResult} instead of throwing, whose
+ * {@link fiftyone.pipeline.did.FodIdParseStatus} names why an input is not
+ * a 51Did, and the {@code from} readers make the same read and throw. A
+ * 51Did exposes the three payload fields (Flags, License Id and the value
+ * Hash) and the identifier {@link fiftyone.pipeline.did.IdType}, and
+ * delegates OWID-level concerns to the envelope it holds. Reading never
+ * checks the signature. Compare 51Dids by their value ({@code getHash()}),
  * never by their envelopes.
  * <p>
  * {@link fiftyone.pipeline.did.DidClient} is what a server uses against the

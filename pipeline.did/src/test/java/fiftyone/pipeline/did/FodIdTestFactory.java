@@ -26,6 +26,7 @@ import com.swancommunity.owid.Creator;
 import com.swancommunity.owid.Crypto;
 import com.swancommunity.owid.Owid;
 import com.swancommunity.owid.OwidException;
+import com.swancommunity.owid.OwidParseResult;
 import com.swancommunity.owid.Version;
 
 import java.io.ByteArrayOutputStream;
@@ -34,36 +35,32 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * Shared test helper for the 51Did tests. Generates a fresh ECDSA P-256 key
- * pair per instance and signs real OWID envelopes with it, and builds the
- * canonical payloads the tests assert against.
+ * Builds signed test envelopes over chosen payloads, with one key pair per
+ * factory so that the client tests can stand up a schedule of keys.
+ * <p>
+ * Two routes produce an envelope. {@link #signedOwid(byte[])} asks the OWID
+ * library's own {@link Creator} to stamp the date and sign, which is the
+ * route production code takes. {@link #signedOwidAt} writes the envelope
+ * bytes by hand, signs them with the same key, and reads them back through
+ * the library, which is the only way to choose the date, the version or the
+ * domain, and the only way to produce bytes the library would refuse.
  */
 final class FodIdTestFactory {
 
-    /** The domain stamped into every signed test OWID. */
     static final String TEST_DOMAIN = "51degrees.com";
 
-    /**
-     * The canonical flags byte (0xA5): usage bits plus the HashedEmail type
-     * tag in bits 6-7, so the 37-byte payload minimum applies.
-     */
     static final int CANONICAL_FLAGS = 0xA5;
 
-    /** The canonical little-endian License Id, 0x12345678. */
     static final long CANONICAL_LICENSE_ID = 0x12345678L;
 
-    /** The canonical 32-byte hash value, bytes 0x20..0x3F. */
     static final byte[] CANONICAL_HASH = canonicalHash();
 
-    /** The origin the envelope date counts minutes from. */
     static final Instant DATE_ORIGIN = Instant.parse("2020-01-01T00:00:00Z");
 
     private final Creator creator;
 
-    /** The key pair behind {@link #publicPem}. */
     final Crypto crypto;
 
-    /** The PEM-encoded public key matching the signing key. */
     final String publicPem;
 
     FodIdTestFactory() throws OwidException {
@@ -84,10 +81,6 @@ final class FodIdTestFactory {
         return hash;
     }
 
-    /**
-     * A canonical 37-byte 51Did payload: {@link #CANONICAL_FLAGS},
-     * {@link #CANONICAL_LICENSE_ID} (little-endian) and {@link #CANONICAL_HASH}.
-     */
     static byte[] canonicalPayload() {
         byte[] payload = new byte[FodId.PAYLOAD_LENGTH];
         payload[FodId.FLAGS_OFFSET] = (byte) CANONICAL_FLAGS;
@@ -97,11 +90,6 @@ final class FodIdTestFactory {
         return payload;
     }
 
-    /**
-     * A canonical 21-byte Random payload: the Random type tag in bits 6-7 plus
-     * usage bits 0b001, {@link #CANONICAL_LICENSE_ID}, and a stable 16-byte
-     * GUID block (0x40..0x4F).
-     */
     static byte[] canonicalRandomPayload() {
         byte[] payload = new byte[FodId.RANDOM_PAYLOAD_LENGTH];
         payload[FodId.FLAGS_OFFSET] = (byte) ((1 << 6) | 0b001);
@@ -112,10 +100,6 @@ final class FodIdTestFactory {
         return payload;
     }
 
-    /**
-     * The canonical payload followed by a context section of the given
-     * length, as an identifier carrying a creator context is laid out.
-     */
     static byte[] canonicalPayloadWithSection(int sectionLength) {
         byte[] payload = new byte[FodId.PAYLOAD_LENGTH + sectionLength];
         System.arraycopy(
@@ -134,73 +118,73 @@ final class FodIdTestFactory {
         payload[FodId.LICENSE_ID_OFFSET + 3] = 0x12;
     }
 
-    /**
-     * Creates and signs a real OWID with the given payload. Note that
-     * {@code Creator.sign} stamps the date itself (current time, to the
-     * minute), so callers that need distinct dates set them after signing.
-     */
+    /** Signs the payload through the library's creator, dated now. */
     Owid signedOwid(byte[] payload) throws OwidException {
-        Owid owid = new Owid(TEST_DOMAIN, Instant.now(), payload);
-        creator.sign(owid);
-        return owid;
+        return creator.createBytes(payload);
     }
 
-    /** Signs the given payload and returns the OWID as base64. */
     String signedOwidBase64(byte[] payload) throws OwidException {
         return signedOwid(payload).asBase64();
     }
 
-    /**
-     * Signs the given payload with the envelope dated at the given moment,
-     * which {@code Creator.sign} cannot do because it stamps the current
-     * time. The envelope is built by hand in the OWID wire layout (version
-     * byte, null-terminated domain, four little-endian bytes of minutes
-     * since 2020, four little-endian bytes of payload length, the payload)
-     * and signed over exactly those bytes, so the result verifies with
-     * {@link #publicPem} and reads back with the chosen date.
-     */
     Owid signedOwidAt(byte[] payload, Instant date) throws OwidException {
         return signedOwidAt(payload, date, Version.VERSION3);
     }
 
-    /**
-     * As {@link #signedOwidAt(byte[], Instant)} with the version byte given,
-     * so a test can produce a version 2 envelope. Versions 2 and 3 share the
-     * wire layout.
-     */
     Owid signedOwidAt(byte[] payload, Instant date, Version version)
             throws OwidException {
         return signedOwidAt(payload, date, version, TEST_DOMAIN);
     }
 
     /**
-     * As {@link #signedOwidAt(byte[], Instant, Version)} with the creator
-     * domain given, because the domain is a deployment parameter and a
-     * self-hosted container may sign with a longer one than the cloud does.
+     * Writes an envelope by hand at the chosen date, version and domain,
+     * signs it with this factory's key, and reads it back through the
+     * library so the test holds exactly what production would.
      */
     Owid signedOwidAt(
             byte[] payload, Instant date, Version version, String domainName)
             throws OwidException {
+        byte[] bytes = envelopeBytes(
+            payload, date, version, domainName, payload.length);
+        OwidParseResult read = Owid.parse(bytes);
+        if (read.isSuccess() == false) {
+            throw new OwidException(
+                "The test envelope did not read back: " + read.getStatus());
+        }
+        return read.getValue();
+    }
+
+    /**
+     * The raw bytes of a signed envelope, with the declared payload length
+     * chosen separately from the payload so a test can produce a
+     * declaration that disagrees with the bytes present. The signature is
+     * over the bytes as written, so a matching declaration gives an envelope
+     * that verifies with this factory's key.
+     */
+    byte[] envelopeBytes(
+            byte[] payload,
+            Instant date,
+            Version version,
+            String domainName,
+            long declaredPayloadLength) throws OwidException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         out.write(version.asByte());
         byte[] domain = domainName.getBytes(StandardCharsets.UTF_8);
         out.write(domain, 0, domain.length);
         out.write(0);
         writeUInt32(out, Duration.between(DATE_ORIGIN, date).toMinutes());
-        writeUInt32(out, payload.length);
+        writeUInt32(out, declaredPayloadLength);
         out.write(payload, 0, payload.length);
         byte[] unsigned = out.toByteArray();
         byte[] signature = crypto.signByteArray(unsigned);
         out.write(signature, 0, signature.length);
-        return Owid.fromByteArray(out.toByteArray());
+        return out.toByteArray();
     }
 
-    /** Signs the payload dated at the moment and parses it as a 51Did. */
     FodId fodIdAt(byte[] payload, Instant date) throws OwidException {
         return FodId.fromOwid(signedOwidAt(payload, date));
     }
 
-    /** As {@link #fodIdAt(byte[], Instant)} with the creator domain given. */
     FodId fodIdAt(byte[] payload, Instant date, String domain)
             throws OwidException {
         return FodId.fromOwid(

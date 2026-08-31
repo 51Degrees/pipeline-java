@@ -369,12 +369,12 @@ public class FodIdTests {
     public void compareTwo51Dids_SamePayload_SameValueDifferentEnvelopes()
             throws Exception {
         byte[] payload = canonicalPayload();
-        Owid a = factory.signedOwid(payload);
-        Owid b = factory.signedOwid(payload);
-        // sign() stamps "now" to the minute, so set distinct dates to
-        // represent two reissues at different times.
-        a.setDate(Instant.parse("2026-01-01T00:00:00Z"));
-        b.setDate(Instant.parse("2026-01-01T00:05:00Z"));
+        // The creator stamps "now" to the minute, so two reissues at
+        // different times are written by hand at distinct dates.
+        Owid a = factory.signedOwidAt(
+            payload, Instant.parse("2026-01-01T00:00:00Z"));
+        Owid b = factory.signedOwidAt(
+            payload, Instant.parse("2026-01-01T00:05:00Z"));
 
         FodId fodA = FodId.fromBase64(a.asBase64());
         FodId fodB = FodId.fromBase64(b.asBase64());
@@ -395,7 +395,8 @@ public class FodIdTests {
         byte[] bytes = Base64.getDecoder().decode(
             factory.signedOwidBase64(canonicalPayload()));
         bytes[bytes.length - 1] ^= (byte) 0xFF;   // corrupt the signature
-        Owid tampered = Owid.fromByteArray(bytes);
+        Owid tampered = Owid.parse(bytes).getValue();
+        assertNotNull(tampered);
 
         FodId fodId = FodId.fromOwid(tampered);
 
@@ -405,17 +406,15 @@ public class FodIdTests {
     }
 
     @Test
-    public void fromOwid_IsDecoupledFromSourceOwid() throws Exception {
-        // Mutating the source OWID after construction must not affect the
-        // FodId (it holds an independent copy).
+    public void fromOwid_HoldsTheEnvelopeItWasGiven() throws Exception {
+        // The library hands out only immutable envelopes, so there is no
+        // copy to make and the 51Did reads exactly what the envelope holds.
         Owid owid = factory.signedOwid(canonicalPayload());
         FodId fodId = FodId.fromOwid(owid);
 
-        owid.setPayload(new byte[FodId.PAYLOAD_LENGTH]);
-
         assertEquals(CANONICAL_FLAGS, fodId.getFlags());
         assertArrayEquals(CANONICAL_HASH, fodId.getHash());
-        assertEquals(CANONICAL_HASH[0], fodId.getPayload()[FodId.HASH_OFFSET]);
+        assertArrayEquals(owid.asByteArray(), fodId.asByteArray());
     }
 
     @Test

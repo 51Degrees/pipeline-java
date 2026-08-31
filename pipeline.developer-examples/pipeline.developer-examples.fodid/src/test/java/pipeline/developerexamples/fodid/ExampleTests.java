@@ -24,7 +24,6 @@ package pipeline.developerexamples.fodid;
 
 import com.swancommunity.owid.Creator;
 import com.swancommunity.owid.Crypto;
-import com.swancommunity.owid.Owid;
 import fiftyone.pipeline.did.DidClient;
 import fiftyone.pipeline.did.FodId;
 import fiftyone.pipeline.did.HttpTransport;
@@ -59,10 +58,9 @@ public class ExampleTests {
     public void init() throws Exception {
         crypto = Crypto.generate();
         Creator creator = Creator.create("51degrees.com", crypto);
-        Owid owid = new Owid("51degrees.com", Instant.now(), samplePayload());
-        creator.sign(owid);
         // As the page sends it, in the URL-safe alphabet without padding.
-        did = FodId.fromOwid(owid).asBase64Url();
+        did = FodId.fromOwid(creator.createBytes(samplePayload()))
+            .asBase64Url();
         transport = new FakeTransport();
         client = DidClient.builder("resource")
             .licenceKey("licence")

@@ -77,6 +77,8 @@ public class DidClientTests {
     private FakeTransport transport;
     private MutableClock clock;
     private DidClient client;
+    /** A genuine identifier as a page sends it, signed with key2. */
+    private String validDid;
 
     @Before
     public void init() throws OwidException {
@@ -84,6 +86,7 @@ public class DidClientTests {
         key2 = new FodIdTestFactory();
         key3 = new FodIdTestFactory();
         transport = new FakeTransport();
+        validDid = key2.fodIdAt(canonicalPayload(), WEEK2).asBase64Url();
         clock = new MutableClock(WEEK2.plus(Duration.ofDays(1)));
         client = DidClient.builder("resource")
             .licenceKey("licence")
@@ -557,18 +560,21 @@ public class DidClientTests {
     public void verify_InvalidAnswers400False() throws Exception {
         transport.queue(400, "{\"valid\":false}");
 
-        assertFalse(client.verify("AwAA"));
+        assertFalse(client.verify(validDid));
     }
 
     @Test
     public void verify_ErrorsAnswer400Raises() {
+        // The cloud's own rejection of an identifier that read locally still
+        // maps to the argument failure, with the cloud's message.
         transport.queue(400, "{\"errors\":[\"Value for 51did is not a valid "
-            + "Base64-encoded 51Did: 'x'.\"]}");
+            + "Base64-encoded 51Did.\"]}");
 
         IllegalArgumentException error = assertThrows(
-            IllegalArgumentException.class, () -> client.verify("x"));
+            IllegalArgumentException.class, () -> client.verify(validDid));
 
         assertTrue(error.getMessage().contains("not a valid"));
+        assertEquals(1, transport.requests.size());
     }
 
     @Test
@@ -576,7 +582,7 @@ public class DidClientTests {
         transport.queue(401, "{\"errors\":[\"bad key\"]}");
 
         DidHttpException error = assertThrows(DidHttpException.class,
-            () -> client.verify("AwAA"));
+            () -> client.verify(validDid));
 
         assertEquals(401, error.getStatusCode());
         assertTrue(error.getBody().contains("bad key"));
@@ -584,7 +590,7 @@ public class DidClientTests {
 
     @Test
     public void verify_TransportFailureRaisesIoException() {
-        assertThrows(IOException.class, () -> client.verify("AwAA"));
+        assertThrows(IOException.class, () -> client.verify(validDid));
     }
 
     // ----- Redeem -----
@@ -641,7 +647,7 @@ public class DidClientTests {
             + "\"verifiedAt\":\"2026-08-07T09:15:32Z\","
             + "\"secondsSinceVerified\":0}");
 
-        RedeemResult result = client.redeem("AwAA", "sealed", "abc");
+        RedeemResult result = client.redeem(validDid, "sealed", "abc");
 
         assertEquals(RedeemResult.Context.VERIFIED, result.getContext());
         assertEquals(RedeemResult.Signature.VERIFIED, result.getSignature());
@@ -658,7 +664,7 @@ public class DidClientTests {
             + "\"verifiedAt\":\"2026-08-07T09:15:32Z\","
             + "\"secondsSinceVerified\":1}");
 
-        RedeemResult result = client.redeem("AwAA", "sealed", "abc");
+        RedeemResult result = client.redeem(validDid, "sealed", "abc");
 
         assertEquals(RedeemResult.Signature.INVALID, result.getSignature());
     }
@@ -669,7 +675,7 @@ public class DidClientTests {
             + "\"verifiedAt\":\"2026-08-07T09:15:32Z\","
             + "\"secondsSinceVerified\":14}");
 
-        RedeemResult result = client.redeem("AwAA", "sealed", "abc");
+        RedeemResult result = client.redeem(validDid, "sealed", "abc");
 
         assertEquals(RedeemResult.Context.EXPIRED, result.getContext());
         assertEquals(RedeemResult.Signature.UNKNOWN, result.getSignature());
@@ -683,7 +689,7 @@ public class DidClientTests {
     public void redeem_Replayed() throws Exception {
         transport.queue(200, "{\"context\":\"replayed\"}");
 
-        RedeemResult result = client.redeem("AwAA", "sealed", "abc");
+        RedeemResult result = client.redeem(validDid, "sealed", "abc");
 
         assertEquals(RedeemResult.Context.REPLAYED, result.getContext());
         assertNull(result.getVerifiedAt());
@@ -694,7 +700,7 @@ public class DidClientTests {
     public void redeem_Unreadable() throws Exception {
         transport.queue(200, "{\"context\":\"unreadable\"}");
 
-        RedeemResult result = client.redeem("AwAA", "sealed", "abc");
+        RedeemResult result = client.redeem(validDid, "sealed", "abc");
 
         assertEquals(RedeemResult.Context.UNREADABLE, result.getContext());
         assertEquals(RedeemResult.Signature.UNKNOWN, result.getSignature());
@@ -704,7 +710,7 @@ public class DidClientTests {
     public void redeem_503Unconfirmed() throws Exception {
         transport.queue(503, "{\"context\":\"unconfirmed\"}");
 
-        RedeemResult result = client.redeem("AwAA", "sealed", "abc");
+        RedeemResult result = client.redeem(validDid, "sealed", "abc");
 
         assertEquals(RedeemResult.Context.UNCONFIRMED, result.getContext());
         assertEquals(503, result.getStatusCode());
@@ -715,7 +721,7 @@ public class DidClientTests {
             throws Exception {
         transport.queue(200, "{\"context\":\"something-new\"}");
 
-        RedeemResult result = client.redeem("AwAA", "sealed", "abc");
+        RedeemResult result = client.redeem(validDid, "sealed", "abc");
 
         assertEquals(RedeemResult.Context.UNREADABLE, result.getContext());
         assertEquals("something-new", result.getContextValue());
@@ -725,7 +731,7 @@ public class DidClientTests {
     public void redeem_MissingContextFailsClosed() throws Exception {
         transport.queue(200, "{}");
 
-        RedeemResult result = client.redeem("AwAA", "sealed", "abc");
+        RedeemResult result = client.redeem(validDid, "sealed", "abc");
 
         assertEquals(RedeemResult.Context.UNREADABLE, result.getContext());
         assertEquals("unreadable", result.getContextValue());
@@ -738,9 +744,10 @@ public class DidClientTests {
 
         IllegalArgumentException error = assertThrows(
             IllegalArgumentException.class,
-            () -> client.redeem("x", "sealed", "abc"));
+            () -> client.redeem(validDid, "sealed", "abc"));
 
         assertTrue(error.getMessage().contains("not a valid"));
+        assertEquals(1, transport.requests.size());
     }
 
     @Test
@@ -762,7 +769,7 @@ public class DidClientTests {
 
         DidNotSupportedException error = assertThrows(
             DidNotSupportedException.class,
-            () -> client.redeem("AwAA", "sealed", "abc"));
+            () -> client.redeem(validDid, "sealed", "abc"));
 
         assertEquals(404, error.getStatusCode());
         assertEquals("Not Found", error.getBody());
@@ -774,7 +781,7 @@ public class DidClientTests {
         transport.queue(500, "boom");
 
         DidHttpException error = assertThrows(DidHttpException.class,
-            () -> client.redeem("AwAA", "sealed", "abc"));
+            () -> client.redeem(validDid, "sealed", "abc"));
 
         assertEquals(500, error.getStatusCode());
         assertEquals("boom", error.getBody());
@@ -785,7 +792,7 @@ public class DidClientTests {
         transport.queue(200, "<html>proxy</html>");
 
         DidHttpException error = assertThrows(DidHttpException.class,
-            () -> client.redeem("AwAA", "sealed", "abc"));
+            () -> client.redeem(validDid, "sealed", "abc"));
 
         assertEquals(200, error.getStatusCode());
     }
@@ -793,7 +800,7 @@ public class DidClientTests {
     @Test
     public void redeem_TransportFailureRaisesIoException() {
         assertThrows(IOException.class,
-            () -> client.redeem("AwAA", "sealed", "abc"));
+            () -> client.redeem(validDid, "sealed", "abc"));
     }
 
     @Test
@@ -802,7 +809,7 @@ public class DidClientTests {
             .endpoint(ENDPOINT).transport(transport).build();
         transport.queue(200, "{\"context\":\"unreadable\"}");
 
-        noLicence.redeem("AwAA", "sealed", null);
+        noLicence.redeem(validDid, "sealed", null);
 
         String form = new String(
             transport.last().getBody(), StandardCharsets.UTF_8);
@@ -813,14 +820,111 @@ public class DidClientTests {
     @Test
     public void redeem_FormEncodesTheValues() throws Exception {
         transport.queue(200, "{\"context\":\"unreadable\"}");
+        // The standard alphabet with padding, as the cloud issues it, so
+        // the form has characters that need encoding.
+        String standard = key2.fodIdAt(canonicalPayload(), WEEK2).asBase64();
+        assertTrue(standard.endsWith("="));
 
-        client.redeem("AwAA+/==", "a b&c", "x=y");
+        client.redeem(standard, "a b&c", "x=y");
 
         String form = new String(
             transport.last().getBody(), StandardCharsets.UTF_8);
-        assertTrue(form.startsWith("resource=resource&51did=AwAA%2B%2F%3D%3D&"));
+        assertTrue(form.startsWith(
+            "resource=resource&51did=" + DidClient.encode(standard) + "&"));
+        assertTrue(form.contains("%3D&result="));
         assertTrue(form.contains("&result=a+b%26c&"));
         assertTrue(form.contains("&challenge=x%3Dy&"));
+    }
+
+    // ----- Malformed input never reaches the network -----
+
+    @Test
+    public void verify_MalformedStringIsRefusedBeforeTransport() {
+        // Not base64 at all, so the OWID reader's own status is the reason,
+        // and neither a key fetch nor the verify call happens.
+        IllegalArgumentException error = assertThrows(
+            IllegalArgumentException.class,
+            () -> client.verify("This is not a 51Did!"));
+
+        assertTrue(error.getMessage(),
+            error.getMessage().contains("INVALID_BASE64"));
+        assertEquals(0, transport.requests.size());
+    }
+
+    @Test
+    public void verify_ShortPayloadStringIsRefusedBeforeTransport()
+            throws Exception {
+        // A genuine envelope whose payload cannot carry the 51Did header.
+        String tooShort = key2.signedOwidAt(new byte[3], WEEK2).asBase64();
+
+        IllegalArgumentException error = assertThrows(
+            IllegalArgumentException.class, () -> client.verify(tooShort));
+
+        assertTrue(error.getMessage(),
+            error.getMessage().contains("PAYLOAD_TOO_SHORT"));
+        assertEquals(0, transport.requests.size());
+    }
+
+    @Test
+    public void redeem_MalformedStringIsRefusedBeforeTransport()
+            throws Exception {
+        String tooShort = key2.signedOwidAt(
+            Arrays.copyOf(canonicalRandomPayload(),
+                FodId.RANDOM_PAYLOAD_LENGTH - 1), WEEK2).asBase64();
+
+        assertThrows(IllegalArgumentException.class,
+            () -> client.redeem("This is not a 51Did!", "sealed", "abc"));
+        IllegalArgumentException error = assertThrows(
+            IllegalArgumentException.class,
+            () -> client.redeem(tooShort, "sealed", "abc"));
+
+        assertTrue(error.getMessage(),
+            error.getMessage().contains("INVALID_TYPE_PAYLOAD_LENGTH"));
+        assertEquals(0, transport.requests.size());
+    }
+
+    @Test
+    public void verify_LongerContextSectionStringReachesTheCloud()
+            throws Exception {
+        // Longer than any shape this package knows is still a 51Did, so it
+        // is not turned away here and the cloud is asked as usual.
+        transport.queue(200, "{\"valid\":true}");
+        String longer = key2.fodIdAt(
+            canonicalPayloadWithSection(600), WEEK2).asBase64Url();
+
+        assertTrue(client.verify(longer));
+
+        assertEquals(1, transport.requests.size());
+    }
+
+    // ----- Invalid is not the same as could not check -----
+
+    @Test
+    public void verifySignature_TamperedSignatureIsInvalidNotAnError()
+            throws Exception {
+        transport.queue(200, keyList("startsAt", false));
+        byte[] bytes = key2.fodIdAt(canonicalPayload(), WEEK2).asByteArray();
+        bytes[bytes.length - 1] ^= (byte) 0xFF;
+        FodIdParseResult read = FodId.tryFromByteArray(bytes);
+        // Reading succeeds, because reading never checks the signature.
+        assertTrue(read.isSuccess());
+        assertEquals(FodIdParseStatus.PARSED, read.getStatus());
+
+        assertEquals(DidClient.SignatureCheck.INVALID,
+            client.verifySignatureDetailed(read.getValue()));
+        assertFalse(client.verifySignature(read.getValue()));
+    }
+
+    @Test
+    public void verifySignature_FirstKeyFetchFailureRaisesRatherThanFalse()
+            throws Exception {
+        // Nothing queued, so the key list cannot be fetched. That is an
+        // error, never a verdict on the signature.
+        FodId fodId = key2.fodIdAt(canonicalPayload(), WEEK2);
+
+        assertThrows(IOException.class, () -> client.verifySignature(fodId));
+        assertThrows(IOException.class,
+            () -> client.verifySignatureDetailed(fodId));
     }
 
     // ----- Helpers -----
