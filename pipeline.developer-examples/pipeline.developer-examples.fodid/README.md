@@ -6,7 +6,7 @@ This module holds the developer examples for the 51Did package
 
 | Program | What it shows |
 | --- | --- |
-| `Main` | Reads a 51Did offline. Builds a sample identifier in process, parses it back with `FodId` and shows that the value is stable while the envelope changes on every issue. Needs no cloud access. |
+| `Main` | Reads a 51Did offline. Builds a sample identifier in process, parses it back with `FodId` and shows that the match key is stable while the envelope changes on every issue. Needs no cloud access. |
 | `CreatorContextDemoServer` | Serves a small web page that creates a 51Did in the browser, verifies it from the browser, and redeems the encrypted creator context result on this server with `DidClient`, which is the only place the licence key lives. |
 
 ## Creator context

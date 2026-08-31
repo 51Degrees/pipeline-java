@@ -34,7 +34,7 @@ import java.time.Instant;
 import java.util.Arrays;
 
 import static fiftyone.pipeline.did.FodIdTestFactory.CANONICAL_FLAGS;
-import static fiftyone.pipeline.did.FodIdTestFactory.CANONICAL_HASH;
+import static fiftyone.pipeline.did.FodIdTestFactory.CANONICAL_MATCH_KEY;
 import static fiftyone.pipeline.did.FodIdTestFactory.CANONICAL_LICENSE_ID;
 import static fiftyone.pipeline.did.FodIdTestFactory.TEST_DOMAIN;
 import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayload;
@@ -77,7 +77,7 @@ public class FodIdParseTests {
         FodId fodId = assertParsed(result);
         assertEquals(CANONICAL_FLAGS, fodId.getFlags());
         assertEquals(CANONICAL_LICENSE_ID, fodId.getLicenseId());
-        assertArrayEquals(CANONICAL_HASH, fodId.getHash());
+        assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
         assertEquals(TEST_DOMAIN, fodId.getDomain());
     }
 
@@ -93,7 +93,7 @@ public class FodIdParseTests {
             FodId.tryFromBase64("  " + urlSafe + "\r\n"));
 
         assertArrayEquals(fromUrlSafe.asByteArray(), fromSpaced.asByteArray());
-        assertArrayEquals(CANONICAL_HASH, fromUrlSafe.getHash());
+        assertArrayEquals(CANONICAL_MATCH_KEY, fromUrlSafe.getMatchKey());
     }
 
     @Test
@@ -103,7 +103,7 @@ public class FodIdParseTests {
 
         FodId fodId = assertParsed(FodId.tryFromByteArray(bytes));
 
-        assertArrayEquals(CANONICAL_HASH, fodId.getHash());
+        assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
         assertArrayEquals(bytes, fodId.asByteArray());
     }
 
@@ -126,15 +126,15 @@ public class FodIdParseTests {
 
     @Test
     public void tryFromBase64_LongerContextSection_Parsed() throws Exception {
-        // A payload longer than the value carries a creator context section
+        // A payload longer than the match key carries a creator context section
         // whose shape belongs to the cloud, so an older reader accepts it
-        // and exposes it as the payload beyond the value.
+        // and exposes it as the payload beyond the match key.
         byte[] payload = canonicalPayloadWithSection(512);
         String base64 = factory.signedOwidAt(payload, DATE).asBase64();
 
         FodId fodId = assertParsed(FodId.tryFromBase64(base64));
 
-        assertArrayEquals(CANONICAL_HASH, fodId.getHash());
+        assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
         assertArrayEquals(payload, fodId.getPayload());
         assertTrue(fodId.verify(factory.publicPem));
     }
@@ -150,7 +150,7 @@ public class FodIdParseTests {
             FodId fodId = assertParsed(FodId.tryFromByteArray(bytes));
 
             assertEquals(payload.length, fodId.getPayload().length);
-            assertArrayEquals(CANONICAL_HASH, fodId.getHash());
+            assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
         }
         byte[] random = Arrays.copyOf(canonicalRandomPayload(), 700);
         assertParsed(FodId.tryFromByteArray(
@@ -183,7 +183,7 @@ public class FodIdParseTests {
             factory.signedOwidAt(payload, DATE).asBase64()));
 
         assertEquals(IdType.RESERVED, fodId.getType());
-        assertEquals(0, fodId.getHash().length);
+        assertEquals(0, fodId.getMatchKey().length);
     }
 
     // ----- 51Did payload rules -----

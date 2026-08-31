@@ -37,8 +37,8 @@ import java.util.Arrays;
  * back with {@link FodId} and prints the three payload fields.
  * <p>
  * It also demonstrates the headline use case: a 51Did is re-issued fresh on
- * every call (the envelope, hence the base64, changes), but the value (the
- * Hash) is stable. <b>Compare values, never envelopes.</b>
+ * every call (the envelope, hence the base64, changes), but the match key
+ * is stable. <b>Compare match keys, never envelopes.</b>
  */
 public class Main {
 
@@ -62,28 +62,29 @@ public class Main {
             System.out.println("  Flags     : 0x"
                     + Integer.toHexString(fodId.getFlags()));
             System.out.println("  LicenseId : " + fodId.getLicenseId());
-            System.out.println("  Hash      : " + toHex(fodId.getHash()));
+            System.out.println("  Match key : " + toHex(fodId.getMatchKey()));
             System.out.println("  Verifies  : "
                     + fodId.verify(crypto.publicKeyPem()));
 
-            // Issue the SAME payload again: a separate envelope, same value.
+            // Issue the SAME payload again: a separate envelope, same match
+            // key.
             FodId reissued = FodId.fromBase64(issue(creator, payload));
             boolean sameEnvelope =
                     fodId.asBase64().equals(reissued.asBase64());
-            boolean sameValue =
-                    Arrays.equals(fodId.getHash(), reissued.getHash());
+            boolean sameMatchKey =
+                    Arrays.equals(fodId.getMatchKey(), reissued.getMatchKey());
 
             System.out.println();
             System.out.println("Same payload, re-issued:");
             System.out.println("  Same envelope (base64) : " + sameEnvelope);
-            System.out.println("  Same value (Hash)      : " + sameValue);
+            System.out.println("  Same match key         : " + sameMatchKey);
 
-            // The reader's whole purpose: the value is the stable, comparable
-            // part while the envelope is not.
-            if (sameEnvelope || !sameValue) {
+            // The reader's whole purpose: the match key is the stable,
+            // comparable part while the envelope is not.
+            if (sameEnvelope || !sameMatchKey) {
                 throw new IllegalStateException(
-                        "Expected a different envelope but the same value "
-                        + "across reissues.");
+                        "Expected a different envelope but the same match "
+                        + "key across reissues.");
             }
         }
 
@@ -99,7 +100,7 @@ public class Main {
 
         /**
          * A canonical 37-byte Probabilistic payload: flags 0x00, License Id
-         * 0x12345678 (little-endian) and a 32-byte value 0x20..0x3F.
+         * 0x12345678 (little-endian) and a 32-byte match key 0x20..0x3F.
          */
         private byte[] samplePayload() {
             byte[] payload = new byte[FodId.PAYLOAD_LENGTH];

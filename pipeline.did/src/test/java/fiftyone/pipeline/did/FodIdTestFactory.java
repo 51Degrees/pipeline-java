@@ -53,7 +53,7 @@ final class FodIdTestFactory {
 
     static final long CANONICAL_LICENSE_ID = 0x12345678L;
 
-    static final byte[] CANONICAL_HASH = canonicalHash();
+    static final byte[] CANONICAL_MATCH_KEY = canonicalMatchKey();
 
     static final Instant DATE_ORIGIN = Instant.parse("2020-01-01T00:00:00Z");
 
@@ -73,12 +73,12 @@ final class FodIdTestFactory {
         this.creator = Creator.create(TEST_DOMAIN, crypto);
     }
 
-    private static byte[] canonicalHash() {
-        byte[] hash = new byte[FodId.HASH_LENGTH];
-        for (int i = 0; i < hash.length; i++) {
-            hash[i] = (byte) (0x20 + i);
+    private static byte[] canonicalMatchKey() {
+        byte[] matchKey = new byte[FodId.HASH_LENGTH];
+        for (int i = 0; i < matchKey.length; i++) {
+            matchKey[i] = (byte) (0x20 + i);
         }
-        return hash;
+        return matchKey;
     }
 
     static byte[] canonicalPayload() {
@@ -86,7 +86,8 @@ final class FodIdTestFactory {
         payload[FodId.FLAGS_OFFSET] = (byte) CANONICAL_FLAGS;
         writeCanonicalLicenseId(payload);
         System.arraycopy(
-            CANONICAL_HASH, 0, payload, FodId.HASH_OFFSET, FodId.HASH_LENGTH);
+            CANONICAL_MATCH_KEY, 0, payload,
+            FodId.HASH_OFFSET, FodId.HASH_LENGTH);
         return payload;
     }
 

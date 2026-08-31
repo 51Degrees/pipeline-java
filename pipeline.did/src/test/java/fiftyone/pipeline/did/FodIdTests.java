@@ -35,7 +35,7 @@ import java.util.Arrays;
 import java.util.Base64;
 
 import static fiftyone.pipeline.did.FodIdTestFactory.CANONICAL_FLAGS;
-import static fiftyone.pipeline.did.FodIdTestFactory.CANONICAL_HASH;
+import static fiftyone.pipeline.did.FodIdTestFactory.CANONICAL_MATCH_KEY;
 import static fiftyone.pipeline.did.FodIdTestFactory.CANONICAL_LICENSE_ID;
 import static fiftyone.pipeline.did.FodIdTestFactory.TEST_DOMAIN;
 import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayload;
@@ -85,7 +85,7 @@ public class FodIdTests {
 
         assertEquals(CANONICAL_FLAGS, fodId.getFlags());
         assertEquals(CANONICAL_LICENSE_ID, fodId.getLicenseId());
-        assertArrayEquals(CANONICAL_HASH, fodId.getHash());
+        assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
         assertEquals(TEST_DOMAIN, fodId.getDomain());
     }
 
@@ -98,7 +98,7 @@ public class FodIdTests {
 
         assertEquals(CANONICAL_FLAGS, fodId.getFlags());
         assertEquals(CANONICAL_LICENSE_ID, fodId.getLicenseId());
-        assertArrayEquals(CANONICAL_HASH, fodId.getHash());
+        assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
         assertEquals(TEST_DOMAIN, fodId.getDomain());
     }
 
@@ -110,7 +110,7 @@ public class FodIdTests {
 
         assertEquals(CANONICAL_FLAGS, fodId.getFlags());
         assertEquals(CANONICAL_LICENSE_ID, fodId.getLicenseId());
-        assertArrayEquals(CANONICAL_HASH, fodId.getHash());
+        assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
         assertEquals(owid.getDomain(), fodId.getDomain());
         assertEquals(owid.getDate(), fodId.getDate());
         assertEquals(owid.getVersion(), fodId.getVersion());
@@ -185,16 +185,28 @@ public class FodIdTests {
     }
 
     @Test
-    public void hash_IsDefensiveCopy() throws Exception {
+    public void matchKey_IsDefensiveCopy() throws Exception {
         FodId fodId = FodId.fromBase64(factory.signedOwidBase64(canonicalPayload()));
 
-        byte[] hash = fodId.getHash();
-        hash[0] = 0x00;
-        hash[FodId.HASH_LENGTH - 1] = 0x00;
+        byte[] matchKey = fodId.getMatchKey();
+        matchKey[0] = 0x00;
+        matchKey[FodId.HASH_LENGTH - 1] = 0x00;
 
-        // Neither the underlying payload nor a fresh getHash() is affected.
-        assertEquals(CANONICAL_HASH[0], fodId.getPayload()[FodId.HASH_OFFSET]);
-        assertArrayEquals(CANONICAL_HASH, fodId.getHash());
+        // Neither the underlying payload nor a fresh getMatchKey() is affected.
+        assertEquals(
+            CANONICAL_MATCH_KEY[0], fodId.getPayload()[FodId.HASH_OFFSET]);
+        assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    public void getHash_DeprecatedAlias_ReturnsMatchKey() throws Exception {
+        // getHash() stays as a deprecated alias so that callers written
+        // against the earlier name keep compiling and get the same bytes.
+        FodId fodId = FodId.fromBase64(factory.signedOwidBase64(canonicalPayload()));
+
+        assertArrayEquals(fodId.getMatchKey(), fodId.getHash());
+        assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getHash());
     }
 
     @Test
@@ -238,8 +250,8 @@ public class FodIdTests {
 
         assertEquals(CANONICAL_FLAGS, fodId.getFlags());
         assertEquals(CANONICAL_LICENSE_ID, fodId.getLicenseId());
-        assertArrayEquals(CANONICAL_HASH, fodId.getHash());
-        assertEquals(FodId.HASH_LENGTH, fodId.getHash().length);
+        assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
+        assertEquals(FodId.HASH_LENGTH, fodId.getMatchKey().length);
     }
 
     @Test
@@ -262,7 +274,7 @@ public class FodIdTests {
         for (FodId fodId : new FodId[] { fromBytes, fromBase64, fromOwid }) {
             assertEquals(longDomain, fodId.getDomain());
             assertEquals(CANONICAL_FLAGS, fodId.getFlags());
-            assertArrayEquals(CANONICAL_HASH, fodId.getHash());
+            assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
             assertArrayEquals(payload, fodId.getPayload());
             assertTrue(fodId.verify(factory.publicPem));
         }
@@ -281,7 +293,7 @@ public class FodIdTests {
 
         assertEquals(fodId1.getFlags(), fodId2.getFlags());
         assertEquals(fodId1.getLicenseId(), fodId2.getLicenseId());
-        assertArrayEquals(fodId1.getHash(), fodId2.getHash());
+        assertArrayEquals(fodId1.getMatchKey(), fodId2.getMatchKey());
         assertEquals(fodId1.getDomain(), fodId2.getDomain());
     }
 
@@ -311,12 +323,12 @@ public class FodIdTests {
         FodId fodId = FodId.fromBase64(factory.signedOwidBase64(canonicalRandomPayload()));
 
         assertEquals(CANONICAL_LICENSE_ID, fodId.getLicenseId());
-        assertEquals(FodId.GUID_LENGTH, fodId.getHash().length);
+        assertEquals(FodId.GUID_LENGTH, fodId.getMatchKey().length);
         byte[] expected = new byte[FodId.GUID_LENGTH];
         for (int i = 0; i < expected.length; i++) {
             expected[i] = (byte) (0x40 + i);
         }
-        assertArrayEquals(expected, fodId.getHash());
+        assertArrayEquals(expected, fodId.getMatchKey());
     }
 
     @Test
@@ -328,7 +340,7 @@ public class FodIdTests {
     }
 
     @Test
-    public void constructor_RandomPayloadLargerThanSpec_UsesFirst16ValueBytes()
+    public void constructor_RandomPayloadLargerThanSpec_UsesFirst16MatchKeyBytes()
             throws Exception {
         byte[] payload = new byte[FodId.PAYLOAD_LENGTH];
         System.arraycopy(
@@ -340,7 +352,7 @@ public class FodIdTests {
         FodId fodId = FodId.fromBase64(factory.signedOwidBase64(payload));
 
         assertEquals(IdType.RANDOM, fodId.getType());
-        assertEquals(FodId.GUID_LENGTH, fodId.getHash().length);
+        assertEquals(FodId.GUID_LENGTH, fodId.getMatchKey().length);
     }
 
     @Test
@@ -360,13 +372,13 @@ public class FodIdTests {
         FodId fodId = FodId.fromBase64(factory.signedOwidBase64(payload));
 
         assertEquals(IdType.RESERVED, fodId.getType());
-        assertEquals(0, fodId.getHash().length);
+        assertEquals(0, fodId.getMatchKey().length);
     }
 
     // ----- Gap tests (runbook section 6b) -----
 
     @Test
-    public void compareTwo51Dids_SamePayload_SameValueDifferentEnvelopes()
+    public void compareTwo51Dids_SamePayload_SameMatchKeyDifferentEnvelopes()
             throws Exception {
         byte[] payload = canonicalPayload();
         // The creator stamps "now" to the minute, so two reissues at
@@ -379,8 +391,8 @@ public class FodIdTests {
         FodId fodA = FodId.fromBase64(a.asBase64());
         FodId fodB = FodId.fromBase64(b.asBase64());
 
-        // The value is stable across reissues...
-        assertArrayEquals(fodA.getHash(), fodB.getHash());
+        // The match key is stable across reissues...
+        assertArrayEquals(fodA.getMatchKey(), fodB.getMatchKey());
         // ...while the envelope differs.
         assertNotEquals(fodA.getDate(), fodB.getDate());
         assertFalse(Arrays.equals(fodA.getSignature(), fodB.getSignature()));
@@ -402,7 +414,7 @@ public class FodIdTests {
 
         assertEquals(CANONICAL_FLAGS, fodId.getFlags());
         assertEquals(CANONICAL_LICENSE_ID, fodId.getLicenseId());
-        assertArrayEquals(CANONICAL_HASH, fodId.getHash());
+        assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
     }
 
     @Test
@@ -413,7 +425,7 @@ public class FodIdTests {
         FodId fodId = FodId.fromOwid(owid);
 
         assertEquals(CANONICAL_FLAGS, fodId.getFlags());
-        assertArrayEquals(CANONICAL_HASH, fodId.getHash());
+        assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
         assertArrayEquals(owid.asByteArray(), fodId.asByteArray());
     }
 
@@ -434,7 +446,7 @@ public class FodIdTests {
 
         assertEquals(fodId1.getFlags(), fodId2.getFlags());
         assertEquals(fodId1.getLicenseId(), fodId2.getLicenseId());
-        assertArrayEquals(fodId1.getHash(), fodId2.getHash());
+        assertArrayEquals(fodId1.getMatchKey(), fodId2.getMatchKey());
         assertEquals(fodId1.getDomain(), fodId2.getDomain());
     }
 
@@ -456,7 +468,7 @@ public class FodIdTests {
 
         assertArrayEquals(fromStandard.asByteArray(), fromUrlSafe.asByteArray());
         assertArrayEquals(fromStandard.asByteArray(), fromUnpadded.asByteArray());
-        assertArrayEquals(CANONICAL_HASH, fromUnpadded.getHash());
+        assertArrayEquals(CANONICAL_MATCH_KEY, fromUnpadded.getMatchKey());
     }
 
     @Test
