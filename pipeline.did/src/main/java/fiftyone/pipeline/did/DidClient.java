@@ -23,6 +23,8 @@
 package fiftyone.pipeline.did;
 
 import com.swancommunity.owid.OwidException;
+import com.swancommunity.owid.OwidSignatureStatus;
+import com.swancommunity.owid.OwidVerificationResult;
 import com.swancommunity.owid.Version;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -495,14 +497,15 @@ public final class DidClient {
             return SignatureCheck.NO_KEY_COVERS_DATE;
         }
         for (SigningKey candidate : candidates) {
-            try {
-                if (fodId.verify(candidate.getPublicKeyPem())) {
-                    return SignatureCheck.VERIFIED;
-                }
-            } catch (OwidException unusable) {
-                // A key whose PEM cannot be read verifies nothing. Try the
-                // next candidate.
+            OwidVerificationResult check =
+                fodId.verifyDetailed(candidate.getPublicKeyPem());
+            if (check.getStatus() == OwidSignatureStatus.SIGNATURE_VALID) {
+                return SignatureCheck.VERIFIED;
             }
+            // Any other answer, whether the signature does not match this
+            // key or the key itself cannot be read, leaves the next
+            // candidate to try. Only when none verifies is the signature
+            // reported invalid.
         }
         return SignatureCheck.INVALID;
     }
@@ -534,15 +537,18 @@ public final class DidClient {
      * @return true when the cloud answers valid, false when it answers
      *         invalid
      * @throws IllegalArgumentException if the value is too long to be an
-     *                                  identifier at all, or if the cloud
-     *                                  says it is not a 51Did, with the
-     *                                  cloud's message
+     *                                  identifier at all, if it does not
+     *                                  read as a 51Did, with the
+     *                                  {@link FodIdParseStatus} in the
+     *                                  message, or if the cloud says it is
+     *                                  not a 51Did, with the cloud's message
      * @throws IOException if the cloud cannot be reached, or answers with a
      *                     status the client does not map
      */
     public boolean verify(String fodId) throws IOException {
         Objects.requireNonNull(fodId, "fodId");
         ensureEncodedLength(fodId);
+        ensureReadsAs51Did(fodId);
         // Under both names so the request works with hosts that read either
         // parameter. Hosts that recognise both prefer 51did and keep owid as
         // a compatibility alias.
@@ -603,7 +609,10 @@ public final class DidClient {
      * @param challenge the challenge, or null
      * @return the typed result, for a 200 or a 503 answer
      * @throws IllegalArgumentException if the value is too long to be an
-     *                                  identifier at all, or as
+     *                                  identifier at all, if it does not
+     *                                  read as a 51Did, with the
+     *                                  {@link FodIdParseStatus} in the
+     *                                  message, or as
      *                                  {@link #redeem(FodId, String, String)}
      * @throws IOException as {@link #redeem(FodId, String, String)}
      */
@@ -611,6 +620,7 @@ public final class DidClient {
             throws IOException {
         Objects.requireNonNull(fodId, "fodId");
         ensureEncodedLength(fodId);
+        ensureReadsAs51Did(fodId);
         // The POST route has no {resource} segment, so the resource key
         // goes in the form with everything else.
         StringBuilder form = new StringBuilder()
@@ -669,6 +679,22 @@ public final class DidClient {
         if (fodId.length() > MAXIMUM_ENCODED_LENGTH) {
             throw new IllegalArgumentException(
                 "The value is too long to be a 51Did.");
+        }
+    }
+
+    /**
+     * Refuses a value that does not read as a 51Did, before any key is
+     * fetched or the cloud is called, so malformed input costs no network
+     * round trip and no use. The value is still sent to the cloud exactly
+     * as the caller gave it. The signature is not checked here, because the
+     * signature is the question the cloud is about to be asked.
+     */
+    private static void ensureReadsAs51Did(String fodId) {
+        FodIdParseResult read = FodId.tryFromBase64(fodId);
+        if (read.isSuccess() == false) {
+            throw new IllegalArgumentException(
+                "The value does not read as a 51Did: " + read.getStatus()
+                + ".");
         }
     }
 
