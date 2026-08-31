@@ -72,8 +72,8 @@ public class ExampleTests {
     /**
      * The 51Did example is fully offline, so unlike the cloud examples it must
      * complete without throwing. {@code run()} also self-checks the
-     * value-stable / envelope-changes invariant and throws if it does not
-     * hold.
+     * invariant that the match key is stable while the envelope changes,
+     * and throws if it does not hold.
      */
     @Test
     public void FodId_Example_Test() throws Exception {
@@ -241,7 +241,7 @@ public class ExampleTests {
 
     /**
      * A canonical 37-byte Probabilistic payload: flags 0x00, License Id
-     * 0x12345678 (little-endian) and a 32-byte value 0x20..0x3F.
+     * 0x12345678 (little-endian) and a 32-byte match key 0x20..0x3F.
      */
     private static byte[] samplePayload() {
         byte[] payload = new byte[FodId.PAYLOAD_LENGTH];
