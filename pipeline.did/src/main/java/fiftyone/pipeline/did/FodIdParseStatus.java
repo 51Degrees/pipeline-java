@@ -110,8 +110,8 @@ public enum FodIdParseStatus {
      * The envelope read and the header names a type, but the payload is
      * shorter than the minimum for that type. Random needs the header plus
      * 16 GUID bytes, and Probabilistic and HashedEmail need the header plus
-     * a 32 byte hash. A longer payload is never refused here, because
-     * anything past the value is a creator context section whose lengths
+     * a 32 byte match key. A longer payload is never refused here, because
+     * anything past the match key is a creator context section whose lengths
      * belong to the cloud.
      */
     INVALID_TYPE_PAYLOAD_LENGTH;

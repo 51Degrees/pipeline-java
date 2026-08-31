@@ -42,25 +42,26 @@ import java.util.Objects;
  * A 51Did is described at three levels, and the wording here is deliberate.
  * The <b>51Did</b> is the identifier as a whole. The <b>envelope</b> is the
  * signed {@link Owid} that carries it (version, domain, date, payload,
- * signature), re-issued fresh on every call. The <b>value</b> is the stable,
- * comparable part of the payload after the Flags and License Id, exposed as
- * {@link #getHash()}. Two 51Dids for the same inputs share the same value even
- * though their envelopes differ on every issue. <b>Compare values, never
- * envelopes.</b>
+ * signature), re-issued fresh on every call. The <b>match key</b> is the
+ * stable, comparable part of the payload after the Flags and License Id,
+ * exposed as {@link #getMatchKey()}. Two 51Dids for the same inputs share the
+ * same match key even though their envelopes differ on every issue.
+ * <b>Compare match keys, never envelopes.</b>
  * <p>
- * Payload layout. The header (offsets 0-4) is shared by every identifier type;
- * bits 6-7 of Flags select the {@link IdType} and the length of the value that
- * follows:
+ * Payload layout. The header (offsets 0-4) is shared by every identifier type.
+ * Bits 6-7 of Flags select the {@link IdType} and the length of the match key
+ * that follows:
  * <ul>
  *   <li>offset 0, length 1: Flags (bits 0-2 usage, bits 6-7 type)</li>
  *   <li>offset 1, length 4: License Id (uint32, little-endian)</li>
- *   <li>offset 5: value - 32-byte SHA-256 (Probabilistic, HashedEmail) or
- *       16 GUID bytes (Random)</li>
- *   <li>after the value, optionally: a creator context section, which binds
- *       the identifier to the browser and connection it was created on.
- *       Only 51Degrees can read it, so this reader exposes it only as the
- *       part of {@link #getPayload()} beyond the value. Its lengths belong
- *       to the cloud, so this reader puts no upper bound on a payload.</li>
+ *   <li>offset 5: match key - 32-byte SHA-256 (Probabilistic, HashedEmail)
+ *       or 16 GUID bytes (Random)</li>
+ *   <li>after the match key, optionally: a creator context section, which
+ *       binds the identifier to the browser and connection it was created
+ *       on. Only 51Degrees can read it, so this reader exposes it only as
+ *       the part of {@link #getPayload()} beyond the match key. Its lengths
+ *       belong to the cloud, so this reader puts no upper bound on a
+ *       payload.</li>
  * </ul>
  * <p>
  * Reading and verifying are two separate steps. {@link #tryFromBase64(String)}
@@ -95,10 +96,10 @@ public final class FodId {
     /** Byte length of the License Id field. */
     public static final int LICENSE_ID_LENGTH = 4;
 
-    /** Byte offset of the value (Hash) field within the payload. */
+    /** Byte offset of the match key field within the payload. */
     public static final int HASH_OFFSET = 5;
 
-    /** Byte length of the SHA-256 value. */
+    /** Byte length of the match key field (SHA-256). */
     public static final int HASH_LENGTH = 32;
 
     /**
@@ -107,7 +108,7 @@ public final class FodId {
      */
     public static final int HEADER_LENGTH = HASH_OFFSET;
 
-    /** Byte length of the GUID value carried by Random identifiers. */
+    /** Byte length of the GUID match key carried by Random identifiers. */
     public static final int GUID_LENGTH = 16;
 
     /**
@@ -118,7 +119,7 @@ public final class FodId {
 
     /**
      * Minimum byte length of a Probabilistic or HashedEmail 51Did payload
-     * (Flags + License Id + Hash). Random payloads are shorter - see
+     * (Flags + License Id + match key). Random payloads are shorter - see
      * {@link #RANDOM_PAYLOAD_LENGTH}.
      */
     public static final int PAYLOAD_LENGTH = HASH_OFFSET + HASH_LENGTH;
@@ -132,18 +133,18 @@ public final class FodId {
     private final Owid owid;
     private final int flags;
     private final long licenseId;
-    private final byte[] hash;
+    private final byte[] matchKey;
 
     /**
      * Built only by {@link #read(Owid)} once the payload has passed the
      * 51Did rules, so an instance never exists for a payload that failed
      * them.
      */
-    private FodId(Owid owid, int flags, long licenseId, byte[] hash) {
+    private FodId(Owid owid, int flags, long licenseId, byte[] matchKey) {
         this.owid = owid;
         this.flags = flags;
         this.licenseId = licenseId;
-        this.hash = hash;
+        this.matchKey = matchKey;
     }
 
     // ----- Reading without throwing -----
@@ -205,7 +206,8 @@ public final class FodId {
      * The rules are lower bounds only. The header must be present before the
      * type can be read, and the type then sets the least the payload can
      * hold. Anything longer is accepted as it stands, because the bytes past
-     * the value are a creator context section whose shape the cloud judges.
+     * the match key are a creator context section whose shape the cloud
+     * judges.
      */
     private static FodIdParseResult read(Owid owid) {
         byte[] payload = owid.getPayload();
@@ -213,21 +215,22 @@ public final class FodId {
             return FodIdParseResult.failed(FodIdParseStatus.PAYLOAD_TOO_SHORT);
         }
         int flags = payload[FLAGS_OFFSET] & 0xFF;
-        int valueLength;
+        int matchKeyLength;
         switch (IdType.fromFlags(flags)) {
             case RANDOM:
-                valueLength = GUID_LENGTH;
+                matchKeyLength = GUID_LENGTH;
                 break;
             case RESERVED:
                 // Not yet assigned, so read best-effort. The header fields
-                // are unpacked and whatever follows is exposed as the value.
-                valueLength = payload.length - HEADER_LENGTH;
+                // are unpacked and whatever follows is exposed as the
+                // match key.
+                matchKeyLength = payload.length - HEADER_LENGTH;
                 break;
             default:
-                valueLength = HASH_LENGTH;
+                matchKeyLength = HASH_LENGTH;
                 break;
         }
-        if (payload.length < HEADER_LENGTH + valueLength) {
+        if (payload.length < HEADER_LENGTH + matchKeyLength) {
             return FodIdParseResult.failed(
                 FodIdParseStatus.INVALID_TYPE_PAYLOAD_LENGTH);
         }
@@ -238,12 +241,13 @@ public final class FodId {
             | ((payload[LICENSE_ID_OFFSET + 1] & 0xFFL) << 8)
             | ((payload[LICENSE_ID_OFFSET + 2] & 0xFFL) << 16)
             | ((payload[LICENSE_ID_OFFSET + 3] & 0xFFL) << 24);
-        // The value is copied out so that mutating the array a caller gets
-        // back from getHash() can never reach the envelope's own bytes.
-        byte[] hash = Arrays.copyOfRange(
-            payload, HASH_OFFSET, HASH_OFFSET + valueLength);
+        // The match key is copied out so that mutating the array a caller
+        // gets back from getMatchKey() can never reach the envelope's own
+        // bytes.
+        byte[] matchKey = Arrays.copyOfRange(
+            payload, HASH_OFFSET, HASH_OFFSET + matchKeyLength);
         return FodIdParseResult.parsed(
-            new FodId(owid, flags, licenseId, hash));
+            new FodId(owid, flags, licenseId, matchKey));
     }
 
     // ----- Reading with exceptions -----
@@ -396,15 +400,31 @@ public final class FodId {
     }
 
     /**
-     * Returns the value bytes from the payload (a 32-byte SHA-256 for
+     * Returns the match key from the payload (a 32-byte SHA-256 for
      * Probabilistic and HashedEmail identifiers, or 16 GUID bytes for Random).
-     * This is the stable, comparable part of the envelope - use it as the
-     * cache / dedup key.
+     * The match key is the stable, comparable part of the envelope. Two
+     * 51Dids for the same inputs share the same match key even though their
+     * envelopes (date, signature) differ on every issue, so use the match
+     * key as the cache / dedup key.
      *
-     * @return a defensive copy of the value bytes
+     * @return a defensive copy of the match key bytes
      */
+    public byte[] getMatchKey() {
+        return matchKey.clone();
+    }
+
+    /**
+     * Deprecated alias for {@link #getMatchKey()}. The stable, comparable
+     * part of a 51Did is now called the match key, mirroring the Model Terms
+     * for Marketing vocabulary. This alias will be removed in a future
+     * release.
+     *
+     * @return the same bytes as {@link #getMatchKey()}
+     * @deprecated renamed to {@link #getMatchKey()}
+     */
+    @Deprecated
     public byte[] getHash() {
-        return hash.clone();
+        return getMatchKey();
     }
 
     /** @return the OWID version. */

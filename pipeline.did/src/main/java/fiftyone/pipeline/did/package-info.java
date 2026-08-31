@@ -30,11 +30,11 @@
  * {@link fiftyone.pipeline.did.FodIdParseResult} instead of throwing, whose
  * {@link fiftyone.pipeline.did.FodIdParseStatus} names why an input is not
  * a 51Did, and the {@code from} readers make the same read and throw. A
- * 51Did exposes the three payload fields (Flags, License Id and the value
- * Hash) and the identifier {@link fiftyone.pipeline.did.IdType}, and
+ * 51Did exposes the three payload fields (Flags, License Id and the match
+ * key) and the identifier {@link fiftyone.pipeline.did.IdType}, and
  * delegates OWID-level concerns to the envelope it holds. Reading never
- * checks the signature. Compare 51Dids by their value ({@code getHash()}),
- * never by their envelopes.
+ * checks the signature. Compare 51Dids by their match key
+ * ({@code getMatchKey()}), never by their envelopes.
  * <p>
  * {@link fiftyone.pipeline.did.DidClient} is what a server uses against the
  * 51Degrees cloud: it fetches and holds the published signing keys, verifies
