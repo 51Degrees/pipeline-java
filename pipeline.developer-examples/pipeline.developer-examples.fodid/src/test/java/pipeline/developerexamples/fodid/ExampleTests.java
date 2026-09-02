@@ -249,8 +249,8 @@ public class ExampleTests {
         payload[FodId.LICENSE_ID_OFFSET + 1] = 0x56;
         payload[FodId.LICENSE_ID_OFFSET + 2] = 0x34;
         payload[FodId.LICENSE_ID_OFFSET + 3] = 0x12;
-        for (int i = 0; i < FodId.HASH_LENGTH; i++) {
-            payload[FodId.HASH_OFFSET + i] = (byte) (0x20 + i);
+        for (int i = 0; i < FodId.MATCH_KEY_LENGTH; i++) {
+            payload[FodId.MATCH_KEY_OFFSET + i] = (byte) (0x20 + i);
         }
         return payload;
     }
