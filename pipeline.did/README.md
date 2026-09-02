@@ -198,6 +198,12 @@ Use `getMatchKey()` as the cache / dedup key. `getHash()` remains as a
 deprecated alias of `getMatchKey()`, returning the same bytes, and will be
 removed in a future release.
 
+The payload constants follow the same naming. `MATCH_KEY_OFFSET` and
+`MATCH_KEY_LENGTH` give the position and the size of the match key inside the
+payload, and `HASH_OFFSET` and `HASH_LENGTH` remain as deprecated aliases of
+the same two values so that code written against the earlier names keeps
+compiling. The aliases will be removed in a future release.
+
 ## Verifying on your server
 
 `DidClient` handles every manipulation of a 51Did a server needs against the

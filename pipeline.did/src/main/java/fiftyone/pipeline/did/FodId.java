@@ -97,16 +97,38 @@ public final class FodId {
     public static final int LICENSE_ID_LENGTH = 4;
 
     /** Byte offset of the match key field within the payload. */
-    public static final int HASH_OFFSET = 5;
+    public static final int MATCH_KEY_OFFSET = 5;
 
     /** Byte length of the match key field (SHA-256). */
-    public static final int HASH_LENGTH = 32;
+    public static final int MATCH_KEY_LENGTH = 32;
+
+    /**
+     * Deprecated alias for {@link #MATCH_KEY_OFFSET}. The stable, comparable
+     * part of a 51Did is now called the match key, mirroring the Model Terms
+     * for Marketing vocabulary. This alias will be removed in a future
+     * release.
+     *
+     * @deprecated renamed to {@link #MATCH_KEY_OFFSET}
+     */
+    @Deprecated
+    public static final int HASH_OFFSET = MATCH_KEY_OFFSET;
+
+    /**
+     * Deprecated alias for {@link #MATCH_KEY_LENGTH}. The stable, comparable
+     * part of a 51Did is now called the match key, mirroring the Model Terms
+     * for Marketing vocabulary. This alias will be removed in a future
+     * release.
+     *
+     * @deprecated renamed to {@link #MATCH_KEY_LENGTH}
+     */
+    @Deprecated
+    public static final int HASH_LENGTH = MATCH_KEY_LENGTH;
 
     /**
      * Byte length of the payload header (Flags + License Id) common to every
      * identifier type.
      */
-    public static final int HEADER_LENGTH = HASH_OFFSET;
+    public static final int HEADER_LENGTH = MATCH_KEY_OFFSET;
 
     /** Byte length of the GUID match key carried by Random identifiers. */
     public static final int GUID_LENGTH = 16;
@@ -122,7 +144,8 @@ public final class FodId {
      * (Flags + License Id + match key). Random payloads are shorter - see
      * {@link #RANDOM_PAYLOAD_LENGTH}.
      */
-    public static final int PAYLOAD_LENGTH = HASH_OFFSET + HASH_LENGTH;
+    public static final int PAYLOAD_LENGTH =
+        MATCH_KEY_OFFSET + MATCH_KEY_LENGTH;
 
     /**
      * The origin the envelope's date counts from, 2020-01-01T00:00:00Z, as
@@ -227,7 +250,7 @@ public final class FodId {
                 matchKeyLength = payload.length - HEADER_LENGTH;
                 break;
             default:
-                matchKeyLength = HASH_LENGTH;
+                matchKeyLength = MATCH_KEY_LENGTH;
                 break;
         }
         if (payload.length < HEADER_LENGTH + matchKeyLength) {
@@ -245,7 +268,7 @@ public final class FodId {
         // gets back from getMatchKey() can never reach the envelope's own
         // bytes.
         byte[] matchKey = Arrays.copyOfRange(
-            payload, HASH_OFFSET, HASH_OFFSET + matchKeyLength);
+            payload, MATCH_KEY_OFFSET, MATCH_KEY_OFFSET + matchKeyLength);
         return FodIdParseResult.parsed(
             new FodId(owid, flags, licenseId, matchKey));
     }

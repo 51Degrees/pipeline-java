@@ -66,9 +66,12 @@ public class FodIdTests {
 
     @Test
     public void constants_AreInternallyConsistent() {
-        assertEquals(FodId.PAYLOAD_LENGTH, FodId.HASH_OFFSET + FodId.HASH_LENGTH);
-        assertEquals(FodId.HASH_OFFSET, FodId.LICENSE_ID_OFFSET + FodId.LICENSE_ID_LENGTH);
-        assertEquals(FodId.RANDOM_PAYLOAD_LENGTH, FodId.HASH_OFFSET + FodId.GUID_LENGTH);
+        assertEquals(FodId.PAYLOAD_LENGTH,
+            FodId.MATCH_KEY_OFFSET + FodId.MATCH_KEY_LENGTH);
+        assertEquals(FodId.MATCH_KEY_OFFSET,
+            FodId.LICENSE_ID_OFFSET + FodId.LICENSE_ID_LENGTH);
+        assertEquals(FodId.RANDOM_PAYLOAD_LENGTH,
+            FodId.MATCH_KEY_OFFSET + FodId.GUID_LENGTH);
     }
 
     @Test
@@ -190,11 +193,11 @@ public class FodIdTests {
 
         byte[] matchKey = fodId.getMatchKey();
         matchKey[0] = 0x00;
-        matchKey[FodId.HASH_LENGTH - 1] = 0x00;
+        matchKey[FodId.MATCH_KEY_LENGTH - 1] = 0x00;
 
         // Neither the underlying payload nor a fresh getMatchKey() is affected.
         assertEquals(
-            CANONICAL_MATCH_KEY[0], fodId.getPayload()[FodId.HASH_OFFSET]);
+            CANONICAL_MATCH_KEY[0], fodId.getPayload()[FodId.MATCH_KEY_OFFSET]);
         assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
     }
 
@@ -207,6 +210,16 @@ public class FodIdTests {
 
         assertArrayEquals(fodId.getMatchKey(), fodId.getHash());
         assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getHash());
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    public void hashConstants_DeprecatedAliases_MatchNewNames() {
+        // HASH_OFFSET and HASH_LENGTH stay as deprecated aliases so that
+        // callers written against the earlier names keep compiling and read
+        // the same values as the match key constants they now point at.
+        assertEquals(FodId.MATCH_KEY_OFFSET, FodId.HASH_OFFSET);
+        assertEquals(FodId.MATCH_KEY_LENGTH, FodId.HASH_LENGTH);
     }
 
     @Test
@@ -251,7 +264,7 @@ public class FodIdTests {
         assertEquals(CANONICAL_FLAGS, fodId.getFlags());
         assertEquals(CANONICAL_LICENSE_ID, fodId.getLicenseId());
         assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
-        assertEquals(FodId.HASH_LENGTH, fodId.getMatchKey().length);
+        assertEquals(FodId.MATCH_KEY_LENGTH, fodId.getMatchKey().length);
     }
 
     @Test
@@ -366,7 +379,7 @@ public class FodIdTests {
 
     @Test
     public void constructor_ReservedHeaderOnly_Parses() throws Exception {
-        byte[] payload = new byte[FodId.HASH_OFFSET];
+        byte[] payload = new byte[FodId.MATCH_KEY_OFFSET];
         payload[FodId.FLAGS_OFFSET] = (byte) 0b1100_0000;
 
         FodId fodId = FodId.fromBase64(factory.signedOwidBase64(payload));

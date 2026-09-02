@@ -74,7 +74,7 @@ final class FodIdTestFactory {
     }
 
     private static byte[] canonicalMatchKey() {
-        byte[] matchKey = new byte[FodId.HASH_LENGTH];
+        byte[] matchKey = new byte[FodId.MATCH_KEY_LENGTH];
         for (int i = 0; i < matchKey.length; i++) {
             matchKey[i] = (byte) (0x20 + i);
         }
@@ -87,7 +87,7 @@ final class FodIdTestFactory {
         writeCanonicalLicenseId(payload);
         System.arraycopy(
             CANONICAL_MATCH_KEY, 0, payload,
-            FodId.HASH_OFFSET, FodId.HASH_LENGTH);
+            FodId.MATCH_KEY_OFFSET, FodId.MATCH_KEY_LENGTH);
         return payload;
     }
 
@@ -96,7 +96,7 @@ final class FodIdTestFactory {
         payload[FodId.FLAGS_OFFSET] = (byte) ((1 << 6) | 0b001);
         writeCanonicalLicenseId(payload);
         for (int i = 0; i < FodId.GUID_LENGTH; i++) {
-            payload[FodId.HASH_OFFSET + i] = (byte) (0x40 + i);
+            payload[FodId.MATCH_KEY_OFFSET + i] = (byte) (0x40 + i);
         }
         return payload;
     }

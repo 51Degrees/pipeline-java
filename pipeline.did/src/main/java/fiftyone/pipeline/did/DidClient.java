@@ -487,7 +487,7 @@ public final class DidClient {
         }
         boolean isRandom = fodId.getType() == IdType.RANDOM;
         int baseLength = FodId.HEADER_LENGTH
-            + (isRandom ? FodId.GUID_LENGTH : FodId.HASH_LENGTH);
+            + (isRandom ? FodId.GUID_LENGTH : FodId.MATCH_KEY_LENGTH);
         if (fodId.getPayload().length < baseLength) {
             return SignatureCheck.MALFORMED_PAYLOAD;
         }
