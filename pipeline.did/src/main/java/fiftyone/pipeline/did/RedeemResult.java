@@ -57,8 +57,11 @@ public final class RedeemResult {
         /** The identifier carries no creator context to check. */
         NO_CONTEXT("nocontext"),
         /**
-         * The identifier carries a context the cloud could not check, for
-         * example one made under a secret the answering node does not hold.
+         * No longer sent by the service, and kept only because it has been
+         * public since this enum was added. What used to give this answer
+         * now gives {@link #MISCONFIGURED} where the service is at fault, or
+         * {@link #INVALID_DATE} where the identifier could not have been
+         * created.
          */
         NOT_CHECKABLE("notcheckable"),
         /** The sealed result was redeemed outside the freshness window. */
@@ -75,7 +78,26 @@ public final class RedeemResult {
          * First use could not be confirmed (answered with 503). Not a
          * verdict, and the caller may retry.
          */
-        UNCONFIRMED("unconfirmed");
+        UNCONFIRMED("unconfirmed"),
+        /**
+         * The service that checked the identifier could not complete the
+         * check, and the reason is that service rather than the identifier.
+         * It either compared nothing, or compared some factors and reports
+         * at least one as {@link Factor#MISCONFIGURED}.
+         *
+         * <p>Nothing a caller sends can produce this. Against 51Degrees
+         * public cloud it should not occur. Against a self-hosted service it
+         * means that service is not reading the client's own connection, or
+         * is missing an engine it needs, and its own logs name what to set.
+         */
+        MISCONFIGURED("misconfigured"),
+        /**
+         * The identifier's creation date is one the scheme could not have
+         * produced, being in the future or before the creator context scheme
+         * began. It says the identifier is fabricated rather than that
+         * anything is wrong with the service.
+         */
+        INVALID_DATE("invaliddate");
 
         private final String value;
 
@@ -142,15 +164,31 @@ public final class RedeemResult {
         /** The factor matches creation. */
         VERIFIED,
         /** The factor differs from creation. */
-        MISMATCH;
+        MISMATCH,
+        /**
+         * The service that checked the identifier is not configured to
+         * determine this factor, so it could not have checked it for any
+         * request. This is NOT a mismatch and must not be read as one, since
+         * the identifier says nothing about it either way.
+         */
+        MISCONFIGURED;
 
         /**
+         * Misconfigured is read on its own, because it is the one value that
+         * must not fall through to a mismatch. Everything else that is not
+         * the word {@code verified} is a mismatch, so an unexpected value
+         * never reads as a pass.
+         *
          * @param value the factor's string from the cloud
-         * @return {@link #VERIFIED} for {@code verified}, otherwise
-         *         {@link #MISMATCH}
+         * @return {@link #VERIFIED} for {@code verified},
+         *         {@link #MISCONFIGURED} for {@code misconfigured},
+         *         otherwise {@link #MISMATCH}
          */
         public static Factor fromValue(String value) {
-            return "verified".equals(value) ? VERIFIED : MISMATCH;
+            if ("verified".equals(value)) {
+                return VERIFIED;
+            }
+            return "misconfigured".equals(value) ? MISCONFIGURED : MISMATCH;
         }
     }
 
