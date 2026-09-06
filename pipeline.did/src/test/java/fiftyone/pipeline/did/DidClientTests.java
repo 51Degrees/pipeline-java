@@ -39,8 +39,13 @@ import java.time.ZoneOffset;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 
 import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayload;
 import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayloadWithSection;
@@ -141,7 +146,7 @@ public class DidClientTests {
     public void publicKeys_ReadsStartsAtAndIgnoresWeekStart() throws Exception {
         transport.queue(200, keyList("startsAt", true));
 
-        List<SigningKey> keys = client.publicKeys();
+        List<SigningKey> keys = client.publicKeys().join();
 
         assertEquals(3, keys.size());
         assertEquals(WEEK1, keys.get(0).getStartsAt());
@@ -161,7 +166,7 @@ public class DidClientTests {
     public void publicKeys_FallsBackToCreated() throws Exception {
         transport.queue(200, keyList("created", false));
 
-        List<SigningKey> keys = client.publicKeys();
+        List<SigningKey> keys = client.publicKeys().join();
 
         assertEquals(WEEK1, keys.get(0).getStartsAt());
         assertEquals(WEEK3, keys.get(2).getStartsAt());
@@ -175,7 +180,7 @@ public class DidClientTests {
         reversed.put(keyEntry("startsAt", WEEK2, key2));
         transport.queue(200, reversed.toString());
 
-        List<SigningKey> keys = client.publicKeys();
+        List<SigningKey> keys = client.publicKeys().join();
 
         assertEquals(WEEK1, keys.get(0).getStartsAt());
         assertEquals(WEEK2, keys.get(1).getStartsAt());
@@ -186,29 +191,29 @@ public class DidClientTests {
     public void publicKeys_SecondCallUsesTheCache() throws Exception {
         transport.queue(200, keyList("startsAt", false));
 
-        List<SigningKey> first = client.publicKeys();
-        List<SigningKey> second = client.publicKeys();
+        List<SigningKey> first = client.publicKeys().join();
+        List<SigningKey> second = client.publicKeys().join();
 
         assertSame(first, second);
         assertEquals(1, transport.requests.size());
     }
 
     @Test
-    public void publicKeys_FirstFetchFailureRaises() {
+    public void publicKeys_FirstFetchFailureFailsTheFuture() {
         transport.queue(500, "down");
 
-        DidHttpException error = assertThrows(DidHttpException.class,
-            () -> client.publicKeys());
+        DidHttpException error =
+            failure(DidHttpException.class, client.publicKeys());
 
         assertEquals(500, error.getStatusCode());
         assertEquals("down", error.getBody());
     }
 
     @Test
-    public void publicKeys_UnreadableListRaises() {
+    public void publicKeys_UnreadableListFailsTheFuture() {
         transport.queue(200, "[{\"publicKey\":\"x\"}]");
 
-        assertThrows(DidHttpException.class, () -> client.publicKeys());
+        failure(DidHttpException.class, client.publicKeys());
     }
 
     @Test
@@ -217,7 +222,7 @@ public class DidClientTests {
         FodId fodId = key2.fodIdAt(
             canonicalPayload(), WEEK2.plus(Duration.ofDays(3)));
 
-        SigningKey key = client.publicKeyFor(fodId);
+        SigningKey key = client.publicKeyFor(fodId).join();
 
         assertEquals(WEEK2, key.getStartsAt());
         assertEquals(1, transport.requests.size());
@@ -228,11 +233,11 @@ public class DidClientTests {
             throws Exception {
         transport.queue(200, keyList("startsAt", false));
         transport.queue(200, keyList("startsAt", false));
-        client.publicKeys();
+        client.publicKeys().join();
         FodId fodId = key3.fodIdAt(
             canonicalPayload(), WEEK3.plus(Duration.ofDays(8)));
 
-        SigningKey key = client.publicKeyFor(fodId);
+        SigningKey key = client.publicKeyFor(fodId).join();
 
         assertEquals(WEEK3, key.getStartsAt());
         assertEquals(2, transport.requests.size());
@@ -248,7 +253,7 @@ public class DidClientTests {
         FodId fodId = key3.fodIdAt(
             canonicalPayload(), WEEK3.plus(Duration.ofDays(8)));
 
-        SigningKey key = client.publicKeyFor(fodId);
+        SigningKey key = client.publicKeyFor(fodId).join();
 
         assertEquals(WEEK3, key.getStartsAt());
         assertEquals(1, transport.requests.size());
@@ -259,11 +264,11 @@ public class DidClientTests {
             throws Exception {
         transport.queue(200, keyList("startsAt", false));
         transport.queue(200, keyList("startsAt", false));
-        client.publicKeys();
+        client.publicKeys().join();
         FodId fodId = key1.fodIdAt(
             canonicalPayload(), WEEK1.minus(Duration.ofDays(1)));
 
-        SigningKey key = client.publicKeyFor(fodId);
+        SigningKey key = client.publicKeyFor(fodId).join();
 
         assertNull(key);
         assertEquals(2, transport.requests.size());
@@ -277,9 +282,9 @@ public class DidClientTests {
         FodId fodId = key2.fodIdAt(
             canonicalPayload(), WEEK2.plus(Duration.ofDays(1)));
 
-        client.publicKeyFor(fodId);
+        client.publicKeyFor(fodId).join();
         clock.advance(Duration.ofHours(25));
-        client.publicKeyFor(fodId);
+        client.publicKeyFor(fodId).join();
 
         assertEquals(2, transport.requests.size());
     }
@@ -290,28 +295,74 @@ public class DidClientTests {
         FodId fodId = key2.fodIdAt(
             canonicalPayload(), WEEK2.plus(Duration.ofDays(1)));
 
-        client.publicKeyFor(fodId);
+        client.publicKeyFor(fodId).join();
         clock.advance(Duration.ofHours(23));
-        client.publicKeyFor(fodId);
+        client.publicKeyFor(fodId).join();
 
         assertEquals(1, transport.requests.size());
     }
 
     @Test
-    public void publicKeyFor_RefetchFailureRaises()
+    public void publicKeyFor_RefetchFailureFailsTheFuture()
             throws Exception {
         transport.queue(200, keyList("startsAt", false));
         FodId fodId = key2.fodIdAt(
             canonicalPayload(), WEEK2.plus(Duration.ofDays(1)));
-        client.publicKeyFor(fodId);
+        client.publicKeyFor(fodId).join();
         clock.advance(Duration.ofHours(25));
 
         // Nothing queued, so the refetch fails with an I/O error.
-        IOException error = assertThrows(IOException.class,
-            () -> client.publicKeyFor(fodId));
+        IOException error =
+            failure(IOException.class, client.publicKeyFor(fodId));
 
         assertTrue(error.getMessage().contains("Nothing queued"));
         assertEquals(2, transport.requests.size());
+    }
+
+    @Test
+    public void publicKeys_ConcurrentCallersShareOneFetch() {
+        // The transport answers only when this test says so, so both
+        // calls are certainly in flight at the same time. Nothing joins
+        // a future before the answer is given, so nothing waits here.
+        HeldTransport held = new HeldTransport();
+        DidClient shared = DidClient.builder("resource")
+            .endpoint(ENDPOINT).transport(held).clock(clock).build();
+
+        CompletableFuture<List<SigningKey>> first = shared.publicKeys();
+        CompletableFuture<List<SigningKey>> second = shared.publicKeys();
+
+        assertEquals(1, held.requests.size());
+        assertFalse(first.isDone());
+        assertFalse(second.isDone());
+
+        held.answer(200, keyList("startsAt", false));
+
+        assertSame(first.join(), second.join());
+        // The fetch is over, so the next caller is answered from the
+        // held list rather than from a fetch that is no longer running.
+        assertSame(first.join(), shared.publicKeys().join());
+        assertEquals(1, held.requests.size());
+    }
+
+    @Test
+    public void publicKeys_AFailedSharedFetchFailsEveryCallerWaiting() {
+        HeldTransport held = new HeldTransport();
+        DidClient shared = DidClient.builder("resource")
+            .endpoint(ENDPOINT).transport(held).clock(clock).build();
+
+        CompletableFuture<List<SigningKey>> first = shared.publicKeys();
+        CompletableFuture<List<SigningKey>> second = shared.publicKeys();
+        held.fail(new IOException("the cloud could not be reached"));
+
+        failure(IOException.class, first);
+        failure(IOException.class, second);
+
+        // Nothing is held, so the next caller starts a fetch of its own
+        // rather than being given the failed one.
+        CompletableFuture<List<SigningKey>> third = shared.publicKeys();
+        assertEquals(2, held.requests.size());
+        held.answer(200, keyList("startsAt", false));
+        assertEquals(3, third.join().size());
     }
 
     // ----- Selection -----
@@ -370,9 +421,9 @@ public class DidClientTests {
         FodId fodId = key2.fodIdAt(
             canonicalPayload(), WEEK2.plus(Duration.ofDays(1)));
 
-        assertTrue(client.verifySignature(fodId));
+        assertTrue(client.verifySignature(fodId).join());
         assertEquals(DidClient.SignatureCheck.VERIFIED,
-            client.verifySignatureDetailed(fodId));
+            client.verifySignatureDetailed(fodId).join());
     }
 
     @Test
@@ -382,9 +433,9 @@ public class DidClientTests {
         FodId fodId = unpublished.fodIdAt(
             canonicalPayload(), WEEK2.plus(Duration.ofDays(1)));
 
-        assertFalse(client.verifySignature(fodId));
+        assertFalse(client.verifySignature(fodId).join());
         assertEquals(DidClient.SignatureCheck.INVALID,
-            client.verifySignatureDetailed(fodId));
+            client.verifySignatureDetailed(fodId).join());
     }
 
     @Test
@@ -396,21 +447,21 @@ public class DidClientTests {
         FodId fodId = key1.fodIdAt(
             canonicalPayload(), WEEK2.plus(Duration.ofDays(1)));
 
-        assertFalse(client.verifySignature(fodId));
+        assertFalse(client.verifySignature(fodId).join());
     }
 
     @Test
-    public void verifySignature_RefetchFailureRaisesRatherThanFalse()
+    public void verifySignature_RefetchFailureFailsRatherThanAnsweringFalse()
             throws Exception {
         transport.queue(200, keyList("startsAt", false));
-        client.publicKeys();
+        client.publicKeys().join();
         FodIdTestFactory missingKey = new FodIdTestFactory();
         FodId fodId = missingKey.fodIdAt(
             canonicalPayload(), WEEK3.plus(Duration.ofDays(8)));
 
         // The held schedule cannot contain the correct key, and the
         // required refetch has no queued answer.
-        assertThrows(IOException.class, () -> client.verifySignature(fodId));
+        failure(IOException.class, client.verifySignature(fodId));
         assertEquals(2, transport.requests.size());
     }
 
@@ -423,8 +474,8 @@ public class DidClientTests {
         FodId outside = key1.fodIdAt(
             canonicalPayload(), WEEK2.plus(WELL_OUTSIDE));
 
-        assertTrue(client.verifySignature(inside));
-        assertFalse(client.verifySignature(outside));
+        assertTrue(client.verifySignature(inside).join());
+        assertFalse(client.verifySignature(outside).join());
     }
 
     @Test
@@ -436,8 +487,8 @@ public class DidClientTests {
         FodId outside = key2.fodIdAt(
             canonicalPayload(), WEEK2.minus(WELL_OUTSIDE));
 
-        assertTrue(client.verifySignature(inside));
-        assertFalse(client.verifySignature(outside));
+        assertTrue(client.verifySignature(inside).join());
+        assertFalse(client.verifySignature(outside).join());
     }
 
     @Test
@@ -449,8 +500,8 @@ public class DidClientTests {
             canonicalPayload(), WEEK1.minus(Duration.ofDays(1)));
 
         assertEquals(DidClient.SignatureCheck.NO_KEY_COVERS_DATE,
-            client.verifySignatureDetailed(fodId));
-        assertFalse(client.verifySignature(fodId));
+            client.verifySignatureDetailed(fodId).join());
+        assertFalse(client.verifySignature(fodId).join());
     }
 
     @Test
@@ -462,8 +513,8 @@ public class DidClientTests {
 
         assertEquals(Version.VERSION2, fodId.getVersion());
         assertEquals(DidClient.SignatureCheck.UNSUPPORTED_VERSION,
-            client.verifySignatureDetailed(fodId));
-        assertFalse(client.verifySignature(fodId));
+            client.verifySignatureDetailed(fodId).join());
+        assertFalse(client.verifySignature(fodId).join());
     }
 
     @Test
@@ -476,8 +527,8 @@ public class DidClientTests {
         FodId fodId = key2.fodIdAt(payload, WEEK2.plus(Duration.ofDays(1)));
 
         assertEquals(DidClient.SignatureCheck.MALFORMED_PAYLOAD,
-            client.verifySignatureDetailed(fodId));
-        assertFalse(client.verifySignature(fodId));
+            client.verifySignatureDetailed(fodId).join());
+        assertFalse(client.verifySignature(fodId).join());
         // Refused on shape before any key is needed.
         assertEquals(0, transport.requests.size());
     }
@@ -488,7 +539,7 @@ public class DidClientTests {
         FodId fodId = key2.fodIdAt(
             canonicalPayloadWithSection(25), WEEK2.plus(Duration.ofDays(1)));
 
-        assertTrue(client.verifySignature(fodId));
+        assertTrue(client.verifySignature(fodId).join());
     }
 
     @Test
@@ -504,7 +555,7 @@ public class DidClientTests {
             WEEK2.plus(Duration.ofDays(1)),
             "a-rather-long-self-hosted-creator.example.internal.51degrees.com");
 
-        assertTrue(client.verifySignature(fodId));
+        assertTrue(client.verifySignature(fodId).join());
     }
 
     @Test
@@ -514,7 +565,7 @@ public class DidClientTests {
             canonicalRandomPayload(), WEEK2.plus(Duration.ofDays(1)));
 
         assertEquals(IdType.RANDOM, fodId.getType());
-        assertTrue(client.verifySignature(fodId));
+        assertTrue(client.verifySignature(fodId).join());
     }
 
     // ----- Cloud signature verification -----
@@ -524,7 +575,7 @@ public class DidClientTests {
         transport.queue(200, "{\"valid\":true}");
         FodId fodId = key2.fodIdAt(canonicalPayload(), WEEK2);
 
-        assertTrue(client.verify(fodId));
+        assertTrue(client.verify(fodId).join());
 
         HttpTransport.Request request = transport.last();
         assertEquals("GET", request.getMethod());
@@ -539,8 +590,8 @@ public class DidClientTests {
     public void verify_OverLongStringIsRefusedBeforeTransport() {
         // Nothing this long can be an identifier, so it is turned away
         // before the client decodes it, fetches a key or calls the cloud.
-        assertThrows(IllegalArgumentException.class,
-            () -> client.verify(repeat('A', 8192)));
+        failure(IllegalArgumentException.class,
+            client.verify(repeat('A', 8192)));
 
         assertEquals(0, transport.requests.size());
     }
@@ -550,8 +601,7 @@ public class DidClientTests {
             throws Exception {
         FodId fodId = overLongFodId(key2, WEEK2);
 
-        assertThrows(IllegalArgumentException.class,
-            () -> client.verify(fodId));
+        failure(IllegalArgumentException.class, client.verify(fodId));
 
         assertEquals(0, transport.requests.size());
     }
@@ -560,37 +610,37 @@ public class DidClientTests {
     public void verify_InvalidAnswers400False() throws Exception {
         transport.queue(400, "{\"valid\":false}");
 
-        assertFalse(client.verify(validDid));
+        assertFalse(client.verify(validDid).join());
     }
 
     @Test
-    public void verify_ErrorsAnswer400Raises() {
+    public void verify_ErrorsAnswer400FailsWithArgumentError() {
         // The cloud's own rejection of an identifier that read locally still
         // maps to the argument failure, with the cloud's message.
         transport.queue(400, "{\"errors\":[\"Value for 51did is not a valid "
             + "Base64-encoded 51Did.\"]}");
 
-        IllegalArgumentException error = assertThrows(
-            IllegalArgumentException.class, () -> client.verify(validDid));
+        IllegalArgumentException error = failure(
+            IllegalArgumentException.class, client.verify(validDid));
 
         assertTrue(error.getMessage().contains("not a valid"));
         assertEquals(1, transport.requests.size());
     }
 
     @Test
-    public void verify_OtherStatusRaisesWithStatusAndBody() {
+    public void verify_OtherStatusFailsWithStatusAndBody() {
         transport.queue(401, "{\"errors\":[\"bad key\"]}");
 
-        DidHttpException error = assertThrows(DidHttpException.class,
-            () -> client.verify(validDid));
+        DidHttpException error =
+            failure(DidHttpException.class, client.verify(validDid));
 
         assertEquals(401, error.getStatusCode());
         assertTrue(error.getBody().contains("bad key"));
     }
 
     @Test
-    public void verify_TransportFailureRaisesIoException() {
-        assertThrows(IOException.class, () -> client.verify(validDid));
+    public void verify_TransportFailureFailsWithIoException() {
+        failure(IOException.class, client.verify(validDid));
     }
 
     // ----- Redeem -----
@@ -606,7 +656,8 @@ public class DidClientTests {
         transport.queue(200, body);
         FodId fodId = key2.fodIdAt(canonicalPayload(), WEEK2);
 
-        RedeemResult result = client.redeem(fodId, "sealed", "abc");
+        RedeemResult result =
+            client.redeem(fodId, "sealed", "abc").join();
 
         assertEquals(RedeemResult.Context.MISMATCH, result.getContext());
         assertEquals("mismatch", result.getContextValue());
@@ -647,7 +698,8 @@ public class DidClientTests {
             + "\"verifiedAt\":\"2026-08-07T09:15:32Z\","
             + "\"secondsSinceVerified\":0}");
 
-        RedeemResult result = client.redeem(validDid, "sealed", "abc");
+        RedeemResult result =
+            client.redeem(validDid, "sealed", "abc").join();
 
         assertEquals(RedeemResult.Context.VERIFIED, result.getContext());
         assertEquals(RedeemResult.Signature.VERIFIED, result.getSignature());
@@ -664,7 +716,8 @@ public class DidClientTests {
             + "\"verifiedAt\":\"2026-08-07T09:15:32Z\","
             + "\"secondsSinceVerified\":1}");
 
-        RedeemResult result = client.redeem(validDid, "sealed", "abc");
+        RedeemResult result =
+            client.redeem(validDid, "sealed", "abc").join();
 
         assertEquals(RedeemResult.Signature.INVALID, result.getSignature());
     }
@@ -675,7 +728,8 @@ public class DidClientTests {
             + "\"verifiedAt\":\"2026-08-07T09:15:32Z\","
             + "\"secondsSinceVerified\":14}");
 
-        RedeemResult result = client.redeem(validDid, "sealed", "abc");
+        RedeemResult result =
+            client.redeem(validDid, "sealed", "abc").join();
 
         assertEquals(RedeemResult.Context.EXPIRED, result.getContext());
         assertEquals(RedeemResult.Signature.UNKNOWN, result.getSignature());
@@ -689,7 +743,8 @@ public class DidClientTests {
     public void redeem_Replayed() throws Exception {
         transport.queue(200, "{\"context\":\"replayed\"}");
 
-        RedeemResult result = client.redeem(validDid, "sealed", "abc");
+        RedeemResult result =
+            client.redeem(validDid, "sealed", "abc").join();
 
         assertEquals(RedeemResult.Context.REPLAYED, result.getContext());
         assertNull(result.getVerifiedAt());
@@ -700,7 +755,8 @@ public class DidClientTests {
     public void redeem_Unreadable() throws Exception {
         transport.queue(200, "{\"context\":\"unreadable\"}");
 
-        RedeemResult result = client.redeem(validDid, "sealed", "abc");
+        RedeemResult result =
+            client.redeem(validDid, "sealed", "abc").join();
 
         assertEquals(RedeemResult.Context.UNREADABLE, result.getContext());
         assertEquals(RedeemResult.Signature.UNKNOWN, result.getSignature());
@@ -710,7 +766,8 @@ public class DidClientTests {
     public void redeem_503Unconfirmed() throws Exception {
         transport.queue(503, "{\"context\":\"unconfirmed\"}");
 
-        RedeemResult result = client.redeem(validDid, "sealed", "abc");
+        RedeemResult result =
+            client.redeem(validDid, "sealed", "abc").join();
 
         assertEquals(RedeemResult.Context.UNCONFIRMED, result.getContext());
         assertEquals(503, result.getStatusCode());
@@ -721,7 +778,8 @@ public class DidClientTests {
             throws Exception {
         transport.queue(200, "{\"context\":\"something-new\"}");
 
-        RedeemResult result = client.redeem(validDid, "sealed", "abc");
+        RedeemResult result =
+            client.redeem(validDid, "sealed", "abc").join();
 
         assertEquals(RedeemResult.Context.UNREADABLE, result.getContext());
         assertEquals("something-new", result.getContextValue());
@@ -731,20 +789,21 @@ public class DidClientTests {
     public void redeem_MissingContextFailsClosed() throws Exception {
         transport.queue(200, "{}");
 
-        RedeemResult result = client.redeem(validDid, "sealed", "abc");
+        RedeemResult result =
+            client.redeem(validDid, "sealed", "abc").join();
 
         assertEquals(RedeemResult.Context.UNREADABLE, result.getContext());
         assertEquals("unreadable", result.getContextValue());
     }
 
     @Test
-    public void redeem_400ErrorsRaisesArgumentError() {
+    public void redeem_400ErrorsFailsWithArgumentError() {
         transport.queue(400, "{\"errors\":[\"'x' is not a valid "
             + "Base64-encoded 51Did.\"]}");
 
-        IllegalArgumentException error = assertThrows(
+        IllegalArgumentException error = failure(
             IllegalArgumentException.class,
-            () -> client.redeem(validDid, "sealed", "abc"));
+            client.redeem(validDid, "sealed", "abc"));
 
         assertTrue(error.getMessage().contains("not a valid"));
         assertEquals(1, transport.requests.size());
@@ -755,21 +814,21 @@ public class DidClientTests {
             throws Exception {
         FodId fodId = overLongFodId(key2, WEEK2);
 
-        assertThrows(IllegalArgumentException.class,
-            () -> client.redeem(repeat('A', 8192), "sealed", "abc"));
-        assertThrows(IllegalArgumentException.class,
-            () -> client.redeem(fodId, "sealed", "abc"));
+        failure(IllegalArgumentException.class,
+            client.redeem(repeat('A', 8192), "sealed", "abc"));
+        failure(IllegalArgumentException.class,
+            client.redeem(fodId, "sealed", "abc"));
 
         assertEquals(0, transport.requests.size());
     }
 
     @Test
-    public void redeem_404RaisesNotSupported() {
+    public void redeem_404FailsWithNotSupported() {
         transport.queue(404, "Not Found");
 
-        DidNotSupportedException error = assertThrows(
+        DidNotSupportedException error = failure(
             DidNotSupportedException.class,
-            () -> client.redeem(validDid, "sealed", "abc"));
+            client.redeem(validDid, "sealed", "abc"));
 
         assertEquals(404, error.getStatusCode());
         assertEquals("Not Found", error.getBody());
@@ -777,30 +836,30 @@ public class DidClientTests {
     }
 
     @Test
-    public void redeem_OtherStatusRaisesWithStatusAndBody() {
+    public void redeem_OtherStatusFailsWithStatusAndBody() {
         transport.queue(500, "boom");
 
-        DidHttpException error = assertThrows(DidHttpException.class,
-            () -> client.redeem(validDid, "sealed", "abc"));
+        DidHttpException error = failure(DidHttpException.class,
+            client.redeem(validDid, "sealed", "abc"));
 
         assertEquals(500, error.getStatusCode());
         assertEquals("boom", error.getBody());
     }
 
     @Test
-    public void redeem_NonJson200Raises() {
+    public void redeem_NonJson200FailsWithHttpError() {
         transport.queue(200, "<html>proxy</html>");
 
-        DidHttpException error = assertThrows(DidHttpException.class,
-            () -> client.redeem(validDid, "sealed", "abc"));
+        DidHttpException error = failure(DidHttpException.class,
+            client.redeem(validDid, "sealed", "abc"));
 
         assertEquals(200, error.getStatusCode());
     }
 
     @Test
-    public void redeem_TransportFailureRaisesIoException() {
-        assertThrows(IOException.class,
-            () -> client.redeem(validDid, "sealed", "abc"));
+    public void redeem_TransportFailureFailsWithIoException() {
+        failure(IOException.class,
+            client.redeem(validDid, "sealed", "abc"));
     }
 
     @Test
@@ -809,7 +868,7 @@ public class DidClientTests {
             .endpoint(ENDPOINT).transport(transport).build();
         transport.queue(200, "{\"context\":\"unreadable\"}");
 
-        noLicence.redeem(validDid, "sealed", null);
+        noLicence.redeem(validDid, "sealed", null).join();
 
         String form = new String(
             transport.last().getBody(), StandardCharsets.UTF_8);
@@ -825,7 +884,7 @@ public class DidClientTests {
         String standard = key2.fodIdAt(canonicalPayload(), WEEK2).asBase64();
         assertTrue(standard.endsWith("="));
 
-        client.redeem(standard, "a b&c", "x=y");
+        client.redeem(standard, "a b&c", "x=y").join();
 
         String form = new String(
             transport.last().getBody(), StandardCharsets.UTF_8);
@@ -842,9 +901,9 @@ public class DidClientTests {
     public void verify_MalformedStringIsRefusedBeforeTransport() {
         // Not base64 at all, so the OWID reader's own status is the reason,
         // and neither a key fetch nor the verify call happens.
-        IllegalArgumentException error = assertThrows(
+        IllegalArgumentException error = failure(
             IllegalArgumentException.class,
-            () -> client.verify("This is not a 51Did!"));
+            client.verify("This is not a 51Did!"));
 
         assertTrue(error.getMessage(),
             error.getMessage().contains("INVALID_BASE64"));
@@ -857,8 +916,8 @@ public class DidClientTests {
         // A genuine envelope whose payload cannot carry the 51Did header.
         String tooShort = key2.signedOwidAt(new byte[3], WEEK2).asBase64();
 
-        IllegalArgumentException error = assertThrows(
-            IllegalArgumentException.class, () -> client.verify(tooShort));
+        IllegalArgumentException error = failure(
+            IllegalArgumentException.class, client.verify(tooShort));
 
         assertTrue(error.getMessage(),
             error.getMessage().contains("PAYLOAD_TOO_SHORT"));
@@ -872,11 +931,11 @@ public class DidClientTests {
             Arrays.copyOf(canonicalRandomPayload(),
                 FodId.RANDOM_PAYLOAD_LENGTH - 1), WEEK2).asBase64();
 
-        assertThrows(IllegalArgumentException.class,
-            () -> client.redeem("This is not a 51Did!", "sealed", "abc"));
-        IllegalArgumentException error = assertThrows(
+        failure(IllegalArgumentException.class,
+            client.redeem("This is not a 51Did!", "sealed", "abc"));
+        IllegalArgumentException error = failure(
             IllegalArgumentException.class,
-            () -> client.redeem(tooShort, "sealed", "abc"));
+            client.redeem(tooShort, "sealed", "abc"));
 
         assertTrue(error.getMessage(),
             error.getMessage().contains("INVALID_TYPE_PAYLOAD_LENGTH"));
@@ -892,7 +951,7 @@ public class DidClientTests {
         String longer = key2.fodIdAt(
             canonicalPayloadWithSection(600), WEEK2).asBase64Url();
 
-        assertTrue(client.verify(longer));
+        assertTrue(client.verify(longer).join());
 
         assertEquals(1, transport.requests.size());
     }
@@ -911,23 +970,88 @@ public class DidClientTests {
         assertEquals(FodIdParseStatus.PARSED, read.getStatus());
 
         assertEquals(DidClient.SignatureCheck.INVALID,
-            client.verifySignatureDetailed(read.getValue()));
-        assertFalse(client.verifySignature(read.getValue()));
+            client.verifySignatureDetailed(read.getValue()).join());
+        assertFalse(client.verifySignature(read.getValue()).join());
     }
 
     @Test
-    public void verifySignature_FirstKeyFetchFailureRaisesRatherThanFalse()
+    public void verifySignature_FirstKeyFetchFailureFailsRatherThanAnsweringFalse()
             throws Exception {
         // Nothing queued, so the key list cannot be fetched. That is an
         // error, never a verdict on the signature.
         FodId fodId = key2.fodIdAt(canonicalPayload(), WEEK2);
 
-        assertThrows(IOException.class, () -> client.verifySignature(fodId));
-        assertThrows(IOException.class,
-            () -> client.verifySignatureDetailed(fodId));
+        failure(IOException.class, client.verifySignature(fodId));
+        failure(IOException.class, client.verifySignatureDetailed(fodId));
+    }
+
+    // ----- The default transport -----
+
+    @Test
+    public void defaultTransport_RunsTheExchangeOnTheBuildersExecutor() {
+        // The executor keeps the work rather than running it, so the
+        // exchange never happens and the test needs no network. What it
+        // shows is that the work was handed over at all, because the
+        // calling thread must not do the blocking.
+        Held work = new Held();
+        DidClient onHold = DidClient.builder("resource")
+            .endpoint(ENDPOINT).executor(work).build();
+
+        CompletableFuture<List<SigningKey>> keys = onHold.publicKeys();
+
+        assertEquals(1, work.tasks.size());
+        assertFalse(keys.isDone());
+    }
+
+    @Test
+    public void defaultTransport_ReportsAFailedExchangeThroughTheFuture() {
+        Held work = new Held();
+        HttpTransport blocking =
+            new DidClient.UrlConnectionTransport(work);
+
+        CompletableFuture<HttpTransport.Response> answer = blocking.send(
+            new HttpTransport.Request("GET", "no-such-scheme://host/",
+                Collections.<String, String>emptyMap(), null));
+
+        assertFalse(answer.isDone());
+        work.tasks.get(0).run();
+
+        // An unknown scheme is a MalformedURLException, which is an
+        // IOException, and it arrives through the future rather than
+        // being thrown at whoever called send.
+        failure(IOException.class, answer);
+    }
+
+    @Test
+    public void defaultTransport_ReportsARefusedExecutorThroughTheFuture() {
+        HttpTransport blocking = new DidClient.UrlConnectionTransport(
+            work -> {
+                throw new RejectedExecutionException("the pool is closed");
+            });
+
+        CompletableFuture<HttpTransport.Response> answer = blocking.send(
+            new HttpTransport.Request("GET", ENDPOINT,
+                Collections.<String, String>emptyMap(), null));
+
+        failure(RejectedExecutionException.class, answer);
     }
 
     // ----- Helpers -----
+
+    /**
+     * The failure a future reports, taken from the cause of the
+     * {@link CompletionException} that {@code join} reports it as, which
+     * is how every failure of this client reaches a caller.
+     */
+    private static <T extends Throwable> T failure(
+            Class<T> type, CompletableFuture<?> answer) {
+        CompletionException reported =
+            assertThrows(CompletionException.class, answer::join);
+        Throwable cause = reported.getCause();
+        assertNotNull("No cause on " + reported, cause);
+        assertTrue(cause.toString(), type.isInstance(cause));
+        return type.cast(cause);
+    }
 
     /**
      * An identifier whose encoded form is longer than the client will take
@@ -995,12 +1119,53 @@ public class DidClientTests {
         }
 
         @Override
-        public Response send(Request request) throws IOException {
+        public CompletableFuture<Response> send(Request request) {
             requests.add(request);
+            CompletableFuture<Response> answer =
+                new CompletableFuture<Response>();
             if (responses.isEmpty()) {
-                throw new IOException("Nothing queued for " + request.getUrl());
+                answer.completeExceptionally(
+                    new IOException("Nothing queued for " + request.getUrl()));
+            } else {
+                answer.complete(responses.removeFirst());
             }
-            return responses.removeFirst();
+            return answer;
+        }
+    }
+
+    /** A transport whose answers the test gives by hand. */
+    static final class HeldTransport implements HttpTransport {
+
+        final List<Request> requests = new ArrayList<Request>();
+        private final Deque<CompletableFuture<Response>> pending =
+            new ArrayDeque<CompletableFuture<Response>>();
+
+        @Override
+        public CompletableFuture<Response> send(Request request) {
+            requests.add(request);
+            CompletableFuture<Response> answer =
+                new CompletableFuture<Response>();
+            pending.add(answer);
+            return answer;
+        }
+
+        void answer(int status, String body) {
+            pending.removeFirst().complete(new Response(status, body));
+        }
+
+        void fail(Throwable failure) {
+            pending.removeFirst().completeExceptionally(failure);
+        }
+    }
+
+    /** An executor that keeps the work rather than running it. */
+    static final class Held implements Executor {
+
+        final List<Runnable> tasks = new ArrayList<Runnable>();
+
+        @Override
+        public void execute(Runnable work) {
+            tasks.add(work);
         }
     }
 

@@ -40,6 +40,8 @@
  * 51Degrees cloud: it fetches and holds the published signing keys, verifies
  * a 51Did's signature offline or through the cloud, and redeems a sealed
  * creator context result into a typed
- * {@link fiftyone.pipeline.did.RedeemResult}.
+ * {@link fiftyone.pipeline.did.RedeemResult}. Every call that may reach
+ * the cloud returns at once and answers through a
+ * {@link java.util.concurrent.CompletableFuture}.
  */
 package fiftyone.pipeline.did;

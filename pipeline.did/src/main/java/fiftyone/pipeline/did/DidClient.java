@@ -51,6 +51,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The client for everything a server does with a 51Did against the
@@ -68,6 +76,16 @@ import java.util.Objects;
  * context result, with the licence key, and returns a typed
  * {@link RedeemResult}.</li>
  * </ol>
+ * Every one of those may reach the cloud, so every one of them returns at
+ * once with a {@link CompletableFuture} and never blocks the calling
+ * thread. Nothing the client refuses is thrown either, so that a caller has
+ * one place to look, and a failure arrives as the cause of a
+ * {@link CompletionException} through {@code join()},
+ * {@code exceptionally}, {@code handle} or {@code whenComplete}, and as the
+ * cause of an {@code ExecutionException} through {@code get()}. The methods
+ * that answer from what the client already holds, {@link #getResourceKey()},
+ * {@link #getEndpoint()} and {@link #hasLicenceKey()}, answer directly.
+ * <p>
  * Creating a 51Did is not part of this client. Creation is the cloud
  * {@code json} endpoint through the cloud request engine and pipeline, and
  * a page creates from the browser because the identifier describes the
@@ -82,6 +100,8 @@ import java.util.Objects;
  * <p>
  * One instance is safe to share across threads. The key list is kept per
  * instance, so share the instance rather than creating one per request.
+ * Callers that arrive while the key list is being fetched wait on that one
+ * fetch rather than starting another.
  */
 public final class DidClient {
 
@@ -138,6 +158,8 @@ public final class DidClient {
     private final Object lock = new Object();
     private List<SigningKey> keys;
     private Instant keysFetchedAt;
+    /** The key list fetch under way, shared by every caller waiting. */
+    private CompletableFuture<List<SigningKey>> inFlight;
 
     /**
      * A client for the public cloud, or the host named by
@@ -181,14 +203,17 @@ public final class DidClient {
         this.licenceKey = blankToNull(builder.licenceKey);
         this.endpoint = resolveEndpoint(builder.endpoint);
         this.transport = builder.transport == null
-            ? new UrlConnectionTransport()
+            ? new UrlConnectionTransport(builder.executor == null
+                ? SharedPool.INSTANCE
+                : builder.executor)
             : builder.transport;
         this.clock = builder.clock == null ? Clock.systemUTC() : builder.clock;
     }
 
     /**
      * Starts a builder for the cases the constructors do not cover, being
-     * an HTTP transport of the caller's own or, in tests, a clock.
+     * an HTTP transport of the caller's own, the executor the default
+     * transport runs on or, in tests, a clock.
      *
      * @param resourceKey the page's resource key, public by nature
      * @return the builder
@@ -204,6 +229,7 @@ public final class DidClient {
         private String licenceKey;
         private String endpoint;
         private HttpTransport transport;
+        private Executor executor;
         private Clock clock;
 
         private Builder(String resourceKey) {
@@ -246,6 +272,21 @@ public final class DidClient {
         }
 
         /**
+         * The executor the default transport runs its blocking exchanges
+         * on. It does nothing when a transport of your own is given,
+         * because that transport schedules its own work, so give one or
+         * the other and not both.
+         *
+         * @param executor the executor to run blocking exchanges on, or
+         *                 null for a small shared pool of daemon threads
+         * @return this builder
+         */
+        public Builder executor(Executor executor) {
+            this.executor = executor;
+            return this;
+        }
+
+        /**
          * @param clock the clock the key list's age is measured by, or null
          *              for the system clock
          * @return this builder
@@ -281,17 +322,19 @@ public final class DidClient {
     /**
      * The cloud's published signing keys, fetched on first use and then
      * held, in order of start. Keys are published ahead of their start, so
-     * the list normally reaches months into the future.
+     * the list normally reaches months into the future. A fetch already
+     * under way is shared rather than repeated.
      *
-     * @return the keys, read only
-     * @throws IOException if the list is not held and cannot be fetched
+     * @return the keys, read only, or a future failed with
+     *         {@link IOException} where the list is not held and cannot be
+     *         fetched
      */
-    public List<SigningKey> publicKeys() throws IOException {
+    public CompletableFuture<List<SigningKey>> publicKeys() {
         synchronized (lock) {
             if (keys == null) {
-                fetchKeys();
+                return fetchKeys();
             }
-            return keys;
+            return CompletableFuture.completedFuture(keys);
         }
     }
 
@@ -305,28 +348,70 @@ public final class DidClient {
      * this very call is not fetched again, because it cannot get better.
      *
      * @param fodId the identifier
-     * @return the key in force, or null when the date precedes every key
-     * @throws IOException if the required key list cannot be fetched
+     * @return the key in force, or null where the date precedes every key,
+     *         or a future failed with {@link IOException} where the
+     *         required key list cannot be fetched
      */
-    public SigningKey publicKeyFor(FodId fodId) throws IOException {
-        Objects.requireNonNull(fodId, "fodId");
-        Instant date = fodId.getDate();
-        return inForceAt(keysFor(date), date);
+    public CompletableFuture<SigningKey> publicKeyFor(FodId fodId) {
+        try {
+            Objects.requireNonNull(fodId, "fodId");
+            Instant date = fodId.getDate();
+            return keysFor(date).thenApply(held -> inForceAt(held, date));
+        } catch (RuntimeException refused) {
+            return failed(refused);
+        }
     }
 
     /**
-     * Fetches the key list and records when. A failure propagates to the
-     * caller and leaves whatever was held in place.
+     * Fetches the key list, records when it was fetched, and hands every
+     * caller that arrives while it is under way the same future, so one
+     * fetch answers them all. A failure leaves whatever was held in place.
+     * Called with the lock held.
      */
-    private void fetchKeys() throws IOException {
+    private CompletableFuture<List<SigningKey>> fetchKeys() {
+        if (inFlight != null) {
+            return inFlight;
+        }
+        CompletableFuture<List<SigningKey>> promise =
+            new CompletableFuture<List<SigningKey>>();
+        inFlight = promise;
         String url = endpoint + "id/key/" + encode(resourceKey);
-        HttpTransport.Response response = send("GET", url, null);
+        send("GET", url, null).whenComplete((response, failure) -> {
+            List<SigningKey> fetched = null;
+            Throwable error = unwrap(failure);
+            if (error == null) {
+                try {
+                    fetched = readKeys(response);
+                } catch (DidHttpException unreadable) {
+                    error = unreadable;
+                }
+            }
+            synchronized (lock) {
+                inFlight = null;
+                if (error == null) {
+                    keys = fetched;
+                    keysFetchedAt = clock.instant();
+                }
+            }
+            // Completed only after the held list is in place, so a caller
+            // waiting on this future never sees the client mid-update.
+            if (error == null) {
+                promise.complete(fetched);
+            } else {
+                promise.completeExceptionally(new CompletionException(error));
+            }
+        });
+        return promise;
+    }
+
+    /** The key list a key endpoint answer carries. */
+    private static List<SigningKey> readKeys(HttpTransport.Response response)
+            throws DidHttpException {
         if (response.getStatusCode() != 200) {
             throw httpError("The public key list", response);
         }
-        List<SigningKey> fetched;
         try {
-            fetched = parseKeys(response.getBody());
+            return parseKeys(response.getBody());
         } catch (JSONException unreadable) {
             throw new DidHttpException(
                 "The public key list could not be read: "
@@ -338,8 +423,6 @@ public final class DidClient {
                 + unreadable.getMessage(),
                 response.getStatusCode(), response.getBody());
         }
-        keys = fetched;
-        keysFetchedAt = clock.instant();
     }
 
     /**
@@ -381,17 +464,15 @@ public final class DidClient {
     /**
      * The key list to answer a question about the given date from,
      * refetching once first where the held list may not have the answer. A
-     * failed fetch propagates because the held list may not contain the key
-     * needed for that date.
+     * failed fetch fails the future, because the held list may not contain
+     * the key needed for that date.
      */
-    private List<SigningKey> keysFor(Instant date) throws IOException {
+    private CompletableFuture<List<SigningKey>> keysFor(Instant date) {
         synchronized (lock) {
-            if (keys == null) {
-                fetchKeys();
-            } else if (needsRefetch(date)) {
-                fetchKeys();
+            if (keys == null || needsRefetch(date)) {
+                return fetchKeys();
             }
-            return keys;
+            return CompletableFuture.completedFuture(keys);
         }
     }
 
@@ -460,11 +541,13 @@ public final class DidClient {
      * {@link #verifySignatureDetailed(FodId)} for why not.
      *
      * @param fodId the identifier
-     * @return true when the signature verifies
-     * @throws IOException if the required key list cannot be fetched
+     * @return true where the signature verifies, or a future failed with
+     *         {@link IOException} where the required key list cannot be
+     *         fetched
      */
-    public boolean verifySignature(FodId fodId) throws IOException {
-        return verifySignatureDetailed(fodId) == SignatureCheck.VERIFIED;
+    public CompletableFuture<Boolean> verifySignature(FodId fodId) {
+        return verifySignatureDetailed(fodId)
+            .thenApply(check -> check == SignatureCheck.VERIFIED);
     }
 
     /**
@@ -476,23 +559,36 @@ public final class DidClient {
      * short tolerance either side of a key boundary, the neighbouring key.
      *
      * @param fodId the identifier
-     * @return the outcome
-     * @throws IOException if the required key list cannot be fetched
+     * @return the outcome, or a future failed with {@link IOException}
+     *         where the required key list cannot be fetched
      */
-    public SignatureCheck verifySignatureDetailed(FodId fodId)
-            throws IOException {
-        Objects.requireNonNull(fodId, "fodId");
-        if (fodId.getVersion() != Version.VERSION3) {
-            return SignatureCheck.UNSUPPORTED_VERSION;
+    public CompletableFuture<SignatureCheck> verifySignatureDetailed(
+            FodId fodId) {
+        try {
+            Objects.requireNonNull(fodId, "fodId");
+            if (fodId.getVersion() != Version.VERSION3) {
+                return CompletableFuture.completedFuture(
+                    SignatureCheck.UNSUPPORTED_VERSION);
+            }
+            boolean isRandom = fodId.getType() == IdType.RANDOM;
+            int baseLength = FodId.HEADER_LENGTH
+                + (isRandom ? FodId.GUID_LENGTH : FodId.MATCH_KEY_LENGTH);
+            if (fodId.getPayload().length < baseLength) {
+                return CompletableFuture.completedFuture(
+                    SignatureCheck.MALFORMED_PAYLOAD);
+            }
+            Instant date = fodId.getDate();
+            return keysFor(date)
+                .thenApply(held -> checkSignature(fodId, held, date));
+        } catch (RuntimeException refused) {
+            return failed(refused);
         }
-        boolean isRandom = fodId.getType() == IdType.RANDOM;
-        int baseLength = FodId.HEADER_LENGTH
-            + (isRandom ? FodId.GUID_LENGTH : FodId.MATCH_KEY_LENGTH);
-        if (fodId.getPayload().length < baseLength) {
-            return SignatureCheck.MALFORMED_PAYLOAD;
-        }
-        Instant date = fodId.getDate();
-        List<SigningKey> candidates = candidatesFor(keysFor(date), date);
+    }
+
+    /** The offline check against the candidate keys for the date. */
+    private static SignatureCheck checkSignature(
+            FodId fodId, List<SigningKey> held, Instant date) {
+        List<SigningKey> candidates = candidatesFor(held, date);
         if (candidates.isEmpty()) {
             return SignatureCheck.NO_KEY_COVERS_DATE;
         }
@@ -518,13 +614,17 @@ public final class DidClient {
      * against the resource key.
      *
      * @param fodId the identifier
-     * @return true when the cloud answers valid
-     * @throws IOException if the cloud cannot be reached, or answers with a
-     *                     status the client does not map
+     * @return true where the cloud answers valid, or a future failed with
+     *         {@link IOException} where the cloud cannot be reached or
+     *         answers with a status the client does not map
      */
-    public boolean verify(FodId fodId) throws IOException {
-        Objects.requireNonNull(fodId, "fodId");
-        return verify(base64Url(fodId));
+    public CompletableFuture<Boolean> verify(FodId fodId) {
+        try {
+            Objects.requireNonNull(fodId, "fodId");
+            return verify(base64Url(fodId));
+        } catch (RuntimeException refused) {
+            return failed(refused);
+        }
     }
 
     /**
@@ -532,30 +632,37 @@ public final class DidClient {
      * verify endpoint. The identifier may be in either base64 alphabet. It
      * is sent under both parameter names the endpoint accepts, {@code 51did}
      * and {@code owid}, so a cloud that reads only the older name answers.
+     * <p>
+     * The future fails with {@link IllegalArgumentException} where the
+     * value is too long to be an identifier at all, where it does not read
+     * as a 51Did, with the {@link FodIdParseStatus} in the message, or
+     * where the cloud says it is not a 51Did, with the cloud's message. It
+     * fails with {@link IOException} where the cloud cannot be reached or
+     * answers with a status the client does not map.
      *
      * @param fodId the identifier as base64
-     * @return true when the cloud answers valid, false when it answers
+     * @return true where the cloud answers valid, false where it answers
      *         invalid
-     * @throws IllegalArgumentException if the value is too long to be an
-     *                                  identifier at all, if it does not
-     *                                  read as a 51Did, with the
-     *                                  {@link FodIdParseStatus} in the
-     *                                  message, or if the cloud says it is
-     *                                  not a 51Did, with the cloud's message
-     * @throws IOException if the cloud cannot be reached, or answers with a
-     *                     status the client does not map
      */
-    public boolean verify(String fodId) throws IOException {
-        Objects.requireNonNull(fodId, "fodId");
-        ensureEncodedLength(fodId);
-        ensureReadsAs51Did(fodId);
-        // Under both names so the request works with hosts that read either
-        // parameter. Hosts that recognise both prefer 51did and keep owid as
-        // a compatibility alias.
-        String encoded = encode(fodId);
-        String url = endpoint + "id/verify/" + encode(resourceKey)
-            + "?51did=" + encoded + "&owid=" + encoded;
-        HttpTransport.Response response = send("GET", url, null);
+    public CompletableFuture<Boolean> verify(String fodId) {
+        try {
+            Objects.requireNonNull(fodId, "fodId");
+            ensureEncodedLength(fodId);
+            ensureReadsAs51Did(fodId);
+            // Under both names so the request works with hosts that read
+            // either parameter. Hosts that recognise both prefer 51did and
+            // keep owid as a compatibility alias.
+            String encoded = encode(fodId);
+            String url = endpoint + "id/verify/" + encode(resourceKey)
+                + "?51did=" + encoded + "&owid=" + encoded;
+            return send("GET", url, null).thenApply(DidClient::readVerify);
+        } catch (RuntimeException refused) {
+            return failed(refused);
+        }
+    }
+
+    /** The verdict a verify endpoint answer carries. */
+    private static boolean readVerify(HttpTransport.Response response) {
         JSONObject json = asObject(response.getBody());
         int status = response.getStatusCode();
         if (status == 200 && json != null && json.has("valid")) {
@@ -569,7 +676,8 @@ public final class DidClient {
                 throw new IllegalArgumentException(errorsText(json));
             }
         }
-        throw httpError("Signature verification", response);
+        throw new CompletionException(
+            httpError("Signature verification", response));
     }
 
     // ----- Redeem -----
@@ -579,6 +687,13 @@ public final class DidClient {
      * caller knows independently, sending the licence key where one was
      * given. One use against the resource key, the second of the two a
      * browser-based context check costs.
+     * <p>
+     * The future fails with {@link IllegalArgumentException} where the
+     * cloud says the identifier is not a 51Did, with the cloud's message,
+     * with {@link DidNotSupportedException} where the host does not offer
+     * the creator context, with {@link DidHttpException} where the cloud
+     * answers with any other status or a body that is not its own shape,
+     * and with {@link IOException} where the cloud cannot be reached.
      *
      * @param fodId     the identifier the sealed result was made for
      * @param result    the sealed result exactly as the verify endpoint
@@ -586,80 +701,86 @@ public final class DidClient {
      * @param challenge the single-use challenge given to the verify
      *                  endpoint, or null where none was
      * @return the typed result, for a 200 or a 503 answer
-     * @throws IllegalArgumentException if the cloud says the identifier is
-     *                                  not a 51Did, with the cloud's message
-     * @throws DidNotSupportedException if the host does not offer the
-     *                                  creator context
-     * @throws DidHttpException if the cloud answers with any other status,
-     *                          or a body that is not its own shape
-     * @throws IOException if the cloud cannot be reached
      */
-    public RedeemResult redeem(FodId fodId, String result, String challenge)
-            throws IOException {
-        Objects.requireNonNull(fodId, "fodId");
-        return redeem(base64(fodId), result, challenge);
+    public CompletableFuture<RedeemResult> redeem(
+            FodId fodId, String result, String challenge) {
+        try {
+            Objects.requireNonNull(fodId, "fodId");
+            return redeem(base64(fodId), result, challenge);
+        } catch (RuntimeException refused) {
+            return failed(refused);
+        }
     }
 
     /**
      * Redeems a sealed creator context result. The identifier may be in
      * either base64 alphabet. See {@link #redeem(FodId, String, String)}.
+     * The future fails with {@link IllegalArgumentException} where the
+     * value is too long to be an identifier at all or does not read as a
+     * 51Did, with the {@link FodIdParseStatus} in the message, and
+     * otherwise as {@link #redeem(FodId, String, String)}.
      *
      * @param fodId     the identifier as base64
      * @param result    the sealed result
      * @param challenge the challenge, or null
      * @return the typed result, for a 200 or a 503 answer
-     * @throws IllegalArgumentException if the value is too long to be an
-     *                                  identifier at all, if it does not
-     *                                  read as a 51Did, with the
-     *                                  {@link FodIdParseStatus} in the
-     *                                  message, or as
-     *                                  {@link #redeem(FodId, String, String)}
-     * @throws IOException as {@link #redeem(FodId, String, String)}
      */
-    public RedeemResult redeem(String fodId, String result, String challenge)
-            throws IOException {
-        Objects.requireNonNull(fodId, "fodId");
-        ensureEncodedLength(fodId);
-        ensureReadsAs51Did(fodId);
-        // The POST route has no {resource} segment, so the resource key
-        // goes in the form with everything else.
-        StringBuilder form = new StringBuilder()
-            .append("resource=").append(encode(resourceKey))
-            .append("&51did=").append(encode(fodId))
-            .append("&result=").append(encode(nullToEmpty(result)))
-            .append("&challenge=").append(encode(nullToEmpty(challenge)));
-        if (licenceKey != null) {
-            form.append("&license=").append(encode(licenceKey));
+    public CompletableFuture<RedeemResult> redeem(
+            String fodId, String result, String challenge) {
+        try {
+            Objects.requireNonNull(fodId, "fodId");
+            ensureEncodedLength(fodId);
+            ensureReadsAs51Did(fodId);
+            // The POST route has no {resource} segment, so the resource key
+            // goes in the form with everything else.
+            StringBuilder form = new StringBuilder()
+                .append("resource=").append(encode(resourceKey))
+                .append("&51did=").append(encode(fodId))
+                .append("&result=").append(encode(nullToEmpty(result)))
+                .append("&challenge=").append(encode(nullToEmpty(challenge)));
+            if (licenceKey != null) {
+                form.append("&license=").append(encode(licenceKey));
+            }
+            String url = endpoint + "id/redeem";
+            return send("POST", url,
+                form.toString().getBytes(StandardCharsets.UTF_8))
+                .thenApply(this::readRedeem);
+        } catch (RuntimeException refused) {
+            return failed(refused);
         }
-        String url = endpoint + "id/redeem";
-        HttpTransport.Response response = send(
-            "POST", url, form.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    /** The typed result a redeem answer carries. */
+    private RedeemResult readRedeem(HttpTransport.Response response) {
         int status = response.getStatusCode();
         JSONObject json = asObject(response.getBody());
         switch (status) {
             case 200:
             case 503:
                 if (json == null) {
-                    throw httpError("Redemption", response);
+                    throw new CompletionException(
+                        httpError("Redemption", response));
                 }
                 return RedeemResult.parse(status, json, response.getBody());
             case 400:
                 if (json != null && json.has("errors")) {
                     throw new IllegalArgumentException(errorsText(json));
                 }
-                throw httpError("Redemption", response);
+                throw new CompletionException(
+                    httpError("Redemption", response));
             case 404:
-                throw new DidNotSupportedException(
-                    endpoint, response.getBody());
+                throw new CompletionException(new DidNotSupportedException(
+                    endpoint, response.getBody()));
             default:
-                throw httpError("Redemption", response);
+                throw new CompletionException(
+                    httpError("Redemption", response));
         }
     }
 
     // ----- HTTP -----
 
-    private HttpTransport.Response send(String method, String url, byte[] body)
-            throws IOException {
+    private CompletableFuture<HttpTransport.Response> send(
+            String method, String url, byte[] body) {
         Map<String, String> headers = new LinkedHashMap<String, String>();
         headers.put("User-Agent", USER_AGENT);
         headers.put("Accept", "application/json");
@@ -667,8 +788,42 @@ public final class DidClient {
             headers.put("Content-Type",
                 "application/x-www-form-urlencoded; charset=utf-8");
         }
-        return transport.send(
-            new HttpTransport.Request(method, url, headers, body));
+        try {
+            CompletableFuture<HttpTransport.Response> sent = transport.send(
+                new HttpTransport.Request(method, url, headers, body));
+            if (sent == null) {
+                return failed(new IOException(
+                    "The transport answered no future for " + url + "."));
+            }
+            return sent;
+        } catch (RuntimeException broken) {
+            // A transport that throws where it should have failed its
+            // future is still reported through the future, so a caller has
+            // one place to look.
+            return failed(broken);
+        }
+    }
+
+    /**
+     * A future already failed with the given cause, wrapped so that every
+     * failure the client reports arrives the same way, as the cause of a
+     * {@link CompletionException}.
+     */
+    private static <T> CompletableFuture<T> failed(Throwable cause) {
+        CompletableFuture<T> answer = new CompletableFuture<T>();
+        answer.completeExceptionally(cause instanceof CompletionException
+            ? cause
+            : new CompletionException(cause));
+        return answer;
+    }
+
+    /** The real failure behind a {@link CompletionException}, or null. */
+    private static Throwable unwrap(Throwable failure) {
+        if (failure instanceof CompletionException
+                && failure.getCause() != null) {
+            return failure.getCause();
+        }
+        return failure;
     }
 
     /**
@@ -801,17 +956,52 @@ public final class DidClient {
     }
 
     /**
-     * The default transport, over {@link HttpURLConnection}. Ten seconds to
-     * connect and ten to read, which is generous for the cloud and short
-     * enough that a request thread is not held for long by a host that is
-     * down.
+     * The default transport, over {@link HttpURLConnection}. Java 8 has no
+     * non-blocking HTTP client in its standard library, so this is blocking
+     * I/O on a background thread, meaning the exchange runs on the executor
+     * and completes the future from there. On Java 11 and later supply a
+     * transport over {@code java.net.http.HttpClient.sendAsync} instead,
+     * which needs no thread per request. Ten seconds to connect and ten to
+     * read, which is generous for the cloud and short enough that a pooled
+     * thread is not held for long by a host that is down.
      */
-    private static final class UrlConnectionTransport implements HttpTransport {
+    static final class UrlConnectionTransport implements HttpTransport {
 
         private static final int TIMEOUT_MILLIS = 10_000;
 
+        private final Executor executor;
+
+        UrlConnectionTransport(Executor executor) {
+            this.executor = Objects.requireNonNull(executor, "executor");
+        }
+
         @Override
-        public Response send(Request request) throws IOException {
+        public CompletableFuture<Response> send(Request request) {
+            CompletableFuture<Response> answer =
+                new CompletableFuture<Response>();
+            try {
+                executor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            answer.complete(exchange(request));
+                        } catch (Throwable failure) {
+                            // Anything at all, so that a caller waiting on
+                            // this future is never left waiting for ever.
+                            answer.completeExceptionally(failure);
+                        }
+                    }
+                });
+            } catch (RuntimeException refused) {
+                // An executor that is shut down or full refuses the work.
+                // That is a failure of the request like any other.
+                answer.completeExceptionally(refused);
+            }
+            return answer;
+        }
+
+        /** The blocking exchange, run on the executor's thread. */
+        private static Response exchange(Request request) throws IOException {
             HttpURLConnection connection = (HttpURLConnection)
                 URI.create(request.getUrl()).toURL().openConnection();
             connection.setConnectTimeout(TIMEOUT_MILLIS);
@@ -859,6 +1049,47 @@ public final class DidClient {
             } finally {
                 stream.close();
             }
+        }
+    }
+
+    /**
+     * The threads the default transport blocks on where the builder is
+     * given no executor, being a small bounded pool of daemon threads,
+     * created as they are needed and retired when they have been idle a
+     * while, so a program that has finished its work still exits. Held in a
+     * class of its own so that no pool exists at all until a client is
+     * built without a transport and without an executor.
+     */
+    private static final class SharedPool {
+
+        private static final int MINIMUM_THREADS = 2;
+        private static final int MAXIMUM_THREADS = 8;
+        private static final long IDLE_SECONDS = 60L;
+
+        static final Executor INSTANCE = create();
+
+        private static Executor create() {
+            int threads = Math.min(MAXIMUM_THREADS, Math.max(MINIMUM_THREADS,
+                Runtime.getRuntime().availableProcessors()));
+            ThreadPoolExecutor pool = new ThreadPoolExecutor(
+                threads, threads, IDLE_SECONDS, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<Runnable>(),
+                new ThreadFactory() {
+
+                    private final AtomicInteger counter = new AtomicInteger();
+
+                    @Override
+                    public Thread newThread(Runnable work) {
+                        Thread thread = new Thread(work,
+                            "51did-http-" + counter.incrementAndGet());
+                        thread.setDaemon(true);
+                        return thread;
+                    }
+                });
+            // Without this the pool keeps its threads for the life of the
+            // program, which a library has no business doing.
+            pool.allowCoreThreadTimeOut(true);
+            return pool;
         }
     }
 }

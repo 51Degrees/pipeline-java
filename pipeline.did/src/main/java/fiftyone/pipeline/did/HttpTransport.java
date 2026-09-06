@@ -22,31 +22,35 @@
 
 package fiftyone.pipeline.did;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * The one HTTP operation {@link DidClient} needs, so that a test can stand in
  * for the network and a caller can route the client's requests through an
  * HTTP stack of its own. The default implementation uses
- * {@link java.net.HttpURLConnection}.
+ * {@link java.net.HttpURLConnection}, which only blocks, so it runs the
+ * exchange on a background thread. On Java 11 and later a transport over
+ * {@code java.net.http.HttpClient.sendAsync} needs no thread per request.
  */
 public interface HttpTransport {
 
     /**
-     * Sends the request and returns whatever the server answered, whatever
-     * the status. Only a failure to reach the server or read its answer is
-     * an exception.
+     * Sends the request and answers with whatever the server answered,
+     * whatever the status. The call returns at once and the answer arrives
+     * through the future. Only a failure to reach the server or read its
+     * answer fails the future, normally with a
+     * {@code java.io.IOException}, and the method itself does not throw for
+     * one. An implementation that blocks must do its blocking on a thread
+     * of its own and complete the future from there.
      *
      * @param request the request to send
      * @return the status and body the server answered with
-     * @throws IOException if the server could not be reached or the answer
-     *                     could not be read
      */
-    Response send(Request request) throws IOException;
+    CompletableFuture<Response> send(Request request);
 
     /** An HTTP request: method, URL, headers and an optional body. */
     final class Request {

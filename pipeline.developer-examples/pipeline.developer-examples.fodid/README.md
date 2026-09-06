@@ -56,19 +56,23 @@ DidClient client = new DidClient(resourceKey, licenceKey);
 // The 51Did arrives from the page in the URL-safe base64 alphabet.
 FodId fodId = FodId.fromBase64(did);
 
-// Offline, against the cloud's published key for the identifier's date.
-// No use is charged, because the client holds the keys.
-boolean genuine = client.verifySignature(fodId);
-
-// Server side, with the licence key. One use.
-RedeemResult redeemed = client.redeem(fodId, result, challenge);
-RedeemResult.Context context = redeemed.getContext();
+// Both client calls answer through a CompletableFuture, so the calling
+// thread is released at once. Offline first, against the cloud's
+// published key for the identifier's date, where no use is charged
+// because the client holds the keys. Then server side, with the licence
+// key, which is one use.
+CompletableFuture<Answer> answer = client.verifySignature(fodId)
+    .thenCompose(genuine -> client.redeem(fodId, result, challenge)
+        .thenApply(redeemed -> toAnswer(redeemed, genuine)))
+    .exceptionally(CreatorContextDemoServer::failed);
 ```
 
 The handler answers the page in the cloud's own shape, `signature`,
 `context`, `factors` when present, `verifiedAt` and
 `secondsSinceVerified`, built from the typed result, with one field
-added, `serverSignature`, being the offline check. A malformed 51Did
+added, `serverSignature`, being the offline check. A failure the client
+reports arrives at the demo's `failed` method as the cause of a
+`CompletionException` and is mapped there. A malformed 51Did
 answers 400, a host without the creator context answers 404 with a
 text body, and an unreachable cloud answers 502 with `{ "error": ... }`.
 A production server would also remember the challenge it issued and
