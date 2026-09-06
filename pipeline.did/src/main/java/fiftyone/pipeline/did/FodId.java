@@ -409,6 +409,27 @@ public final class FodId {
     }
 
     /**
+     * @return the usage carried in bits 0-2 of {@link #getFlags()}, as the
+     *         highest usage granted; see {@link Usage} for why it is read
+     *         that way
+     */
+    public Usage getUsage() {
+        return Usage.fromFlags(flags);
+    }
+
+    /**
+     * Whether the usage was derived from an IAB consent string the caller
+     * sent, rather than stated by the caller directly. Bit 3 of
+     * {@link #getFlags()}. Both are legitimate ways to arrive at a usage,
+     * and this says nothing about which usage it is.
+     *
+     * @return whether the usage came from a consent string
+     */
+    public boolean isUsageFromConsent() {
+        return (flags & 0b1000) != 0;
+    }
+
+    /**
      * The 4-byte little-endian License Id field (0 to 4294967295).
      * <p>
      * On an identifier carrying a creator context, the four bytes at offset

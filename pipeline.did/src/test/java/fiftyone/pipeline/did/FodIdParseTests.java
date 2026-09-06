@@ -173,6 +173,44 @@ public class FodIdParseTests {
             .getType());
     }
 
+    /**
+     * The usage is the highest granted, because the bits are cumulative.
+     * A mask for the non-marketing bit alone would say yes for every
+     * marketing identifier, which is the wrong answer for a data
+     * protection decision.
+     */
+    @Test
+    public void getUsage_IsTheHighestGranted() throws Exception {
+        int[] bits = {0b000, 0b001, 0b011, 0b111};
+        Usage[] expected = {
+            Usage.NONE, Usage.NON_MARKETING, Usage.STANDARD, Usage.PERSONALIZED};
+        String[] idUsage = {null, "non-marketing", "standard", "personalized"};
+        for (int i = 0; i < bits.length; i++) {
+            byte[] payload = canonicalRandomPayload();
+            payload[FodId.FLAGS_OFFSET] = (byte) ((1 << 6) | bits[i]);
+            FodId fodId = assertParsed(FodId.tryFromBase64(
+                factory.signedOwidAt(payload, DATE).asBase64()));
+            assertEquals("usage bits " + bits[i], expected[i], fodId.getUsage());
+            assertEquals(idUsage[i], fodId.getUsage().getIdUsage());
+            assertEquals(IdType.RANDOM, fodId.getType());
+            assertFalse(fodId.isUsageFromConsent());
+        }
+    }
+
+    /**
+     * Bit 3 records that the usage came from a consent string rather than
+     * being stated, and reads independently of which usage it is.
+     */
+    @Test
+    public void isUsageFromConsent_IsBitThree() throws Exception {
+        byte[] payload = canonicalRandomPayload();
+        payload[FodId.FLAGS_OFFSET] = (byte) ((1 << 6) | 0b1011);
+        FodId fodId = assertParsed(FodId.tryFromBase64(
+            factory.signedOwidAt(payload, DATE).asBase64()));
+        assertTrue(fodId.isUsageFromConsent());
+        assertEquals(Usage.STANDARD, fodId.getUsage());
+    }
+
     @Test
     public void tryFromBase64_ReservedHeaderOnly_ParsedBestEffort()
             throws Exception {
