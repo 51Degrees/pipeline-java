@@ -44,6 +44,18 @@ public class Main {
 
     private static final String DOMAIN = "51degrees.com";
 
+    // This example stands in for the cloud, so it builds a payload byte by
+    // byte, which is a writer's job and not a reader's. The layout is not
+    // part of the reader's public surface, so the offsets are spelled out
+    // here from the specification at
+    // https://github.com/51Degrees/specifications/blob/main/did-specification/identifier-layout.md
+    // Code that reads a 51Did should use the typed accessors instead.
+    private static final int LICENSE_ID_OFFSET = 1;
+    private static final int MATCH_KEY_OFFSET = 5;
+    private static final int MATCH_KEY_LENGTH = 32;
+    private static final int PAYLOAD_LENGTH =
+            MATCH_KEY_OFFSET + MATCH_KEY_LENGTH;
+
     public static class Example {
 
         public void run() throws Exception {
@@ -57,13 +69,15 @@ public class Main {
             FodId fodId = FodId.fromBase64(issue(creator, payload));
 
             System.out.println("51Did parsed from base64:");
-            System.out.println("  Domain    : " + fodId.getDomain());
-            System.out.println("  Type      : " + fodId.getType());
-            System.out.println("  Flags     : 0x"
-                    + Integer.toHexString(fodId.getFlags()));
-            System.out.println("  LicenseId : " + fodId.getLicenseId());
-            System.out.println("  Match key : " + toHex(fodId.getMatchKey()));
-            System.out.println("  Verifies  : "
+            System.out.println("  Domain       : " + fodId.getDomain());
+            System.out.println("  Type         : " + fodId.getType());
+            System.out.println("  Usage        : " + fodId.getUsage());
+            System.out.println("  From consent : "
+                    + fodId.isUsageFromConsent());
+            System.out.println("  LicenseId    : " + fodId.getLicenseId());
+            System.out.println("  Match key    : "
+                    + toHex(fodId.getMatchKey()));
+            System.out.println("  Verifies     : "
                     + fodId.verify(crypto.publicKeyPem()));
 
             // Issue the SAME payload again: a separate envelope, same match
@@ -99,18 +113,20 @@ public class Main {
         }
 
         /**
-         * A canonical 37-byte Probabilistic payload: flags 0x00, License Id
+         * A canonical 37-byte Probabilistic payload with flags 0x03, License Id
          * 0x12345678 (little-endian) and a 32-byte match key 0x20..0x3F.
          */
         private byte[] samplePayload() {
-            byte[] payload = new byte[FodId.PAYLOAD_LENGTH];
-            payload[FodId.FLAGS_OFFSET] = 0x00;
-            payload[FodId.LICENSE_ID_OFFSET] = 0x78;
-            payload[FodId.LICENSE_ID_OFFSET + 1] = 0x56;
-            payload[FodId.LICENSE_ID_OFFSET + 2] = 0x34;
-            payload[FodId.LICENSE_ID_OFFSET + 3] = 0x12;
-            for (int i = 0; i < FodId.MATCH_KEY_LENGTH; i++) {
-                payload[FodId.MATCH_KEY_OFFSET + i] = (byte) (0x20 + i);
+            byte[] payload = new byte[PAYLOAD_LENGTH];
+            // Flags 0b0000_0011, being standard marketing usage stated by
+            // the caller, on a Probabilistic identifier (bits 6-7 zero).
+            payload[0] = 0b0000_0011;
+            payload[LICENSE_ID_OFFSET] = 0x78;
+            payload[LICENSE_ID_OFFSET + 1] = 0x56;
+            payload[LICENSE_ID_OFFSET + 2] = 0x34;
+            payload[LICENSE_ID_OFFSET + 3] = 0x12;
+            for (int i = 0; i < MATCH_KEY_LENGTH; i++) {
+                payload[MATCH_KEY_OFFSET + i] = (byte) (0x20 + i);
             }
             return payload;
         }

@@ -23,15 +23,18 @@ envelopes.**
 
 ## Payload layout
 
-The header is shared by every identifier type. Bits 6-7 of Flags select the
-type and the length of the match key that follows.
+The byte layout of a 51Did is specified in
+[identifier-layout.md](https://github.com/51Degrees/specifications/blob/main/did-specification/identifier-layout.md),
+and the surface every 51Did package offers is specified in
+[package-surface.md](https://github.com/51Degrees/specifications/blob/main/did-specification/package-surface.md).
+Those two pages are the authority, so read them rather than working the
+layout out from this package. What follows is a summary of the part that
+changes how this package behaves.
 
-| Offset | Length | Field      | Type                                            |
-|-------:|-------:|------------|-------------------------------------------------|
-|      0 |      1 | Flags      | uint8: bits 0-2 usage, bits 6-7 identifier type |
-|      1 |      4 | LicenseId  | uint32 (little-endian)                          |
-|      5 |  16/32 | Match key  | SHA-256 (Probabilistic, HashedEmail) or GUID (Random) |
-|  after |    any | Context    | Optional creator context section, readable only by 51Degrees |
+The identifier carries a five byte header of Flags and License Id, then the
+match key, then an optional creator context section. Bits 6-7 of Flags
+select the type, which decides how long the match key is and so what the
+least a payload can hold is.
 
 | Bits 7-6 | `IdType`        | Match key length | Minimum payload |
 |---------:|-----------------|-------------:|----------------:|
@@ -51,6 +54,12 @@ never refuses a payload for being long. On such an identifier the four
 License Id bytes hold an encrypted value that only 51Degrees can turn back
 into a licence identifier, so `getLicenseId()` is the field's raw value and
 identifies nothing outside 51Degrees.
+
+The package gives no way to read the payload by hand. There is no raw flags
+accessor and the offsets and lengths are package-private, because every
+field and every bit already has a typed accessor and reading the bytes by
+hand is how the usage gets misread. See the usage section below for the
+mistake this closes off.
 
 ## OWID dependency
 
@@ -167,17 +176,20 @@ apart from "the signature could not be checked" (`KEY_UNAVAILABLE`,
 ```java
 import fiftyone.pipeline.did.FodId;
 import fiftyone.pipeline.did.IdType;
+import fiftyone.pipeline.did.Usage;
+import java.time.Instant;
 
 FodId fodId = FodId.fromBase64(base64FromCloudService);
 
-int    flags     = fodId.getFlags();
-IdType type      = fodId.getType();        // PROBABILISTIC / RANDOM / HASHED_EMAIL
-long   licenseId = fodId.getLicenseId();
-byte[] matchKey  = fodId.getMatchKey();    // SHA-256 or GUID bytes, see type
+IdType  type       = fodId.getType();      // PROBABILISTIC / RANDOM / HASHED_EMAIL
+Usage   usage      = fodId.getUsage();     // what the identifier may be used for
+boolean fromConsent = fodId.isUsageFromConsent();
+long    licenseId  = fodId.getLicenseId();
+byte[]  matchKey   = fodId.getMatchKey();  // SHA-256 or GUID bytes, see type
 
 // Delegated OWID-level fields and operations.
 String  domain   = fodId.getDomain();
-long    minutes  = fodId.getDateMinutes(); // the envelope's own date field
+Instant date     = fodId.getDate();        // when the cloud issued it
 boolean verified = fodId.verify(publicKeyPem);
 String  base64   = fodId.asBase64();       // standard alphabet, padded
 String  forUrl   = fodId.asBase64Url();    // URL-safe alphabet, no padding
@@ -194,15 +206,42 @@ FodId b = FodId.fromBase64(idprobglobalB);
 boolean sameMatchKey = java.util.Arrays.equals(a.getMatchKey(), b.getMatchKey());
 ```
 
-Use `getMatchKey()` as the cache / dedup key. `getHash()` remains as a
-deprecated alias of `getMatchKey()`, returning the same bytes, and will be
-removed in a future release.
+Use `getMatchKey()` as the cache / dedup key.
 
-The payload constants follow the same naming. `MATCH_KEY_OFFSET` and
-`MATCH_KEY_LENGTH` give the position and the size of the match key inside the
-payload, and `HASH_OFFSET` and `HASH_LENGTH` remain as deprecated aliases of
-the same two values so that code written against the earlier names keeps
-compiling. The aliases will be removed in a future release.
+## What a 51Did may be used for
+
+`getUsage()` answers what the identifier was created for, and it is the
+accessor a data protection decision turns on.
+
+| `Usage` | Cloud `id.usage` | What it means |
+|---|---|---|
+| `NON_MARKETING` | `non-marketing` | Created for use that is not marketing. Must never be passed to a demand source. |
+| `STANDARD` | `standard` | Created for standard marketing, being targeting unrelated to the person's browsing history or interactions. |
+| `PERSONALIZED` | `personalized` | Created for personalized marketing, being targeting related to the person's browsing history or interactions. |
+| `NONE` | none | No usage bit is set. The cloud never issues such an identifier, so treat it as one that may not be passed on. |
+
+`STANDARD` and `PERSONALIZED` may be passed only to a recipient that has
+accepted the applicable terms.
+
+The three usages are cumulative in the byte rather than exclusive, because
+non-marketing sets one bit, standard sets two and personalized sets three,
+so every marketing identifier also carries the non-marketing bit. Code that
+masked the byte for that bit alone would read every marketing identifier as
+non-marketing, which is the wrong way round for a rule that says a
+non-marketing identifier must never reach a demand source. `getUsage()`
+answers with the highest usage granted, so that mistake cannot be made, and
+the package offers no raw flags accessor with which to make it.
+
+`isUsageFromConsent()` says whether the usage came from an IAB consent
+string the caller sent rather than being stated by the caller directly.
+Both are legitimate ways to arrive at a usage and this says nothing about
+which usage it is.
+
+```java
+if (fodId.getUsage() == Usage.NON_MARKETING) {
+    // Do not pass this identifier to a demand source.
+}
+```
 
 ## Verifying on your server
 

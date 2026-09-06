@@ -28,7 +28,6 @@ import com.swancommunity.owid.OwidParseResult;
 import com.swancommunity.owid.OwidVerificationResult;
 import com.swancommunity.owid.Version;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
@@ -48,21 +47,19 @@ import java.util.Objects;
  * same match key even though their envelopes differ on every issue.
  * <b>Compare match keys, never envelopes.</b>
  * <p>
- * Payload layout. The header (offsets 0-4) is shared by every identifier type.
- * Bits 6-7 of Flags select the {@link IdType} and the length of the match key
- * that follows:
- * <ul>
- *   <li>offset 0, length 1: Flags (bits 0-2 usage, bits 6-7 type)</li>
- *   <li>offset 1, length 4: License Id (uint32, little-endian)</li>
- *   <li>offset 5: match key - 32-byte SHA-256 (Probabilistic, HashedEmail)
- *       or 16 GUID bytes (Random)</li>
- *   <li>after the match key, optionally: a creator context section, which
- *       binds the identifier to the browser and connection it was created
- *       on. Only 51Degrees can read it, so this reader exposes it only as
- *       the part of {@link #getPayload()} beyond the match key. Its lengths
- *       belong to the cloud, so this reader puts no upper bound on a
- *       payload.</li>
- * </ul>
+ * Payload layout. Read a 51Did through the typed accessors below, never by
+ * walking the payload bytes. The identifier carries a five byte header of
+ * Flags and License Id, then the match key, whose length the identifier
+ * type in bits 6-7 of Flags decides, and then an optional creator context
+ * section that binds the identifier to the browser and connection it was
+ * created on. Only 51Degrees can read that section, so this reader exposes
+ * it only as the part of {@link #getPayload()} beyond the match key, its
+ * lengths belong to the cloud, and this reader therefore puts no upper
+ * bound on a payload. The byte layout is specified at
+ * <a href="https://github.com/51Degrees/specifications/blob/main/did-specification/identifier-layout.md">identifier-layout.md</a>,
+ * which is the authority for it, and the surface every 51Did package
+ * offers is specified at
+ * <a href="https://github.com/51Degrees/specifications/blob/main/did-specification/package-surface.md">package-surface.md</a>.
  * <p>
  * Reading and verifying are two separate steps. {@link #tryFromBase64(String)}
  * and {@link #tryFromByteArray(byte[])} read a 51Did from external input
@@ -87,71 +84,51 @@ import java.util.Objects;
  */
 public final class FodId {
 
+    // The byte layout below is not part of the public surface. A caller
+    // reads a 51Did through the typed accessors, because every field and
+    // every bit already has a name, and reading the payload by hand is how
+    // the usage bits get misread. The constants stay package-private so
+    // that this package's own readers and tests can build and walk a
+    // payload. The layout itself is specified at
+    // https://github.com/51Degrees/specifications/blob/main/did-specification/identifier-layout.md
+
     /** Byte offset of the Flags field within the payload. */
-    public static final int FLAGS_OFFSET = 0;
+    static final int FLAGS_OFFSET = 0;
 
     /** Byte offset of the License Id field within the payload. */
-    public static final int LICENSE_ID_OFFSET = 1;
+    static final int LICENSE_ID_OFFSET = 1;
 
     /** Byte length of the License Id field. */
-    public static final int LICENSE_ID_LENGTH = 4;
+    static final int LICENSE_ID_LENGTH = 4;
 
     /** Byte offset of the match key field within the payload. */
-    public static final int MATCH_KEY_OFFSET = 5;
+    static final int MATCH_KEY_OFFSET = 5;
 
     /** Byte length of the match key field (SHA-256). */
-    public static final int MATCH_KEY_LENGTH = 32;
-
-    /**
-     * Deprecated alias for {@link #MATCH_KEY_OFFSET}. The stable, comparable
-     * part of a 51Did is now called the match key, mirroring the Model Terms
-     * for Marketing vocabulary. This alias will be removed in a future
-     * release.
-     *
-     * @deprecated renamed to {@link #MATCH_KEY_OFFSET}
-     */
-    @Deprecated
-    public static final int HASH_OFFSET = MATCH_KEY_OFFSET;
-
-    /**
-     * Deprecated alias for {@link #MATCH_KEY_LENGTH}. The stable, comparable
-     * part of a 51Did is now called the match key, mirroring the Model Terms
-     * for Marketing vocabulary. This alias will be removed in a future
-     * release.
-     *
-     * @deprecated renamed to {@link #MATCH_KEY_LENGTH}
-     */
-    @Deprecated
-    public static final int HASH_LENGTH = MATCH_KEY_LENGTH;
+    static final int MATCH_KEY_LENGTH = 32;
 
     /**
      * Byte length of the payload header (Flags + License Id) common to every
      * identifier type.
      */
-    public static final int HEADER_LENGTH = MATCH_KEY_OFFSET;
+    static final int HEADER_LENGTH = MATCH_KEY_OFFSET;
 
     /** Byte length of the GUID match key carried by Random identifiers. */
-    public static final int GUID_LENGTH = 16;
+    static final int GUID_LENGTH = 16;
 
     /**
      * Minimum byte length of a Random 51Did payload
      * (Flags + License Id + GUID).
      */
-    public static final int RANDOM_PAYLOAD_LENGTH = HEADER_LENGTH + GUID_LENGTH;
+    static final int RANDOM_PAYLOAD_LENGTH = HEADER_LENGTH + GUID_LENGTH;
 
     /**
      * Minimum byte length of a Probabilistic or HashedEmail 51Did payload
-     * (Flags + License Id + match key). Random payloads are shorter - see
+     * (Flags + License Id + match key). Random payloads are shorter, see
      * {@link #RANDOM_PAYLOAD_LENGTH}.
      */
-    public static final int PAYLOAD_LENGTH =
+    static final int PAYLOAD_LENGTH =
         MATCH_KEY_OFFSET + MATCH_KEY_LENGTH;
-
-    /**
-     * The origin the envelope's date counts from, 2020-01-01T00:00:00Z, as
-     * epoch seconds. See {@link #getDateMinutes()}.
-     */
-    private static final long DATE_ORIGIN_EPOCH_SECONDS = 1_577_836_800L;
 
     private final Owid owid;
     private final int flags;
@@ -395,21 +372,27 @@ public final class FodId {
     // ----- Fields -----
 
     /**
-     * @return the 1-byte usage flags bit-mask from the payload (0-255)
+     * The raw Flags byte. Package-private on purpose, because
+     * {@link #getType()}, {@link #getUsage()} and
+     * {@link #isUsageFromConsent()} name every bit a caller needs and
+     * masking the byte by hand is how the cumulative usage bits get read
+     * backwards. Kept because those three accessors are built on it.
+     *
+     * @return the 1-byte flags bit-mask from the payload (0-255)
      */
-    public int getFlags() {
+    int getFlags() {
         return flags;
     }
 
     /**
-     * @return the identifier type carried in bits 6-7 of {@link #getFlags()}
+     * @return the identifier type carried in bits 6-7 of the Flags byte
      */
     public IdType getType() {
         return IdType.fromFlags(flags);
     }
 
     /**
-     * @return the usage carried in bits 0-2 of {@link #getFlags()}, as the
+     * @return the usage carried in bits 0-2 of the Flags byte, as the
      *         highest usage granted; see {@link Usage} for why it is read
      *         that way
      */
@@ -419,8 +402,8 @@ public final class FodId {
 
     /**
      * Whether the usage was derived from an IAB consent string the caller
-     * sent, rather than stated by the caller directly. Bit 3 of
-     * {@link #getFlags()}. Both are legitimate ways to arrive at a usage,
+     * sent, rather than stated by the caller directly. This is bit 3 of
+     * the Flags byte. Both are legitimate ways to arrive at a usage,
      * and this says nothing about which usage it is.
      *
      * @return whether the usage came from a consent string
@@ -457,20 +440,6 @@ public final class FodId {
         return matchKey.clone();
     }
 
-    /**
-     * Deprecated alias for {@link #getMatchKey()}. The stable, comparable
-     * part of a 51Did is now called the match key, mirroring the Model Terms
-     * for Marketing vocabulary. This alias will be removed in a future
-     * release.
-     *
-     * @return the same bytes as {@link #getMatchKey()}
-     * @deprecated renamed to {@link #getMatchKey()}
-     */
-    @Deprecated
-    public byte[] getHash() {
-        return getMatchKey();
-    }
-
     /** @return the OWID version. */
     public Version getVersion() {
         return owid.getVersion();
@@ -482,27 +451,15 @@ public final class FodId {
     }
 
     /**
-     * The envelope's creation date, to the minute. See
-     * {@link #getDateMinutes()} for the same date as the envelope stores it.
+     * The envelope's creation date, to the minute. The envelope stores it
+     * as a count of minutes since 2020-01-01T00:00:00Z, and this reader
+     * hands back the date itself rather than that count, because two dates
+     * compare exactly as well as two counts do.
      *
      * @return the OWID creation date
      */
     public Instant getDate() {
         return owid.getDate();
-    }
-
-    /**
-     * The envelope's own date field, the unsigned 32-bit count of minutes
-     * since 2020-01-01T00:00:00Z. It is the value the OWID
-     * {@code public-key?date=} parameter takes, and the integer a caller
-     * comparing creation times wants rather than a converted date.
-     *
-     * @return minutes since 2020-01-01T00:00:00Z, 0 to 4294967295
-     */
-    public long getDateMinutes() {
-        return Duration.between(
-            Instant.ofEpochSecond(DATE_ORIGIN_EPOCH_SECONDS),
-            owid.getDate()).toMinutes();
     }
 
     /** @return a copy of the OWID payload bytes. */

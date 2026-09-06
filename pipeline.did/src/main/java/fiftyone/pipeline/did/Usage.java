@@ -23,8 +23,8 @@
 package fiftyone.pipeline.did;
 
 /**
- * The usage a 51Did was created for, carried in bits 0-2 of
- * {@link FodId#getFlags()}. It decides where the identifier may go: one
+ * The usage a 51Did was created for, carried in bits 0-2 of the Flags
+ * byte. It decides where the identifier may go, so one
  * created for {@link #NON_MARKETING} must never be passed to a demand
  * source, and one created for {@link #STANDARD} or {@link #PERSONALIZED}
  * may be passed only to a recipient that has accepted the applicable
