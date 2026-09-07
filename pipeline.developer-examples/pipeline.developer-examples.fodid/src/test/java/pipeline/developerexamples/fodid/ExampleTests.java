@@ -40,6 +40,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -89,7 +90,8 @@ public class ExampleTests {
             + "\"secondsSinceVerified\":2}");
 
         CreatorContextDemoServer.Answer answer =
-            CreatorContextDemoServer.redeem(client, did, "sealed", "abc");
+            CreatorContextDemoServer.redeem(client, did, "sealed", "abc")
+                .join();
 
         assertEquals(200, answer.status);
         assertEquals("application/json", answer.type);
@@ -127,7 +129,8 @@ public class ExampleTests {
             + "\"secondsSinceVerified\":3}");
 
         CreatorContextDemoServer.Answer answer =
-            CreatorContextDemoServer.redeem(client, did, "sealed", "abc");
+            CreatorContextDemoServer.redeem(client, did, "sealed", "abc")
+                .join();
 
         JSONObject json = new JSONObject(answer.bodyText());
         assertEquals("mismatch", json.getString("context"));
@@ -148,7 +151,8 @@ public class ExampleTests {
             + "\"secondsSinceVerified\":2}");
 
         CreatorContextDemoServer.Answer answer =
-            CreatorContextDemoServer.redeem(client, did, "sealed", "abc");
+            CreatorContextDemoServer.redeem(client, did, "sealed", "abc")
+                .join();
 
         JSONObject json = new JSONObject(answer.bodyText());
         assertEquals("verified", json.getString("signature"));
@@ -161,7 +165,8 @@ public class ExampleTests {
         transport.queue(503, "{\"context\":\"unconfirmed\"}");
 
         CreatorContextDemoServer.Answer answer =
-            CreatorContextDemoServer.redeem(client, did, "sealed", "abc");
+            CreatorContextDemoServer.redeem(client, did, "sealed", "abc")
+                .join();
 
         assertEquals(503, answer.status);
         JSONObject json = new JSONObject(answer.bodyText());
@@ -176,7 +181,8 @@ public class ExampleTests {
         transport.queue(404, "Not Found");
 
         CreatorContextDemoServer.Answer answer =
-            CreatorContextDemoServer.redeem(client, did, "sealed", "abc");
+            CreatorContextDemoServer.redeem(client, did, "sealed", "abc")
+                .join();
 
         assertEquals(404, answer.status);
         assertTrue(answer.type.startsWith("text/plain"));
@@ -187,7 +193,8 @@ public class ExampleTests {
     public void Redeem_Route_Answers_502_When_The_Cloud_Is_Unreachable() {
         // Nothing queued, so the first request fails as the network would.
         CreatorContextDemoServer.Answer answer =
-            CreatorContextDemoServer.redeem(client, did, "sealed", "abc");
+            CreatorContextDemoServer.redeem(client, did, "sealed", "abc")
+                .join();
 
         assertEquals(502, answer.status);
         JSONObject json = new JSONObject(answer.bodyText());
@@ -197,7 +204,8 @@ public class ExampleTests {
     @Test
     public void Redeem_Route_Answers_400_For_A_Malformed_51Did() {
         CreatorContextDemoServer.Answer answer =
-            CreatorContextDemoServer.redeem(client, "not a 51did", "s", "c");
+            CreatorContextDemoServer.redeem(client, "not a 51did", "s", "c")
+                .join();
 
         assertEquals(400, answer.status);
         JSONObject json = new JSONObject(answer.bodyText());
@@ -213,7 +221,8 @@ public class ExampleTests {
             + "Base64-encoded 51Did.\"]}");
 
         CreatorContextDemoServer.Answer answer =
-            CreatorContextDemoServer.redeem(client, did, "sealed", "abc");
+            CreatorContextDemoServer.redeem(client, did, "sealed", "abc")
+                .join();
 
         assertEquals(400, answer.status);
         JSONObject json = new JSONObject(answer.bodyText());
@@ -266,12 +275,17 @@ public class ExampleTests {
         }
 
         @Override
-        public Response send(Request request) throws IOException {
+        public CompletableFuture<Response> send(Request request) {
             requests.add(request);
+            CompletableFuture<Response> answer =
+                new CompletableFuture<Response>();
             if (responses.isEmpty()) {
-                throw new IOException("Nothing queued for " + request.getUrl());
+                answer.completeExceptionally(
+                    new IOException("Nothing queued for " + request.getUrl()));
+            } else {
+                answer.complete(responses.removeFirst());
             }
-            return responses.removeFirst();
+            return answer;
         }
     }
 }

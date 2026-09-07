@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletionException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -67,9 +68,9 @@ public class DidClientLiveTests {
         FodId fodId = create();
 
         assertEquals(DidClient.SignatureCheck.VERIFIED,
-            client.verifySignatureDetailed(fodId));
-        assertTrue(client.verifySignature(fodId));
-        assertTrue(client.verify(fodId));
+            client.verifySignatureDetailed(fodId).join());
+        assertTrue(client.verifySignature(fodId).join());
+        assertTrue(client.verify(fodId).join());
     }
 
     @Test
@@ -78,11 +79,16 @@ public class DidClientLiveTests {
 
         RedeemResult result;
         try {
-            result = client.redeem(fodId, "not-base64url!!", "live-test");
-        } catch (DidNotSupportedException unsupported) {
-            Assume.assumeNoException(
-                "The host does not offer the creator context.", unsupported);
-            return;
+            result = client.redeem(fodId, "not-base64url!!", "live-test")
+                .join();
+        } catch (CompletionException reported) {
+            if (reported.getCause() instanceof DidNotSupportedException) {
+                Assume.assumeNoException(
+                    "The host does not offer the creator context.",
+                    reported.getCause());
+                return;
+            }
+            throw reported;
         }
 
         assertEquals(200, result.getStatusCode());

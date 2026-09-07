@@ -44,6 +44,8 @@ import java.security.SecureRandom;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 /**
  * 51Did creator context demo server. Serves a page that runs the 51Did
@@ -191,18 +193,33 @@ public class CreatorContextDemoServer {
         exchange.close();
     }
 
-    static void redeem(HttpExchange exchange) throws IOException {
+    static void redeem(HttpExchange exchange) {
         Map<String, String> query = parse(
             exchange.getRequestURI().getRawQuery());
-        Answer answer = redeem(
+        // The route hands the exchange to the client's future and returns,
+        // so the web server's own thread is free while the cloud is asked.
+        redeem(
             client,
             decode(valueOr(query, "51did")),
             decode(valueOr(query, "result")),
-            decode(valueOr(query, "challenge")));
-        exchange.getResponseHeaders().set("Content-Type", answer.type);
-        exchange.sendResponseHeaders(answer.status, answer.body.length);
-        exchange.getResponseBody().write(answer.body);
-        exchange.close();
+            decode(valueOr(query, "challenge")))
+            .thenAccept(answer -> write(exchange, answer));
+    }
+
+    /** Writes one answer to the page and closes the exchange. */
+    static void write(HttpExchange exchange, Answer answer) {
+        try {
+            exchange.getResponseHeaders().set("Content-Type", answer.type);
+            exchange.sendResponseHeaders(answer.status, answer.body.length);
+            exchange.getResponseBody().write(answer.body);
+        } catch (IOException gone) {
+            // The browser went away between asking and being answered,
+            // which is nothing this demo can do anything about.
+            System.err.println("The page could not be answered: "
+                + gone.getMessage());
+        } finally {
+            exchange.close();
+        }
     }
 
     /**
@@ -214,44 +231,74 @@ public class CreatorContextDemoServer {
      * with the licence key, which is added by the client here and only
      * here, so the browser never sees it.
      * <p>
+     * Both client calls answer through a {@link CompletableFuture}, so the
+     * calling thread is released at once and the answer is built when the
+     * cloud has replied. A failure the client reports arrives at
+     * {@link #failed(Throwable)} as the cause of a
+     * {@link CompletionException} and is mapped to a status there.
+     * <p>
      * The page is answered in the cloud's own shape ({@code signature},
      * {@code context}, {@code factors} when present, {@code verifiedAt},
      * {@code secondsSinceVerified}) with one field added,
      * {@code serverSignature}, being this server's own offline check. The
      * page ignores fields it does not know.
      */
-    static Answer redeem(
+    static CompletableFuture<Answer> redeem(
             DidClient client, String did, String result, String challenge) {
         FodId fodId;
         try {
             fodId = FodId.fromBase64(did);
         } catch (OwidException notA51Did) {
-            return Answer.json(400, errors(
-                "'" + did + "' is not a valid Base64-encoded 51Did."));
+            return CompletableFuture.completedFuture(Answer.json(400, errors(
+                "'" + did + "' is not a valid Base64-encoded 51Did.")));
         } catch (IllegalArgumentException notA51Did) {
-            return Answer.json(400, errors(
-                "'" + did + "' is not a valid Base64-encoded 51Did."));
+            return CompletableFuture.completedFuture(Answer.json(400, errors(
+                "'" + did + "' is not a valid Base64-encoded 51Did.")));
         }
-        try {
-            String serverSignature = client.verifySignature(fodId)
-                ? "verified" : "invalid";
-            RedeemResult redeemed = client.redeem(fodId, result, challenge);
-            return Answer.json(
-                redeemed.getStatusCode(), toJson(redeemed, serverSignature));
-        } catch (DidNotSupportedException unsupported) {
+        return client.verifySignature(fodId)
+            .thenCompose(genuine -> client.redeem(fodId, result, challenge)
+                .thenApply(redeemed -> toAnswer(redeemed, genuine)))
+            .exceptionally(CreatorContextDemoServer::failed);
+    }
+
+    /** The cloud's answer and this server's own check, as one answer. */
+    static Answer toAnswer(RedeemResult redeemed, boolean genuine) {
+        return Answer.json(redeemed.getStatusCode(),
+            toJson(redeemed, genuine ? "verified" : "invalid"));
+    }
+
+    /**
+     * What the page is told when the client reports a failure. The failure
+     * arrives wrapped, so the cause is the part that carries the meaning.
+     */
+    static Answer failed(Throwable reported) {
+        Throwable failure = reported instanceof CompletionException
+            && reported.getCause() != null
+            ? reported.getCause()
+            : reported;
+        if (failure instanceof DidNotSupportedException) {
             // The host does not offer the creator context. The same status
             // and a text body, which the page reports as not supported by
             // this host.
-            return Answer.text(404, unsupported.getBody());
-        } catch (IllegalArgumentException malformed) {
-            return Answer.json(400, errors(malformed.getMessage()));
-        } catch (DidHttpException other) {
-            // Relayed as received, so the page sees what the cloud said.
-            return Answer.text(other.getStatusCode(), other.getBody());
-        } catch (IOException unreachable) {
-            return Answer.json(502, new JSONObject()
-                .put("error", String.valueOf(unreachable.getMessage())));
+            return Answer.text(404,
+                ((DidNotSupportedException) failure).getBody());
         }
+        if (failure instanceof IllegalArgumentException) {
+            return Answer.json(400, errors(failure.getMessage()));
+        }
+        if (failure instanceof DidHttpException) {
+            // Relayed as received, so the page sees what the cloud said.
+            DidHttpException other = (DidHttpException) failure;
+            return Answer.text(other.getStatusCode(), other.getBody());
+        }
+        if (failure instanceof IOException) {
+            return Answer.json(502, new JSONObject()
+                .put("error", String.valueOf(failure.getMessage())));
+        }
+        // Nothing the client is documented to report, so the page is told
+        // as much rather than being left waiting for an answer.
+        return Answer.json(500, new JSONObject()
+            .put("error", String.valueOf(failure)));
     }
 
     /** The cloud's own shape, plus {@code serverSignature}. */

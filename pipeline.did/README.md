@@ -150,7 +150,8 @@ found it, and adds two of its own for the payload rules.
 
 Every one of those is an expected data result and comes back as a status.
 What remains exceptional is a `null` passed to a throwing reader, and on the
-client, a cloud that cannot be reached or a key list that cannot be fetched.
+client, a cloud that cannot be reached or a key list that cannot be fetched,
+which the client reports by failing the future rather than by throwing.
 
 ### Reading is not verifying
 
@@ -237,26 +238,31 @@ In the order a server uses them:
 
 2. **Verify offline.** The client fetches the cloud's signing keys once,
    holds them, and checks the signature against the key in force when the
-   identifier was created. No use is charged.
+   identifier was created. No use is charged. Every client method that may
+   reach the cloud returns at once with a `CompletableFuture`, so a request
+   thread is never held while the cloud is asked.
 
    ```java
-   boolean genuine = client.verifySignature(fodId);
+   CompletableFuture<Boolean> genuine = client.verifySignature(fodId);
    // or, to learn why not:
-   DidClient.SignatureCheck check = client.verifySignatureDetailed(fodId);
+   CompletableFuture<DidClient.SignatureCheck> check =
+       client.verifySignatureDetailed(fodId);
    ```
 
-   `publicKeys()` returns the held list and `publicKeyFor(fodId)` the key in
-   force at the identifier's date. The list is refetched, once, when it has
-   no key for the date, when the date is later than the newest start held,
-   or when the list is more than a day old. A key list that cannot be
-   fetched raises `IOException`, never a false, because not being able to
-   check is not the same as the signature being wrong.
+   `publicKeys()` answers with the held list and `publicKeyFor(fodId)` with
+   the key in force at the identifier's date. The list is refetched, once,
+   when it has no key for the date, when the date is later than the newest
+   start held, or when the list is more than a day old, and callers that
+   arrive while a fetch is under way wait on that one fetch rather than
+   starting their own. A key list that cannot be fetched fails the future
+   with `IOException`, never with a false, because not being able to check
+   is not the same as the signature being wrong.
 
 3. **Verify through the cloud.** The open verify endpoint, one use against
    the resource key, needing no licence key.
 
    ```java
-   boolean genuine = client.verify(fodId);
+   CompletableFuture<Boolean> genuine = client.verify(fodId);
    ```
 
 4. **Redeem.** A page checks the creator context from the browser with
@@ -265,39 +271,65 @@ In the order a server uses them:
    identifier it knows independently. One use against the resource key.
 
    ```java
-   RedeemResult redeemed = client.redeem(fodId, result, challenge);
-   switch (redeemed.getContext()) {
-       case VERIFIED:      // presented from where it was created
-       case MISMATCH:      // redeemed.getFactors() says which factor differs
-       case NO_CONTEXT:    // the identifier carries no creator context
-       case NOT_CHECKABLE: // the cloud could not check it
-       case EXPIRED:       // redeemed outside the freshness window
-       case REPLAYED:      // already redeemed
-       case UNREADABLE:    // tampered, wrong identifier, challenge or key
-       case UNCONFIRMED:   // answered 503, retry
-   }
-   redeemed.getSignature();            // VERIFIED, INVALID or UNKNOWN
-   redeemed.getVerifiedAt();           // when the cloud sealed the result
-   redeemed.getSecondsSinceVerified(); // how long before this redemption
+   client.redeem(fodId, result, challenge).thenAccept(redeemed -> {
+       switch (redeemed.getContext()) {
+           case VERIFIED:      // presented from where it was created
+           case MISMATCH:      // redeemed.getFactors() says which differs
+           case NO_CONTEXT:    // the identifier carries no creator context
+           case NOT_CHECKABLE: // the cloud could not check it
+           case EXPIRED:       // redeemed outside the freshness window
+           case REPLAYED:      // already redeemed
+           case UNREADABLE:    // tampered, wrong identifier, challenge or key
+           case UNCONFIRMED:   // answered 503, retry
+       }
+       redeemed.getSignature();            // VERIFIED, INVALID or UNKNOWN
+       redeemed.getVerifiedAt();           // when the cloud sealed the result
+       redeemed.getSecondsSinceVerified(); // how long before this redemption
+   });
    ```
 
-   A malformed identifier raises `IllegalArgumentException`, a host without
-   the creator context raises `DidNotSupportedException`, any other status
-   raises `DidHttpException` carrying the status and body, and an
-   unreachable cloud raises `IOException`. Every cryptographic failure comes
-   back as the one word `unreadable`, by design, so the client does not try
-   to distinguish them either.
+   A failure completes the future exceptionally. A malformed identifier
+   fails it with `IllegalArgumentException`, a host without the creator
+   context with `DidNotSupportedException`, any other status with
+   `DidHttpException` carrying the status and body, and an unreachable
+   cloud with `IOException`. `get()` reports the failure as the cause of an
+   `ExecutionException`, `join()` as the cause of a `CompletionException`,
+   and a stage added with `exceptionally`, `handle` or `whenComplete`
+   receives a `CompletionException` whose cause it is. Every cryptographic
+   failure comes back as the one word `unreadable`, by design, so the
+   client does not try to distinguish them either.
 
 The client methods that take the identifier as a string, `verify(String)`
 and `redeem(String, String, String)`, read the value before doing anything
-else, and a value that does not read as a 51Did is refused with
-`IllegalArgumentException` naming the status before any key is fetched or
-the cloud is called. Two things are worth knowing about that boundary. The
-client also turns away any string longer than a generous fixed limit before
-reading it, which is client policy against obviously wrong input and says
-nothing about how long a 51Did can be. And the client checks the shape,
-not the signature, because the signature is the question the cloud is about
-to be asked.
+else, and for a value that does not read as a 51Did the future fails with
+`IllegalArgumentException` naming the status, before any key is fetched or
+the cloud is called, in the same shape as a failure the cloud answers with,
+so a caller has one place to look. Two things are worth knowing about that
+boundary. The client also turns away any string longer than a generous
+fixed limit before reading it, which is client policy against obviously
+wrong input and says nothing about how long a 51Did can be. And the client
+checks the shape, not the signature, because the signature is the question
+the cloud is about to be asked.
+
+The default transport is `java.net.HttpURLConnection`, which only blocks,
+so by default each request is blocking I/O on a background thread. Those
+threads come from a small shared pool of daemon threads, or from an
+executor given to the builder:
+
+```java
+DidClient client = DidClient.builder(resourceKey)
+    .licenceKey(licenceKey)
+    .executor(myPool)
+    .build();
+```
+
+On Java 11 and later, supply a transport over
+`java.net.http.HttpClient.sendAsync` through `transport(HttpTransport)`
+instead, which needs no thread per request, and give no executor, because
+the executor belongs to the default transport and a transport of your own
+schedules its own work. An
+`HttpTransport` is one method, `send(Request)`, answering a
+`CompletableFuture<Response>`.
 
 `verify-context` and `verify-full` are browser calls rather than client
 methods, because the creator context describes the browser's own
@@ -307,6 +339,33 @@ endpoint through the cloud request engine and pipeline.
 
 The `pipeline.developer-examples.fodid` module holds a web example whose
 `/redeem` route is these calls in a running server.
+
+## Migrating from the blocking client
+
+Earlier versions of `DidClient` blocked the calling thread on every call
+that reached the cloud. Those methods are gone, each replaced by one of the
+same name and arguments that answers through a `CompletableFuture`:
+
+| Removed | Replaced by |
+| --- | --- |
+| `List<SigningKey> publicKeys()` | `CompletableFuture<List<SigningKey>> publicKeys()` |
+| `SigningKey publicKeyFor(FodId)` | `CompletableFuture<SigningKey> publicKeyFor(FodId)` |
+| `boolean verifySignature(FodId)` | `CompletableFuture<Boolean> verifySignature(FodId)` |
+| `SignatureCheck verifySignatureDetailed(FodId)` | `CompletableFuture<SignatureCheck> verifySignatureDetailed(FodId)` |
+| `boolean verify(FodId)` | `CompletableFuture<Boolean> verify(FodId)` |
+| `boolean verify(String)` | `CompletableFuture<Boolean> verify(String)` |
+| `RedeemResult redeem(FodId, String, String)` | `CompletableFuture<RedeemResult> redeem(FodId, String, String)` |
+| `RedeemResult redeem(String, String, String)` | `CompletableFuture<RedeemResult> redeem(String, String, String)` |
+
+None of them declares `IOException` any more, because the failure arrives
+through the future. A caller that wants the old blocking behaviour calls
+`join()` on the future, or `get()`, and takes the failure from the cause of
+the `CompletionException` or `ExecutionException` that reports it.
+`HttpTransport.send(Request)` likewise answers a
+`CompletableFuture<Response>` rather than a `Response`, and does not throw
+for a failure of the exchange. A transport of your own that blocks must
+run its blocking call on a thread of its own and complete the future from
+there.
 
 ## Migrating from the OWID library's removed API
 
