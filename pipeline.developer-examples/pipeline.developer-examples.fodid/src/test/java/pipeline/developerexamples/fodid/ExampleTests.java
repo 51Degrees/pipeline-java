@@ -249,17 +249,24 @@ public class ExampleTests {
     }
 
     /**
-     * A canonical 37-byte Probabilistic payload: flags 0x00, License Id
-     * 0x12345678 (little-endian) and a 32-byte match key 0x20..0x3F.
+     * A canonical 37-byte Probabilistic payload with flags 0x00, License Id
+     * 0x12345678 (little-endian) and a 32-byte match key 0x20..0x3F. The
+     * offsets are spelled out here because writing a payload is the cloud's
+     * job rather than a reader's, so the layout is not part of the reader's
+     * public surface. It is specified at
+     * https://github.com/51Degrees/specifications/blob/main/did-specification/identifier-layout.md
      */
     private static byte[] samplePayload() {
-        byte[] payload = new byte[FodId.PAYLOAD_LENGTH];
-        payload[FodId.LICENSE_ID_OFFSET] = 0x78;
-        payload[FodId.LICENSE_ID_OFFSET + 1] = 0x56;
-        payload[FodId.LICENSE_ID_OFFSET + 2] = 0x34;
-        payload[FodId.LICENSE_ID_OFFSET + 3] = 0x12;
-        for (int i = 0; i < FodId.MATCH_KEY_LENGTH; i++) {
-            payload[FodId.MATCH_KEY_OFFSET + i] = (byte) (0x20 + i);
+        final int licenseIdOffset = 1;
+        final int matchKeyOffset = 5;
+        final int matchKeyLength = 32;
+        byte[] payload = new byte[matchKeyOffset + matchKeyLength];
+        payload[licenseIdOffset] = 0x78;
+        payload[licenseIdOffset + 1] = 0x56;
+        payload[licenseIdOffset + 2] = 0x34;
+        payload[licenseIdOffset + 3] = 0x12;
+        for (int i = 0; i < matchKeyLength; i++) {
+            payload[matchKeyOffset + i] = (byte) (0x20 + i);
         }
         return payload;
     }

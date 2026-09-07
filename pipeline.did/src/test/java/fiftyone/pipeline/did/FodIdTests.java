@@ -202,27 +202,6 @@ public class FodIdTests {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
-    public void getHash_DeprecatedAlias_ReturnsMatchKey() throws Exception {
-        // getHash() stays as a deprecated alias so that callers written
-        // against the earlier name keep compiling and get the same bytes.
-        FodId fodId = FodId.fromBase64(factory.signedOwidBase64(canonicalPayload()));
-
-        assertArrayEquals(fodId.getMatchKey(), fodId.getHash());
-        assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getHash());
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    public void hashConstants_DeprecatedAliases_MatchNewNames() {
-        // HASH_OFFSET and HASH_LENGTH stay as deprecated aliases so that
-        // callers written against the earlier names keep compiling and read
-        // the same values as the match key constants they now point at.
-        assertEquals(FodId.MATCH_KEY_OFFSET, FodId.HASH_OFFSET);
-        assertEquals(FodId.MATCH_KEY_LENGTH, FodId.HASH_LENGTH);
-    }
-
-    @Test
     public void constructor_PayloadOneByteShort_Throws() throws Exception {
         // 36 bytes - one short of the minimum 37 (flags 0 -> Probabilistic).
         String base64 = factory.signedOwidBase64(new byte[FodId.PAYLOAD_LENGTH - 1]);
@@ -538,27 +517,35 @@ public class FodIdTests {
     }
 
     @Test
-    public void dateMinutes_IsTheEnvelopeDateField() throws Exception {
+    public void date_ReadsTheEnvelopeDateField() throws Exception {
         Instant date = Instant.parse("2026-01-01T00:00:00Z");
 
         FodId fodId = factory.fodIdAt(canonicalPayload(), date);
 
-        // 2020 through 2025 is 2192 days, 2020 and 2024 being leap years.
-        assertEquals(2192L * 24 * 60, fodId.getDateMinutes());
-        assertEquals(3_156_480L, fodId.getDateMinutes());
+        // The envelope stores the date as minutes since 2020-01-01, and the
+        // factory writes exactly that field, so reading the date back is
+        // reading the field. 2020 through 2025 is 2192 days, 2020 and 2024
+        // being leap years, which is 3,156,480 minutes.
         assertEquals(date, fodId.getDate());
+        assertEquals(FodIdTestFactory.DATE_ORIGIN.plus(
+            Duration.ofMinutes(2192L * 24 * 60)), fodId.getDate());
+        assertEquals(FodIdTestFactory.DATE_ORIGIN.plus(
+            Duration.ofMinutes(3_156_480L)), fodId.getDate());
     }
 
     @Test
-    public void dateMinutes_HighBitStaysUnsigned() throws Exception {
+    public void date_HighBitOfTheMinutesFieldStaysUnsigned()
+            throws Exception {
         // 0x80000000 minutes after 2020 is the year 6103, inside the uint32
-        // range the envelope stores, and must not read back negative.
+        // range the envelope stores. Were the field read as signed the date
+        // would come back before 2020 instead.
         Instant date = FodIdTestFactory.DATE_ORIGIN.plus(
             Duration.ofMinutes(0x80000000L));
 
         FodId fodId = factory.fodIdAt(canonicalPayload(), date);
 
-        assertEquals(0x80000000L, fodId.getDateMinutes());
+        assertEquals(date, fodId.getDate());
+        assertTrue(fodId.getDate().isAfter(FodIdTestFactory.DATE_ORIGIN));
     }
 
     @Test
