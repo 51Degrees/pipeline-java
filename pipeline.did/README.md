@@ -52,6 +52,23 @@ as index zero, which says the terms are not stated in the identifier.
 Absence and zero mean the same thing, so no reader has to tell them apart
 and no presence flag exists. See the terms section below.
 
+## The payload version
+
+Bits 4 and 5 of the Flags byte say which payload layout the identifier
+follows, and this package reads version 0. A payload naming version 1, 2
+or 3 is refused with `FodIdParseStatus.UNSUPPORTED_PAYLOAD_VERSION`, and
+the throwing readers name the version they found in the message.
+
+The fields are never read under the layout this package knows once the
+version says otherwise. A later version exists precisely because a field
+moved, so reading such a payload here would answer with values that are
+wrong rather than absent, which is worse than refusing. A version that
+nothing checks protects nothing.
+
+The version is not exposed. Either this package read the layout, in which
+case the accessors are the answer, or it did not, in which case there is
+no identifier to read fields from.
+
 The minimums in that table are the only lengths this package enforces. There
 is no upper bound. An identifier carrying a creator context is longer than
 the minimum, its extra bytes have a shape only the cloud knows, and a reader
@@ -183,7 +200,6 @@ apart from "the signature could not be checked" (`KEY_UNAVAILABLE`,
 ```java
 import fiftyone.pipeline.did.FodId;
 import fiftyone.pipeline.did.IdType;
-import fiftyone.pipeline.did.Terms;
 import fiftyone.pipeline.did.Usage;
 import java.time.Instant;
 
@@ -194,9 +210,10 @@ Usage   usage      = fodId.getUsage();     // what the identifier may be used fo
 boolean fromConsent = fodId.isUsageFromConsent();
 long    licenseId  = fodId.getLicenseId();
 byte[]  matchKey   = fodId.getMatchKey();  // SHA-256 or GUID bytes, see type
-Terms   terms      = fodId.getTerms();     // which terms it was created under
-int     termsIndex = fodId.getTermsIndex();
-String  termsUrl   = fodId.getTermsUrl();  // null where none is stated
+String  terms      = fodId.getTerms();     // address of the terms document
+                                           // it was created under, null
+                                           // where it names none this
+                                           // package knows
 
 // Delegated OWID-level fields and operations.
 String  domain   = fodId.getDomain();
@@ -256,11 +273,12 @@ if (fodId.getUsage() == Usage.NON_MARKETING) {
 
 ## Which terms a 51Did was created under
 
-`getTerms()` answers which terms document the identifier was created under.
-The answer travels inside the identifier, so a receiver always has it,
-rather than depending on the surrounding protocol to carry the terms
-alongside the identifier where any hop can drop them without the identifier
-looking any different.
+`getTerms()` answers with the address of the terms document the identifier
+was created under. The answer travels inside the identifier, so a receiver
+always has it, rather than depending on the surrounding protocol to carry
+the terms alongside the identifier where any hop can drop them without the
+identifier looking any different. The package turns the index into the
+address, so a caller never handles the byte.
 
 The byte after the match key is an index into a table in the specification
 and is not a version number, so that a later document can live at any
@@ -268,28 +286,27 @@ address rather than only at one a number could compose. An index is never
 reused and never repointed once published, because repointing one would
 rewrite what an identifier already issued says it agreed to.
 
-| `Terms` | Index | `getTermsUrl()` | What it means |
-|---|---|---|---|
-| `NOT_STATED` | `0` | `null` | The terms are not stated in the identifier, so take them from the data accompanying it. |
-| `MODEL_TERMS_FOR_MARKETING_2` | `1` | `https://m4ow.uk/mtm/2.txt` | The Model Terms for Marketing, version 2. |
-| `UNKNOWN` | any other | `null` | An index added to the specification after this package was released. |
+| Index | Document | `getTerms()` |
+|---|---|---|
+| `0` | Not stated in the identifier | `null` |
+| `1` | Model Terms for Marketing, version 2 | `https://m4ow.uk/mtm/2.txt` |
+| any other | One this package cannot name | `null` |
 
-`UNKNOWN` is not `NOT_STATED`. Zero says no terms are stated, whilst an
-unknown index says terms are stated that this package cannot name, and code
-that treated the two alike would read an identifier created under terms as
-one created under none. `getTermsIndex()` gives the raw index whatever the
-answer is, which is the one raw value a 51Did offers, so a caller meeting an
-index this package does not know can look the document up in the
-specification by hand and can report which index it could not read.
+An index added to the specification after this package was released answers
+with no address, and the package never builds an address from the index,
+because that would name a document nobody wrote and a receiver would record
+having accepted terms that do not exist. A caller therefore cannot tell an
+index of zero from an index this package cannot name, which is deliberate,
+since both lead to the same place.
 
 ```java
-if (fodId.getTerms() == Terms.UNKNOWN) {
-    // Terms are stated that this package cannot name. Take a newer package
-    // or refuse the identifier, reporting fodId.getTermsIndex().
+if (fodId.getTerms() == null) {
+    // The identifier does not say which terms it was created under, so the
+    // answer has to come from the data accompanying it.
 }
 ```
 
-`NOT_STATED` does not mean the identifier is unrestricted. It means only
+No address does not mean the identifier is unrestricted. It means only
 that the identifier does not carry the answer, so the answer has to come
 from somewhere else, being the Terms Document Locator in an OpenRTB request
 or whatever the surrounding protocol provides. Carrying the terms in the
@@ -301,9 +318,9 @@ accompanying data is not.
 The terms and the usage answer different questions and a receiver needs
 both. `getUsage()` says where an identifier may go and `getTerms()` says
 which document it was created under. An identifier created for non-marketing
-carries `NOT_STATED`, because the Model Terms govern marketing use and a
-non-marketing identifier is not created under them, and it stays barred from
-a demand source by its usage.
+carries index zero and so answers with no address, because the Model Terms
+govern marketing use and a non-marketing identifier is not created under
+them, and it stays barred from a demand source by its usage.
 
 This package never fetches the address. It returns it and the receiver
 decides what to do with it.

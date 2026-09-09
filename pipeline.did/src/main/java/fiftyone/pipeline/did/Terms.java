@@ -37,14 +37,17 @@ package fiftyone.pipeline.did;
  * index, and every 51Did package has to be released to know it, which is
  * the cost of a receiver being able to trust what it reads.
  * <p>
- * {@link #UNKNOWN} is not {@link #NOT_STATED}. This package will meet an
- * index added to the specification after it was released, and reading that
- * as {@link #NOT_STATED} would read an identifier created under terms as
- * one created under none. {@link FodId#getTermsIndex()} gives the index
- * whatever the answer is, so a caller meeting {@link #UNKNOWN} can look the
- * document up in the specification by hand and can report which index it
- * could not read, and it should treat the identifier as covered by terms it
- * cannot yet read and either take a newer package or refuse the identifier.
+ * This enumeration is not public, and neither is the index behind it. The
+ * package turns the index into the address that {@link FodId#getTerms()}
+ * answers with, so a caller never handles the byte, and the names here are
+ * the ones the specification gives so that every package describes one
+ * document the same way.
+ * <p>
+ * {@link #UNKNOWN} is an index added to the specification after this
+ * package was released, so the package cannot name the document. It
+ * answers with no address, as {@link #NOT_STATED} does, because no package
+ * may build an address from an index it does not know, since that would
+ * name a document nobody wrote.
  * <p>
  * {@link #NOT_STATED} does not mean the identifier is unrestricted. It
  * means only that the identifier does not carry the answer, so the answer
@@ -66,7 +69,7 @@ package fiftyone.pipeline.did;
  * <a href="https://github.com/51Degrees/specifications/blob/main/did-specification/identifier-layout.md">identifier-layout.md</a>,
  * which is the authority for it.
  */
-public enum Terms {
+enum Terms {
     /**
      * Index 0, the terms are not stated in the identifier and the receiver
      * has to take them from the data accompanying it. An identifier whose
@@ -74,6 +77,7 @@ public enum Terms {
      * mean the same thing.
      */
     NOT_STATED(null),
+
 
     /**
      * Index 1, the Model Terms for Marketing, version 2.
@@ -83,8 +87,7 @@ public enum Terms {
     /**
      * An index added to the specification after this package was released.
      * Terms are stated and this package cannot name them, so it answers
-     * with no address, and {@link FodId#getTermsIndex()} says which index it
-     * could not read.
+     * with no address rather than building one from the index.
      */
     UNKNOWN(null);
 

@@ -49,7 +49,20 @@ final class FodIdTestFactory {
 
     static final String TEST_DOMAIN = "51degrees.com";
 
-    static final int CANONICAL_FLAGS = 0xA5;
+    static final int CANONICAL_FLAGS = 0x85;
+
+    /**
+     * The Terms index a marketing identifier carries, being the Model Terms
+     * for Marketing version 2.
+     */
+    static final int MARKETING_TERMS_INDEX = 1;
+
+    /**
+     * The Terms index a non-marketing identifier carries, since the Model
+     * Terms govern marketing use and a non-marketing identifier is not
+     * created under them.
+     */
+    static final int NON_MARKETING_TERMS_INDEX = 0;
 
     static final long CANONICAL_LICENSE_ID = 0x12345678L;
 
@@ -81,7 +94,23 @@ final class FodIdTestFactory {
         return matchKey;
     }
 
+    /**
+     * The canonical payload as an issuer writes one, carrying the payload
+     * version 0 in its Flags byte and the Terms byte of the document a
+     * personalized marketing identifier is created under. This is the
+     * creating side, so it writes every field an issuer writes.
+     */
     static byte[] canonicalPayload() {
+        return canonicalPayloadWithTerms(MARKETING_TERMS_INDEX);
+    }
+
+    /**
+     * The canonical payload cut off at the end of the match key, so it
+     * carries no Terms byte. A reader takes that as a Terms of zero, and
+     * this is the fixture for that rule rather than anything an issuer
+     * would write.
+     */
+    static byte[] payloadEndingAtMatchKey() {
         byte[] payload = new byte[FodId.PAYLOAD_LENGTH];
         payload[FodId.FLAGS_OFFSET] = (byte) CANONICAL_FLAGS;
         writeCanonicalLicenseId(payload);
@@ -91,7 +120,20 @@ final class FodIdTestFactory {
         return payload;
     }
 
+    /**
+     * The canonical Random payload as an issuer writes one, carrying the
+     * payload version 0 and the zero Terms byte a non-marketing identifier
+     * carries.
+     */
     static byte[] canonicalRandomPayload() {
+        return canonicalRandomPayloadWithTerms(NON_MARKETING_TERMS_INDEX);
+    }
+
+    /**
+     * The canonical Random payload cut off at the end of its GUID, so it
+     * carries no Terms byte.
+     */
+    static byte[] randomPayloadEndingAtMatchKey() {
         byte[] payload = new byte[FodId.RANDOM_PAYLOAD_LENGTH];
         payload[FodId.FLAGS_OFFSET] = (byte) ((1 << 6) | 0b001);
         writeCanonicalLicenseId(payload);
@@ -103,13 +145,13 @@ final class FodIdTestFactory {
 
     /**
      * The canonical payload with a Terms byte written after its 32-byte
-     * match key, which is how the cloud issues one now.
+     * match key, which is how the cloud issues one.
      */
     static byte[] canonicalPayloadWithTerms(int termsIndex) {
         byte[] payload =
             new byte[FodId.PAYLOAD_LENGTH + FodId.TERMS_LENGTH];
         System.arraycopy(
-            canonicalPayload(), 0, payload, 0, FodId.PAYLOAD_LENGTH);
+            payloadEndingAtMatchKey(), 0, payload, 0, FodId.PAYLOAD_LENGTH);
         payload[FodId.PAYLOAD_LENGTH] = (byte) termsIndex;
         return payload;
     }
@@ -123,7 +165,7 @@ final class FodIdTestFactory {
         byte[] payload =
             new byte[FodId.RANDOM_PAYLOAD_LENGTH + FodId.TERMS_LENGTH];
         System.arraycopy(
-            canonicalRandomPayload(), 0, payload, 0,
+            randomPayloadEndingAtMatchKey(), 0, payload, 0,
             FodId.RANDOM_PAYLOAD_LENGTH);
         payload[FodId.RANDOM_PAYLOAD_LENGTH] = (byte) termsIndex;
         return payload;
@@ -147,7 +189,7 @@ final class FodIdTestFactory {
     static byte[] canonicalPayloadWithSection(int sectionLength) {
         byte[] payload = new byte[FodId.PAYLOAD_LENGTH + sectionLength];
         System.arraycopy(
-            canonicalPayload(), 0, payload, 0, FodId.PAYLOAD_LENGTH);
+            payloadEndingAtMatchKey(), 0, payload, 0, FodId.PAYLOAD_LENGTH);
         for (int i = FodId.PAYLOAD_LENGTH; i < payload.length; i++) {
             payload[i] = (byte) 0xCC;
         }

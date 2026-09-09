@@ -57,8 +57,17 @@ import java.util.Objects;
  * it only as the part of {@link #getPayload()} beyond the Terms, its
  * lengths belong to the cloud, and this reader therefore puts no upper
  * bound on a payload. A payload that ends at the match key has no Terms
- * byte, and a missing byte reads as {@link Terms#NOT_STATED}, so absence
- * and zero mean the same thing.
+ * byte, and a missing byte reads as a Terms of zero, so absence and zero
+ * mean the same thing.
+ * <p>
+ * Bits 4 and 5 of the Flags byte say which payload layout the identifier
+ * follows, and this package reads version 0. A payload naming any other
+ * version is refused with
+ * {@link FodIdParseStatus#UNSUPPORTED_PAYLOAD_VERSION} rather than read
+ * under the layout this package knows, because a later version exists
+ * precisely because a field moved, so reading one here would answer with
+ * values that are wrong rather than absent. The version is not exposed,
+ * because a caller has nothing to decide with it.
  * The byte layout is specified at
  * <a href="https://github.com/51Degrees/specifications/blob/main/did-specification/identifier-layout.md">identifier-layout.md</a>,
  * which is the authority for it, and the surface every 51Did package
@@ -140,6 +149,13 @@ public final class FodId {
      * match key reads as a Terms of zero.
      */
     static final int TERMS_LENGTH = 1;
+
+    /**
+     * The payload layout version this package reads, carried in bits 4 and
+     * 5 of the Flags byte. Any other version is refused rather than read
+     * under this layout.
+     */
+    static final int SUPPORTED_PAYLOAD_VERSION = 0;
 
     private final Owid owid;
     private final int flags;
@@ -234,6 +250,16 @@ public final class FodId {
             return FodIdParseResult.failed(FodIdParseStatus.PAYLOAD_TOO_SHORT);
         }
         int flags = payload[FLAGS_OFFSET] & 0xFF;
+        // The version is read before any field, because a later version
+        // exists precisely because a field moved. Reading a payload of a
+        // version this package does not know under the layout it does know
+        // would answer with values that are wrong rather than absent,
+        // which is worse than refusing, and a version that nothing checks
+        // protects nothing.
+        int payloadVersion = payloadVersionOf(flags);
+        if (payloadVersion != SUPPORTED_PAYLOAD_VERSION) {
+            return FodIdParseResult.unsupportedPayloadVersion(payloadVersion);
+        }
         int matchKeyLength;
         switch (IdType.fromFlags(flags)) {
             case RANDOM:
@@ -377,6 +403,19 @@ public final class FodId {
      * failure is an OWID one, which is the split the readers have always
      * made. The message names the status and the parameter, never the input.
      */
+    /**
+     * Bits 4 and 5 of the Flags byte, being the version of the payload
+     * layout the identifier follows. The envelope carries a version of its
+     * own at its first byte, which versions the envelope, whilst this one
+     * versions the payload.
+     *
+     * @param flags the Flags byte
+     * @return the payload layout version (0 to 3)
+     */
+    private static int payloadVersionOf(int flags) {
+        return (flags >> 4) & 0b11;
+    }
+
     private static FodId valueOrThrow(FodIdParseResult result, String paramName)
             throws OwidException {
         switch (result.getStatus()) {
@@ -390,6 +429,11 @@ public final class FodId {
                 throw new IllegalArgumentException(
                     "51Did payload is shorter than the minimum for its "
                     + "identifier type (" + paramName + ").");
+            case UNSUPPORTED_PAYLOAD_VERSION:
+                throw new IllegalArgumentException(
+                    "51Did payload version " + result.getPayloadVersion()
+                    + " is not one this package can read ("
+                    + paramName + ").");
             default:
                 throw new OwidException(
                     "The value is not an OWID envelope: "
@@ -469,45 +513,33 @@ public final class FodId {
     }
 
     /**
-     * The terms document this 51Did was created under, from the Terms byte
-     * that follows the match key. See {@link Terms} for what each answer
-     * means, and read {@link #getTermsIndex()} alongside this where the
-     * answer is {@link Terms#UNKNOWN}.
+     * The address of the terms document this 51Did was created under, from
+     * the Terms byte that follows the match key.
+     * <p>
+     * The byte is an index into a table in the specification and this
+     * package turns the index into the address, so a caller never handles
+     * the byte. The address is answered and never fetched, and the receiver
+     * decides what to do with the document.
+     * <p>
+     * Null covers both an index of zero, which says the terms are not
+     * stated in the identifier, and an index added to the specification
+     * after this package was released, which it cannot name. A caller
+     * cannot tell those two apart, which is deliberate, because both lead
+     * to the same place, being that the identifier does not say which terms
+     * it was created under and the answer has to come from somewhere else.
+     * No package may build an address from an index it does not know, since
+     * that would name a document nobody wrote.
+     * <p>
+     * No address does not mean the identifier is unrestricted. Where an
+     * identifier may go is a separate question {@link #getUsage()} answers,
+     * which still bars a non-marketing identifier from a demand source.
      *
-     * @return the terms document, {@link Terms#NOT_STATED} where the
-     *         identifier does not state them, or {@link Terms#UNKNOWN}
-     *         where it states an index this package does not know
+     * @return the address of the terms document, or null where the
+     *         identifier names no document this package knows, which is
+     *         never an empty string and is never built from the index
      */
-    public Terms getTerms() {
-        return Terms.fromIndex(termsIndex);
-    }
-
-    /**
-     * The raw Terms index (0 to 255). This is the one raw value a 51Did
-     * offers, where the Flags byte is not offered at all, and it is here
-     * because a caller meeting an index added to the specification after
-     * this package was released otherwise holds {@link Terms#UNKNOWN} and
-     * has no way to find out what it stands for. With the index that caller
-     * can look the document up in the specification by hand and can report
-     * which index it could not read. An identifier whose payload ends at
-     * the match key answers 0.
-     *
-     * @return the Terms index from the payload (0-255)
-     */
-    public int getTermsIndex() {
-        return termsIndex;
-    }
-
-    /**
-     * The address of the terms document this 51Did was created under. This
-     * package never fetches it and the receiver decides what to do with it.
-     *
-     * @return the address, or null where the terms are not stated and where
-     *         the index is one this package does not know, which is never
-     *         an empty string and is never an address built from the index
-     */
-    public String getTermsUrl() {
-        return getTerms().getUrl();
+    public String getTerms() {
+        return Terms.fromIndex(termsIndex).getUrl();
     }
 
     /** @return the OWID version. */
