@@ -22,6 +22,10 @@
 
 package fiftyone.pipeline.did;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * The terms document a 51Did was created under, carried in the byte after
  * the match key. It travels inside the identifier so that a receiver always
@@ -76,25 +80,54 @@ enum Terms {
      * payload ends at the match key reads as this, so absence and zero
      * mean the same thing.
      */
-    NOT_STATED(null),
+    NOT_STATED(0, null),
 
 
     /**
      * Index 1, the Model Terms for Marketing, version 2.
      */
-    MODEL_TERMS_FOR_MARKETING_2("https://m4ow.uk/mtm/2.txt"),
+    MODEL_TERMS_FOR_MARKETING_2(1, "https://m4ow.uk/mtm/2.txt"),
 
     /**
      * An index added to the specification after this package was released.
      * Terms are stated and this package cannot name them, so it answers
      * with no address rather than building one from the index.
      */
-    UNKNOWN(null);
+    UNKNOWN(-1, null);
+
+    /**
+     * The Terms index, and -1 for {@link #UNKNOWN}, which stands for every
+     * index this package does not name and so has no index of its own. A
+     * Terms index read from a payload is one byte, so it is 0 to 255 and
+     * can never be negative, which is what makes -1 safe as the value that
+     * is not in the table. A negative index is left out of
+     * {@link #BY_INDEX} for that reason.
+     */
+    private final int index;
 
     private final String url;
 
-    Terms(String url) {
+    Terms(int index, String url) {
+        this.index = index;
         this.url = url;
+    }
+
+    /**
+     * The table above, read by index. It is built from the members rather
+     * than written out a second time, so a member and its index can never
+     * disagree, and a new terms document is one new member above and
+     * nothing here.
+     */
+    private static final Map<Integer, Terms> BY_INDEX;
+
+    static {
+        final Map<Integer, Terms> byIndex = new HashMap<>();
+        for (Terms terms : values()) {
+            if (terms.index >= 0) {
+                byIndex.put(terms.index, terms);
+            }
+        }
+        BY_INDEX = Collections.unmodifiableMap(byIndex);
     }
 
     /**
@@ -106,14 +139,8 @@ enum Terms {
      * @return the terms document the index stands for
      */
     public static Terms fromIndex(int index) {
-        switch (index) {
-            case 0:
-                return NOT_STATED;
-            case 1:
-                return MODEL_TERMS_FOR_MARKETING_2;
-            default:
-                return UNKNOWN;
-        }
+        final Terms terms = BY_INDEX.get(index);
+        return terms == null ? UNKNOWN : terms;
     }
 
     /**
@@ -126,5 +153,14 @@ enum Terms {
      */
     public String getUrl() {
         return url;
+    }
+
+    /**
+     * The Terms index this member is carried as in a payload.
+     *
+     * @return the index, or -1 for {@link #UNKNOWN}, which has none
+     */
+    public int getIndex() {
+        return index;
     }
 }

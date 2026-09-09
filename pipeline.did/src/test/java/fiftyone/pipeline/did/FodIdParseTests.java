@@ -461,6 +461,43 @@ public class FodIdParseTests {
     }
 
     /**
+     * The terms table is the one place the package says which index is
+     * which document, and the index to member map is built from the
+     * members rather than written out again. This walks every member and
+     * fails if one does not read back from its own index, or if a member
+     * that names a document has no address, which is what would happen if
+     * a member and its address were ever added apart.
+     */
+    @Test
+    public void terms_EveryMemberAgreesWithTheTable() {
+        for (Terms terms : Terms.values()) {
+            if (terms == Terms.UNKNOWN) {
+                // It stands for every index not in the table, so it has no
+                // index of its own and no address.
+                assertEquals(-1, terms.getIndex());
+                assertNull(terms.getUrl());
+                continue;
+            }
+            assertEquals(
+                "member " + terms + " does not read back from its index",
+                terms,
+                Terms.fromIndex(terms.getIndex()));
+            if (terms == Terms.NOT_STATED) {
+                // Names no document, so it has no address.
+                assertEquals(0, terms.getIndex());
+                assertNull(terms.getUrl());
+            } else {
+                assertNotNull(
+                    "member " + terms + " names a document with no address",
+                    terms.getUrl());
+                assertTrue(
+                    "address for " + terms + " is not an https address",
+                    terms.getUrl().startsWith("https://"));
+            }
+        }
+    }
+
+    /**
      * The Reserved type has no defined match key length, so the reader
      * takes every byte after the header as the match key and leaves none
      * to read as the Terms. Such an identifier therefore states no terms,
