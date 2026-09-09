@@ -50,12 +50,16 @@ import java.util.Objects;
  * Payload layout. Read a 51Did through the typed accessors below, never by
  * walking the payload bytes. The identifier carries a five byte header of
  * Flags and License Id, then the match key, whose length the identifier
- * type in bits 6-7 of Flags decides, and then an optional creator context
+ * type in bits 6-7 of Flags decides, then the Terms byte naming the terms
+ * document it was created under, and then an optional creator context
  * section that binds the identifier to the browser and connection it was
  * created on. Only 51Degrees can read that section, so this reader exposes
- * it only as the part of {@link #getPayload()} beyond the match key, its
+ * it only as the part of {@link #getPayload()} beyond the Terms, its
  * lengths belong to the cloud, and this reader therefore puts no upper
- * bound on a payload. The byte layout is specified at
+ * bound on a payload. An identifier issued before the Terms existed has a
+ * payload that ends at the match key, and a missing byte reads as
+ * {@link Terms#NOT_STATED}, so nothing about such an identifier changes.
+ * The byte layout is specified at
  * <a href="https://github.com/51Degrees/specifications/blob/main/did-specification/identifier-layout.md">identifier-layout.md</a>,
  * which is the authority for it, and the surface every 51Did package
  * offers is specified at
@@ -130,21 +134,35 @@ public final class FodId {
     static final int PAYLOAD_LENGTH =
         MATCH_KEY_OFFSET + MATCH_KEY_LENGTH;
 
+    /**
+     * Byte length of the Terms field, which follows the match key. It is
+     * not part of any minimum above, because an identifier issued before
+     * the field existed ends at the match key and reads as a Terms of zero.
+     */
+    static final int TERMS_LENGTH = 1;
+
     private final Owid owid;
     private final int flags;
     private final long licenseId;
     private final byte[] matchKey;
+    private final int termsIndex;
 
     /**
      * Built only by {@link #read(Owid)} once the payload has passed the
      * 51Did rules, so an instance never exists for a payload that failed
      * them.
      */
-    private FodId(Owid owid, int flags, long licenseId, byte[] matchKey) {
+    private FodId(
+            Owid owid,
+            int flags,
+            long licenseId,
+            byte[] matchKey,
+            int termsIndex) {
         this.owid = owid;
         this.flags = flags;
         this.licenseId = licenseId;
         this.matchKey = matchKey;
+        this.termsIndex = termsIndex;
     }
 
     // ----- Reading without throwing -----
@@ -206,8 +224,10 @@ public final class FodId {
      * The rules are lower bounds only. The header must be present before the
      * type can be read, and the type then sets the least the payload can
      * hold. Anything longer is accepted as it stands, because the bytes past
-     * the match key are a creator context section whose shape the cloud
-     * judges.
+     * the match key are the Terms and then a creator context section whose
+     * shape the cloud judges. The Terms adds nothing to those bounds, since
+     * an identifier issued before the field existed ends at the match key
+     * and reads as a Terms of zero.
      */
     private static FodIdParseResult read(Owid owid) {
         byte[] payload = owid.getPayload();
@@ -246,8 +266,17 @@ public final class FodId {
         // bytes.
         byte[] matchKey = Arrays.copyOfRange(
             payload, MATCH_KEY_OFFSET, MATCH_KEY_OFFSET + matchKeyLength);
+        // The Terms byte follows the match key, wherever the type put its
+        // end. A payload that stops there was issued before the field
+        // existed, and a missing byte is read as zero, which says the terms
+        // are not stated in the identifier. Absence and zero therefore mean
+        // the same thing and nothing has to tell them apart.
+        int termsOffset = MATCH_KEY_OFFSET + matchKeyLength;
+        int termsIndex = payload.length > termsOffset
+            ? payload[termsOffset] & 0xFF
+            : 0;
         return FodIdParseResult.parsed(
-            new FodId(owid, flags, licenseId, matchKey));
+            new FodId(owid, flags, licenseId, matchKey, termsIndex));
     }
 
     // ----- Reading with exceptions -----
@@ -438,6 +467,48 @@ public final class FodId {
      */
     public byte[] getMatchKey() {
         return matchKey.clone();
+    }
+
+    /**
+     * The terms document this 51Did was created under, from the Terms byte
+     * that follows the match key. See {@link Terms} for what each answer
+     * means, and read {@link #getTermsIndex()} alongside this where the
+     * answer is {@link Terms#UNKNOWN}.
+     *
+     * @return the terms document, {@link Terms#NOT_STATED} where the
+     *         identifier does not state them, or {@link Terms#UNKNOWN}
+     *         where it states an index this package does not know
+     */
+    public Terms getTerms() {
+        return Terms.fromIndex(termsIndex);
+    }
+
+    /**
+     * The raw Terms index (0 to 255). This is the one raw value a 51Did
+     * offers, where the Flags byte is not offered at all, and it is here
+     * because a caller meeting an index added to the specification after
+     * this package was released otherwise holds {@link Terms#UNKNOWN} and
+     * has no way to find out what it stands for. With the index that caller
+     * can look the document up in the specification by hand and can report
+     * which index it could not read. An identifier whose payload ends at
+     * the match key answers 0.
+     *
+     * @return the Terms index from the payload (0-255)
+     */
+    public int getTermsIndex() {
+        return termsIndex;
+    }
+
+    /**
+     * The address of the terms document this 51Did was created under. This
+     * package never fetches it and the receiver decides what to do with it.
+     *
+     * @return the address, or null where the terms are not stated and where
+     *         the index is one this package does not know, which is never
+     *         an empty string and is never an address built from the index
+     */
+    public String getTermsUrl() {
+        return getTerms().getUrl();
     }
 
     /** @return the OWID version. */

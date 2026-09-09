@@ -39,7 +39,10 @@ import static fiftyone.pipeline.did.FodIdTestFactory.CANONICAL_LICENSE_ID;
 import static fiftyone.pipeline.did.FodIdTestFactory.TEST_DOMAIN;
 import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayload;
 import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayloadWithSection;
+import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayloadWithTerms;
+import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayloadWithTermsAndSection;
 import static fiftyone.pipeline.did.FodIdTestFactory.canonicalRandomPayload;
+import static fiftyone.pipeline.did.FodIdTestFactory.canonicalRandomPayloadWithTerms;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -209,6 +212,140 @@ public class FodIdParseTests {
             factory.signedOwidAt(payload, DATE).asBase64()));
         assertTrue(fodId.isUsageFromConsent());
         assertEquals(Usage.STANDARD, fodId.getUsage());
+    }
+
+    /**
+     * An identifier issued before the Terms byte existed has a payload that
+     * ends at the match key. A missing byte is read as index zero, which
+     * says the terms are not stated in the identifier, so absence and zero
+     * mean the same thing and such an identifier reads as it always did.
+     */
+    @Test
+    public void getTerms_NoByteAfterTheMatchKey_NotStatedWithNoUrl()
+            throws Exception {
+        for (byte[] payload : new byte[][] {
+                canonicalPayload(), canonicalRandomPayload() }) {
+            FodId fodId = assertParsed(FodId.tryFromBase64(
+                factory.signedOwidAt(payload, DATE).asBase64()));
+
+            assertEquals(Terms.NOT_STATED, fodId.getTerms());
+            assertEquals(0, fodId.getTermsIndex());
+            assertNull(fodId.getTermsUrl());
+        }
+    }
+
+    /**
+     * Index one is the Model Terms for Marketing version 2, whose address is
+     * answered exactly as the specification writes it and is never fetched.
+     * The byte is read after the match key, whose length the type sets, so
+     * both match key lengths are checked and neither loses a byte to the
+     * Terms.
+     */
+    @Test
+    public void getTerms_IndexOne_ModelTermsWithItsUrlForBothKeyLengths()
+            throws Exception {
+        FodId probabilistic = assertParsed(FodId.tryFromBase64(
+            factory.signedOwidAt(canonicalPayloadWithTerms(1), DATE)
+                .asBase64()));
+        FodId random = assertParsed(FodId.tryFromBase64(
+            factory.signedOwidAt(canonicalRandomPayloadWithTerms(1), DATE)
+                .asBase64()));
+
+        for (FodId fodId : new FodId[] { probabilistic, random }) {
+            assertEquals(Terms.MODEL_TERMS_FOR_MARKETING_2, fodId.getTerms());
+            assertEquals(1, fodId.getTermsIndex());
+            assertEquals("https://m4ow.uk/mtm/2.txt", fodId.getTermsUrl());
+        }
+        // The 32-byte match key and the 16-byte one are both the same as
+        // they are without the Terms byte, so nothing was taken from either.
+        assertEquals(IdType.HASHED_EMAIL, probabilistic.getType());
+        assertArrayEquals(CANONICAL_MATCH_KEY, probabilistic.getMatchKey());
+        assertEquals(IdType.RANDOM, random.getType());
+        assertEquals(FodId.GUID_LENGTH, random.getMatchKey().length);
+        assertArrayEquals(
+            assertParsed(FodId.tryFromBase64(factory
+                .signedOwidAt(canonicalRandomPayload(), DATE).asBase64()))
+                .getMatchKey(),
+            random.getMatchKey());
+    }
+
+    /**
+     * An index added to the specification after this package was released is
+     * reported as itself and answers with no address, and it is not the
+     * value for zero. Zero says no terms are stated whilst an unknown index
+     * says terms are stated that this package cannot name, and a receiver
+     * confusing the two would read an identifier created under terms as one
+     * created under none.
+     */
+    @Test
+    public void getTerms_IndexThisPackageDoesNotKnow_ReportedAndNotZero()
+            throws Exception {
+        FodId notStated = assertParsed(FodId.tryFromBase64(
+            factory.signedOwidAt(canonicalPayloadWithTerms(0), DATE)
+                .asBase64()));
+
+        for (int index : new int[] { 200, 255 }) {
+            FodId unknown = assertParsed(FodId.tryFromBase64(
+                factory.signedOwidAt(canonicalPayloadWithTerms(index), DATE)
+                    .asBase64()));
+
+            // The index is reported as written, so a caller can name the one
+            // it could not read. The byte is unsigned, so 200 is 200 and 255
+            // is 255 rather than a negative number.
+            assertEquals("terms index " + index,
+                index, unknown.getTermsIndex());
+            assertEquals("terms index " + index,
+                Terms.UNKNOWN, unknown.getTerms());
+            assertNull("terms index " + index, unknown.getTermsUrl());
+            // Zero and an unknown index are told apart, by the named value
+            // and by the index.
+            assertNotEquals(notStated.getTerms(), unknown.getTerms());
+            assertNotEquals(
+                notStated.getTermsIndex(), unknown.getTermsIndex());
+        }
+        assertEquals(Terms.NOT_STATED, notStated.getTerms());
+        assertEquals(0, notStated.getTermsIndex());
+        assertNull(notStated.getTermsUrl());
+    }
+
+    /**
+     * Every index the table does not carry is unknown and has no address,
+     * across the whole byte, so none of them can be read as zero.
+     */
+    @Test
+    public void terms_EveryIndexOutsideTheTable_IsUnknownWithNoUrl() {
+        assertEquals(Terms.NOT_STATED, Terms.fromIndex(0));
+        assertNull(Terms.NOT_STATED.getUrl());
+        assertEquals(Terms.MODEL_TERMS_FOR_MARKETING_2, Terms.fromIndex(1));
+        assertEquals("https://m4ow.uk/mtm/2.txt",
+            Terms.MODEL_TERMS_FOR_MARKETING_2.getUrl());
+        for (int index = 2; index <= 255; index++) {
+            assertEquals("terms index " + index,
+                Terms.UNKNOWN, Terms.fromIndex(index));
+            assertNull("terms index " + index,
+                Terms.fromIndex(index).getUrl());
+        }
+    }
+
+    /**
+     * The Terms sits before the creator context section, so a payload
+     * carrying both still reads the match key and the Terms from the places
+     * they are written at, and the section is exposed as it always was.
+     */
+    @Test
+    public void getTerms_ByteThenContextSection_ReadAtTheRightOffset()
+            throws Exception {
+        byte[] payload = canonicalPayloadWithTermsAndSection(1, 512);
+
+        FodId fodId = assertParsed(FodId.tryFromBase64(
+            factory.signedOwidAt(payload, DATE).asBase64()));
+
+        assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
+        assertEquals(Terms.MODEL_TERMS_FOR_MARKETING_2, fodId.getTerms());
+        assertEquals(1, fodId.getTermsIndex());
+        assertEquals("https://m4ow.uk/mtm/2.txt", fodId.getTermsUrl());
+        assertArrayEquals(payload, fodId.getPayload());
+        assertTrue(fodId.verify(factory.publicPem));
     }
 
     @Test

@@ -32,9 +32,9 @@ layout out from this package. What follows is a summary of the part that
 changes how this package behaves.
 
 The identifier carries a five byte header of Flags and License Id, then the
-match key, then an optional creator context section. Bits 6-7 of Flags
-select the type, which decides how long the match key is and so what the
-least a payload can hold is.
+match key, then the Terms byte, then an optional creator context section.
+Bits 6-7 of Flags select the type, which decides how long the match key is
+and so what the least a payload can hold is.
 
 | Bits 7-6 | `IdType`        | Match key length | Minimum payload |
 |---------:|-----------------|-------------:|----------------:|
@@ -45,6 +45,12 @@ least a payload can hold is.
 
 Identifiers issued before the type tag existed have bits 6-7 zeroed and decode
 as `PROBABILISTIC`.
+
+The Terms byte is not counted in those minimums. An identifier issued before
+the byte existed has a payload that ends at the match key, and a missing
+byte is read as index zero, which says the terms are not stated in the
+identifier. Absence and zero mean the same thing, so no reader has to tell
+them apart and no presence flag exists. See the terms section below.
 
 The minimums in that table are the only lengths this package enforces. There
 is no upper bound. An identifier carrying a creator context is longer than
@@ -177,6 +183,7 @@ apart from "the signature could not be checked" (`KEY_UNAVAILABLE`,
 ```java
 import fiftyone.pipeline.did.FodId;
 import fiftyone.pipeline.did.IdType;
+import fiftyone.pipeline.did.Terms;
 import fiftyone.pipeline.did.Usage;
 import java.time.Instant;
 
@@ -187,6 +194,9 @@ Usage   usage      = fodId.getUsage();     // what the identifier may be used fo
 boolean fromConsent = fodId.isUsageFromConsent();
 long    licenseId  = fodId.getLicenseId();
 byte[]  matchKey   = fodId.getMatchKey();  // SHA-256 or GUID bytes, see type
+Terms   terms      = fodId.getTerms();     // which terms it was created under
+int     termsIndex = fodId.getTermsIndex();
+String  termsUrl   = fodId.getTermsUrl();  // null where none is stated
 
 // Delegated OWID-level fields and operations.
 String  domain   = fodId.getDomain();
@@ -243,6 +253,60 @@ if (fodId.getUsage() == Usage.NON_MARKETING) {
     // Do not pass this identifier to a demand source.
 }
 ```
+
+## Which terms a 51Did was created under
+
+`getTerms()` answers which terms document the identifier was created under.
+The answer travels inside the identifier, so a receiver always has it,
+rather than depending on the surrounding protocol to carry the terms
+alongside the identifier where any hop can drop them without the identifier
+looking any different.
+
+The byte after the match key is an index into a table in the specification
+and is not a version number, so that a later document can live at any
+address rather than only at one a number could compose. An index is never
+reused and never repointed once published, because repointing one would
+rewrite what an identifier already issued says it agreed to.
+
+| `Terms` | Index | `getTermsUrl()` | What it means |
+|---|---|---|---|
+| `NOT_STATED` | `0` | `null` | The terms are not stated in the identifier, so take them from the data accompanying it. |
+| `MODEL_TERMS_FOR_MARKETING_2` | `1` | `https://m4ow.uk/mtm/2.txt` | The Model Terms for Marketing, version 2. |
+| `UNKNOWN` | any other | `null` | An index added to the specification after this package was released. |
+
+`UNKNOWN` is not `NOT_STATED`. Zero says no terms are stated, whilst an
+unknown index says terms are stated that this package cannot name, and code
+that treated the two alike would read an identifier created under terms as
+one created under none. `getTermsIndex()` gives the raw index whatever the
+answer is, which is the one raw value a 51Did offers, so a caller meeting an
+index this package does not know can look the document up in the
+specification by hand and can report which index it could not read.
+
+```java
+if (fodId.getTerms() == Terms.UNKNOWN) {
+    // Terms are stated that this package cannot name. Take a newer package
+    // or refuse the identifier, reporting fodId.getTermsIndex().
+}
+```
+
+`NOT_STATED` does not mean the identifier is unrestricted. It means only
+that the identifier does not carry the answer, so the answer has to come
+from somewhere else, being the Terms Document Locator in an OpenRTB request
+or whatever the surrounding protocol provides. Carrying the terms in the
+identifier does not remove the need to carry a locator where a protocol has
+one, and where the two disagree the identifier's own value is the one that
+describes the identifier, because it is inside the signature and the
+accompanying data is not.
+
+The terms and the usage answer different questions and a receiver needs
+both. `getUsage()` says where an identifier may go and `getTerms()` says
+which document it was created under. An identifier created for non-marketing
+carries `NOT_STATED`, because the Model Terms govern marketing use and a
+non-marketing identifier is not created under them, and it stays barred from
+a demand source by its usage.
+
+This package never fetches the address. It returns it and the receiver
+decides what to do with it.
 
 ## Verifying on your server
 

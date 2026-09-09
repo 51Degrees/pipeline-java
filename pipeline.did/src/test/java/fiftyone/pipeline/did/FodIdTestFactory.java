@@ -101,6 +101,49 @@ final class FodIdTestFactory {
         return payload;
     }
 
+    /**
+     * The canonical payload with a Terms byte written after its 32-byte
+     * match key, which is how the cloud issues one now.
+     */
+    static byte[] canonicalPayloadWithTerms(int termsIndex) {
+        byte[] payload =
+            new byte[FodId.PAYLOAD_LENGTH + FodId.TERMS_LENGTH];
+        System.arraycopy(
+            canonicalPayload(), 0, payload, 0, FodId.PAYLOAD_LENGTH);
+        payload[FodId.PAYLOAD_LENGTH] = (byte) termsIndex;
+        return payload;
+    }
+
+    /**
+     * The canonical Random payload with a Terms byte written after its
+     * 16-byte match key, so that the byte sits at a different offset from
+     * the one {@link #canonicalPayloadWithTerms(int)} puts it at.
+     */
+    static byte[] canonicalRandomPayloadWithTerms(int termsIndex) {
+        byte[] payload =
+            new byte[FodId.RANDOM_PAYLOAD_LENGTH + FodId.TERMS_LENGTH];
+        System.arraycopy(
+            canonicalRandomPayload(), 0, payload, 0,
+            FodId.RANDOM_PAYLOAD_LENGTH);
+        payload[FodId.RANDOM_PAYLOAD_LENGTH] = (byte) termsIndex;
+        return payload;
+    }
+
+    /**
+     * The canonical payload with a Terms byte and then a creator context
+     * section after it, which is the order the two sit in.
+     */
+    static byte[] canonicalPayloadWithTermsAndSection(
+            int termsIndex, int sectionLength) {
+        byte[] withTerms = canonicalPayloadWithTerms(termsIndex);
+        byte[] payload = new byte[withTerms.length + sectionLength];
+        System.arraycopy(withTerms, 0, payload, 0, withTerms.length);
+        for (int i = withTerms.length; i < payload.length; i++) {
+            payload[i] = (byte) 0xCC;
+        }
+        return payload;
+    }
+
     static byte[] canonicalPayloadWithSection(int sectionLength) {
         byte[] payload = new byte[FodId.PAYLOAD_LENGTH + sectionLength];
         System.arraycopy(

@@ -33,8 +33,8 @@ import java.util.Arrays;
  * <p>
  * The 51Degrees Cloud service issues real 51Dids. To keep this example
  * self-contained and offline, it builds a sample 51Did in process - generate
- * an ECDSA P-256 key pair, sign a canonical 37-byte payload - then parses it
- * back with {@link FodId} and prints the three payload fields.
+ * an ECDSA P-256 key pair, sign a canonical 38-byte payload - then parses it
+ * back with {@link FodId} and prints the four payload fields.
  * <p>
  * It also demonstrates the headline use case: a 51Did is re-issued fresh on
  * every call (the envelope, hence the base64, changes), but the match key
@@ -53,8 +53,9 @@ public class Main {
     private static final int LICENSE_ID_OFFSET = 1;
     private static final int MATCH_KEY_OFFSET = 5;
     private static final int MATCH_KEY_LENGTH = 32;
-    private static final int PAYLOAD_LENGTH =
+    private static final int TERMS_OFFSET =
             MATCH_KEY_OFFSET + MATCH_KEY_LENGTH;
+    private static final int PAYLOAD_LENGTH = TERMS_OFFSET + 1;
 
     public static class Example {
 
@@ -77,6 +78,9 @@ public class Main {
             System.out.println("  LicenseId    : " + fodId.getLicenseId());
             System.out.println("  Match key    : "
                     + toHex(fodId.getMatchKey()));
+            System.out.println("  Terms        : " + fodId.getTerms()
+                    + " (index " + fodId.getTermsIndex() + ")");
+            System.out.println("  Terms url    : " + fodId.getTermsUrl());
             System.out.println("  Verifies     : "
                     + fodId.verify(crypto.publicKeyPem()));
 
@@ -128,6 +132,11 @@ public class Main {
             for (int i = 0; i < MATCH_KEY_LENGTH; i++) {
                 payload[MATCH_KEY_OFFSET + i] = (byte) (0x20 + i);
             }
+            // Terms index 1, being the Model Terms for Marketing version 2,
+            // which is the document a marketing identifier is created
+            // under. An identifier issued before this byte existed ends at
+            // the match key and reads as NOT_STATED.
+            payload[TERMS_OFFSET] = 1;
             return payload;
         }
 
