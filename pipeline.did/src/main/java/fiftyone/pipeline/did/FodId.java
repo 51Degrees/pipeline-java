@@ -56,9 +56,9 @@ import java.util.Objects;
  * created on. Only 51Degrees can read that section, so this reader exposes
  * it only as the part of {@link #getPayload()} beyond the Terms, its
  * lengths belong to the cloud, and this reader therefore puts no upper
- * bound on a payload. An identifier issued before the Terms existed has a
- * payload that ends at the match key, and a missing byte reads as
- * {@link Terms#NOT_STATED}, so nothing about such an identifier changes.
+ * bound on a payload. A payload that ends at the match key has no Terms
+ * byte, and a missing byte reads as {@link Terms#NOT_STATED}, so absence
+ * and zero mean the same thing.
  * The byte layout is specified at
  * <a href="https://github.com/51Degrees/specifications/blob/main/did-specification/identifier-layout.md">identifier-layout.md</a>,
  * which is the authority for it, and the surface every 51Did package
@@ -136,8 +136,8 @@ public final class FodId {
 
     /**
      * Byte length of the Terms field, which follows the match key. It is
-     * not part of any minimum above, because an identifier issued before
-     * the field existed ends at the match key and reads as a Terms of zero.
+     * not part of any minimum above, because a payload that ends at the
+     * match key reads as a Terms of zero.
      */
     static final int TERMS_LENGTH = 1;
 
@@ -226,8 +226,7 @@ public final class FodId {
      * hold. Anything longer is accepted as it stands, because the bytes past
      * the match key are the Terms and then a creator context section whose
      * shape the cloud judges. The Terms adds nothing to those bounds, since
-     * an identifier issued before the field existed ends at the match key
-     * and reads as a Terms of zero.
+     * a payload that ends at the match key reads as a Terms of zero.
      */
     private static FodIdParseResult read(Owid owid) {
         byte[] payload = owid.getPayload();
@@ -267,10 +266,10 @@ public final class FodId {
         byte[] matchKey = Arrays.copyOfRange(
             payload, MATCH_KEY_OFFSET, MATCH_KEY_OFFSET + matchKeyLength);
         // The Terms byte follows the match key, wherever the type put its
-        // end. A payload that stops there was issued before the field
-        // existed, and a missing byte is read as zero, which says the terms
-        // are not stated in the identifier. Absence and zero therefore mean
-        // the same thing and nothing has to tell them apart.
+        // end. A payload that stops there has no Terms byte, and a missing
+        // byte is read as zero, which says the terms are not stated in the
+        // identifier. Absence and zero therefore mean the same thing and
+        // nothing has to tell them apart.
         int termsOffset = MATCH_KEY_OFFSET + matchKeyLength;
         int termsIndex = payload.length > termsOffset
             ? payload[termsOffset] & 0xFF

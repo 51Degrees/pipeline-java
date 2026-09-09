@@ -69,9 +69,9 @@ package fiftyone.pipeline.did;
 public enum Terms {
     /**
      * Index 0, the terms are not stated in the identifier and the receiver
-     * has to take them from the data accompanying it. An identifier issued
-     * before the byte existed ends at the match key and reads as this, so
-     * absence and zero mean the same thing.
+     * has to take them from the data accompanying it. An identifier whose
+     * payload ends at the match key reads as this, so absence and zero
+     * mean the same thing.
      */
     NOT_STATED(null),
 

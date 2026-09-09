@@ -46,11 +46,11 @@ and so what the least a payload can hold is.
 Identifiers issued before the type tag existed have bits 6-7 zeroed and decode
 as `PROBABILISTIC`.
 
-The Terms byte is not counted in those minimums. An identifier issued before
-the byte existed has a payload that ends at the match key, and a missing
-byte is read as index zero, which says the terms are not stated in the
-identifier. Absence and zero mean the same thing, so no reader has to tell
-them apart and no presence flag exists. See the terms section below.
+The Terms byte is not counted in those minimums. An identifier whose
+payload ends at the match key has no Terms byte, and a missing byte is read
+as index zero, which says the terms are not stated in the identifier.
+Absence and zero mean the same thing, so no reader has to tell them apart
+and no presence flag exists. See the terms section below.
 
 The minimums in that table are the only lengths this package enforces. There
 is no upper bound. An identifier carrying a creator context is longer than

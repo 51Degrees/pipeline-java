@@ -215,10 +215,10 @@ public class FodIdParseTests {
     }
 
     /**
-     * An identifier issued before the Terms byte existed has a payload that
-     * ends at the match key. A missing byte is read as index zero, which
-     * says the terms are not stated in the identifier, so absence and zero
-     * mean the same thing and such an identifier reads as it always did.
+     * An identifier whose payload ends at the match key has no Terms byte.
+     * A missing byte is read as index zero, which says the terms are not
+     * stated in the identifier, so absence and zero mean the same thing and
+     * nothing has to tell them apart.
      */
     @Test
     public void getTerms_NoByteAfterTheMatchKey_NotStatedWithNoUrl()
