@@ -460,6 +460,32 @@ public class FodIdParseTests {
         assertTrue(fodId.verify(factory.publicPem));
     }
 
+    /**
+     * The Reserved type has no defined match key length, so the reader
+     * takes every byte after the header as the match key and leaves none
+     * to read as the Terms. Such an identifier therefore states no terms,
+     * which is the right answer rather than a gap to close, because an
+     * identifier of a type this package cannot lay out is one whose Terms
+     * it cannot place either.
+     */
+    @Test
+    public void getTerms_ReservedType_StatesNoTerms() throws Exception {
+        byte[] payload = canonicalPayloadWithTerms(1);
+        payload[FodId.FLAGS_OFFSET] =
+            (byte) ((CANONICAL_FLAGS & 0b0011_1111) | 0b1100_0000);
+
+        FodId fodId = assertParsed(FodId.tryFromBase64(
+            factory.signedOwidAt(payload, DATE).asBase64()));
+
+        assertEquals(IdType.RESERVED, fodId.getType());
+        assertNull(fodId.getTerms());
+        // The byte that would have been the Terms is inside the match key,
+        // which is what taking every byte after the header means.
+        assertEquals(
+            payload.length - FodId.HEADER_LENGTH,
+            fodId.getMatchKey().length);
+    }
+
     @Test
     public void tryFromBase64_ReservedHeaderOnly_ParsedBestEffort()
             throws Exception {
