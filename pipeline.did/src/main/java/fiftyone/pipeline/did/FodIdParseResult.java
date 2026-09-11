@@ -49,17 +49,49 @@ public final class FodIdParseResult {
 
     private final FodIdParseStatus status;
 
-    private FodIdParseResult(FodId value, FodIdParseStatus status) {
+    private final int payloadVersion;
+
+    private FodIdParseResult(
+            FodId value, FodIdParseStatus status, int payloadVersion) {
         this.value = value;
         this.status = status;
+        this.payloadVersion = payloadVersion;
     }
 
     static FodIdParseResult parsed(FodId value) {
-        return new FodIdParseResult(value, FodIdParseStatus.PARSED);
+        return new FodIdParseResult(
+            value, FodIdParseStatus.PARSED, FodId.SUPPORTED_PAYLOAD_VERSION);
     }
 
     static FodIdParseResult failed(FodIdParseStatus status) {
-        return new FodIdParseResult(null, status);
+        return new FodIdParseResult(
+            null, status, FodId.SUPPORTED_PAYLOAD_VERSION);
+    }
+
+    /**
+     * A read refused because the payload names a layout version this
+     * package does not know, carrying the version so that the throwing
+     * readers can name it in their message. The version is not public,
+     * because a caller has nothing to decide with it.
+     *
+     * @param payloadVersion the version the payload named
+     * @return the refused read
+     */
+    static FodIdParseResult unsupportedPayloadVersion(int payloadVersion) {
+        return new FodIdParseResult(
+            null,
+            FodIdParseStatus.UNSUPPORTED_PAYLOAD_VERSION,
+            payloadVersion);
+    }
+
+    /**
+     * The payload layout version a refused read found, for the message the
+     * throwing readers give. Zero for every other outcome.
+     *
+     * @return the version the payload named
+     */
+    int getPayloadVersion() {
+        return payloadVersion;
     }
 
     /**

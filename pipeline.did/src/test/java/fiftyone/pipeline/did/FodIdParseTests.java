@@ -39,8 +39,14 @@ import static fiftyone.pipeline.did.FodIdTestFactory.CANONICAL_LICENSE_ID;
 import static fiftyone.pipeline.did.FodIdTestFactory.TEST_DOMAIN;
 import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayload;
 import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayloadWithSection;
+import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayloadWithTerms;
+import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayloadWithTermsAndSection;
 import static fiftyone.pipeline.did.FodIdTestFactory.canonicalRandomPayload;
+import static fiftyone.pipeline.did.FodIdTestFactory.canonicalRandomPayloadWithTerms;
+import static fiftyone.pipeline.did.FodIdTestFactory.payloadEndingAtMatchKey;
+import static fiftyone.pipeline.did.FodIdTestFactory.randomPayloadEndingAtMatchKey;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -209,6 +215,312 @@ public class FodIdParseTests {
             factory.signedOwidAt(payload, DATE).asBase64()));
         assertTrue(fodId.isUsageFromConsent());
         assertEquals(Usage.STANDARD, fodId.getUsage());
+    }
+
+    /**
+     * An identifier whose payload ends at the match key has no Terms byte.
+     * A missing byte is read as index zero, which says the terms are not
+     * stated in the identifier, so absence and zero mean the same thing and
+     * nothing has to tell them apart, and the identifier answers with no
+     * address.
+     */
+    @Test
+    public void getTerms_NoByteAfterTheMatchKey_HasNoAddress()
+            throws Exception {
+        for (byte[] payload : new byte[][] {
+                payloadEndingAtMatchKey(),
+                randomPayloadEndingAtMatchKey() }) {
+            FodId fodId = assertParsed(FodId.tryFromBase64(
+                factory.signedOwidAt(payload, DATE).asBase64()));
+
+            assertNull(fodId.getTerms());
+        }
+    }
+
+    /**
+     * A Terms byte holding zero answers exactly as no byte at all does, so
+     * the two never have to be told apart.
+     */
+    @Test
+    public void getTerms_ZeroByte_AnswersAsAbsenceDoes() throws Exception {
+        FodId absent = assertParsed(FodId.tryFromBase64(
+            factory.signedOwidAt(payloadEndingAtMatchKey(), DATE)
+                .asBase64()));
+        FodId zero = assertParsed(FodId.tryFromBase64(
+            factory.signedOwidAt(canonicalPayloadWithTerms(0), DATE)
+                .asBase64()));
+
+        assertEquals(absent.getTerms(), zero.getTerms());
+        assertNull(zero.getTerms());
+    }
+
+    /**
+     * Index one is the Model Terms for Marketing version 2, whose address is
+     * answered exactly as the specification writes it and is never fetched.
+     * The byte is read after the match key, whose length the type sets, so
+     * both match key lengths are checked and neither loses a byte to the
+     * Terms.
+     */
+    @Test
+    public void getTerms_IndexOne_ModelTermsAddressForBothKeyLengths()
+            throws Exception {
+        FodId probabilistic = assertParsed(FodId.tryFromBase64(
+            factory.signedOwidAt(canonicalPayloadWithTerms(1), DATE)
+                .asBase64()));
+        FodId random = assertParsed(FodId.tryFromBase64(
+            factory.signedOwidAt(canonicalRandomPayloadWithTerms(1), DATE)
+                .asBase64()));
+
+        for (FodId fodId : new FodId[] { probabilistic, random }) {
+            assertEquals("https://m4ow.uk/mtm/2.txt", fodId.getTerms());
+        }
+        // The 32-byte match key and the 16-byte one are both the same as
+        // they are without the Terms byte, so nothing was taken from either.
+        assertEquals(IdType.HASHED_EMAIL, probabilistic.getType());
+        assertArrayEquals(CANONICAL_MATCH_KEY, probabilistic.getMatchKey());
+        assertEquals(IdType.RANDOM, random.getType());
+        assertEquals(FodId.GUID_LENGTH, random.getMatchKey().length);
+        assertArrayEquals(
+            assertParsed(FodId.tryFromBase64(factory
+                .signedOwidAt(randomPayloadEndingAtMatchKey(), DATE)
+                .asBase64()))
+                .getMatchKey(),
+            random.getMatchKey());
+    }
+
+    /**
+     * An index added to the specification after this package was released
+     * answers with no address, and no address is ever built from the index,
+     * because that would name a document nobody wrote. A caller cannot tell
+     * such an index from zero, which is deliberate, since both say the
+     * identifier does not give the terms and the answer has to come from
+     * somewhere else. The byte is unsigned in the read, so 255 is 255 and
+     * not a negative number.
+     */
+    @Test
+    public void getTerms_IndexThisPackageDoesNotKnow_HasNoAddress()
+            throws Exception {
+        FodId notStated = assertParsed(FodId.tryFromBase64(
+            factory.signedOwidAt(canonicalPayloadWithTerms(0), DATE)
+                .asBase64()));
+
+        for (int index : new int[] { 2, 127, 200, 255 }) {
+            FodId unknown = assertParsed(FodId.tryFromBase64(
+                factory.signedOwidAt(canonicalPayloadWithTerms(index), DATE)
+                    .asBase64()));
+
+            assertNull("terms index " + index, unknown.getTerms());
+            assertEquals("terms index " + index,
+                Terms.UNKNOWN, Terms.fromIndex(index));
+        }
+        assertNull(notStated.getTerms());
+    }
+
+    /**
+     * Every index the table does not carry is unknown and has no address,
+     * across the whole byte, so none of them can be read as zero.
+     */
+    @Test
+    public void terms_EveryIndexOutsideTheTable_IsUnknownWithNoUrl() {
+        assertEquals(Terms.NOT_STATED, Terms.fromIndex(0));
+        assertNull(Terms.NOT_STATED.getUrl());
+        assertEquals(Terms.MODEL_TERMS_FOR_MARKETING_2, Terms.fromIndex(1));
+        assertEquals("https://m4ow.uk/mtm/2.txt",
+            Terms.MODEL_TERMS_FOR_MARKETING_2.getUrl());
+        for (int index = 2; index <= 255; index++) {
+            assertEquals("terms index " + index,
+                Terms.UNKNOWN, Terms.fromIndex(index));
+            assertNull("terms index " + index,
+                Terms.fromIndex(index).getUrl());
+        }
+    }
+
+    // ----- The payload version -----
+
+    /**
+     * The payload with its version bits set to the given version, leaving
+     * every other bit of the Flags byte alone.
+     */
+    private static byte[] withVersion(byte[] payload, int version) {
+        byte[] withVersion = payload.clone();
+        withVersion[FodId.FLAGS_OFFSET] = (byte) (
+            (payload[FodId.FLAGS_OFFSET] & 0b1100_1111)
+            | (version << 4));
+        return withVersion;
+    }
+
+    /**
+     * A Flags byte with bits 4 and 5 clear is version 0, which is the
+     * layout this package reads, so every field reads as it does on the
+     * canonical payload.
+     */
+    @Test
+    public void version_Zero_ReadsEveryField() throws Exception {
+        FodId fodId = assertParsed(FodId.tryFromBase64(
+            factory.signedOwidAt(canonicalPayload(), DATE).asBase64()));
+
+        assertEquals(IdType.HASHED_EMAIL, fodId.getType());
+        assertEquals(Usage.PERSONALIZED, fodId.getUsage());
+        assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
+        assertEquals("https://m4ow.uk/mtm/2.txt", fodId.getTerms());
+    }
+
+    /**
+     * Versions 1, 2 and 3 are not assigned, so a payload naming one is
+     * refused rather than read under the layout this package knows.
+     */
+    @Test
+    public void version_NotZero_IsRefused() throws Exception {
+        for (int version : new int[] { 1, 2, 3 }) {
+            FodIdParseResult result = FodId.tryFromBase64(factory
+                .signedOwidAt(withVersion(canonicalPayload(), version), DATE)
+                .asBase64());
+
+            assertFalse("version " + version, result.isSuccess());
+            assertEquals("version " + version,
+                FodIdParseStatus.UNSUPPORTED_PAYLOAD_VERSION,
+                result.getStatus());
+            // Nothing is handed back, rather than a value with some fields
+            // filled in, because there is no identifier to expose fields
+            // for when the layout was not understood.
+            assertNull("version " + version, result.getValue());
+        }
+    }
+
+    /**
+     * The throwing readers name the version they found, so whoever reads
+     * the message knows which layout the identifier claims rather than only
+     * that some version was refused.
+     */
+    @Test
+    public void version_NotZero_MessageNamesTheVersion() throws Exception {
+        for (int version : new int[] { 1, 2, 3 }) {
+            String base64 = factory
+                .signedOwidAt(withVersion(canonicalPayload(), version), DATE)
+                .asBase64();
+            try {
+                FodId.fromBase64(base64);
+                fail("version " + version + " should have been refused");
+            } catch (IllegalArgumentException thrown) {
+                assertTrue(thrown.getMessage(),
+                    thrown.getMessage().contains("version " + version));
+            }
+        }
+    }
+
+    /**
+     * The version bits are read on their own, so an identifier of version 0
+     * still reads whatever its usage and type bits hold, and one of another
+     * version is refused whatever they hold. A reader masking the wrong
+     * bits would fail one of these.
+     */
+    @Test
+    public void version_IsReadApartFromTheUsageAndTypeBits()
+            throws Exception {
+        for (int usage : new int[] { 0b000, 0b001, 0b011, 0b111 }) {
+            for (int type : new int[] { 0b00, 0b10, 0b11 }) {
+                int flags = (type << 6) | usage;
+                byte[] payload = payloadEndingAtMatchKey();
+                payload[FodId.FLAGS_OFFSET] = (byte) flags;
+
+                assertTrue("flags " + flags, FodId.tryFromBase64(
+                    factory.signedOwidAt(payload, DATE).asBase64())
+                    .isSuccess());
+
+                for (int version : new int[] { 1, 2, 3 }) {
+                    FodIdParseResult refused = FodId.tryFromBase64(factory
+                        .signedOwidAt(withVersion(payload, version), DATE)
+                        .asBase64());
+
+                    assertEquals("flags " + flags + " version " + version,
+                        FodIdParseStatus.UNSUPPORTED_PAYLOAD_VERSION,
+                        refused.getStatus());
+                    assertNull(refused.getValue());
+                }
+            }
+        }
+    }
+
+    /**
+     * The Terms sits before the creator context section, so a payload
+     * carrying both still reads the match key and the Terms from the places
+     * they are written at, and the section is exposed as it always was.
+     */
+    @Test
+    public void getTerms_ByteThenContextSection_ReadAtTheRightOffset()
+            throws Exception {
+        byte[] payload = canonicalPayloadWithTermsAndSection(1, 512);
+
+        FodId fodId = assertParsed(FodId.tryFromBase64(
+            factory.signedOwidAt(payload, DATE).asBase64()));
+
+        assertArrayEquals(CANONICAL_MATCH_KEY, fodId.getMatchKey());
+        assertEquals("https://m4ow.uk/mtm/2.txt", fodId.getTerms());
+        assertArrayEquals(payload, fodId.getPayload());
+        assertTrue(fodId.verify(factory.publicPem));
+    }
+
+    /**
+     * The terms table is the one place the package says which index is
+     * which document, and the index to member map is built from the
+     * members rather than written out again. This walks every member and
+     * fails if one does not read back from its own index, or if a member
+     * that names a document has no address, which is what would happen if
+     * a member and its address were ever added apart.
+     */
+    @Test
+    public void terms_EveryMemberAgreesWithTheTable() {
+        for (Terms terms : Terms.values()) {
+            if (terms == Terms.UNKNOWN) {
+                // It stands for every index not in the table, so it has no
+                // index of its own and no address.
+                assertEquals(-1, terms.getIndex());
+                assertNull(terms.getUrl());
+                continue;
+            }
+            assertEquals(
+                "member " + terms + " does not read back from its index",
+                terms,
+                Terms.fromIndex(terms.getIndex()));
+            if (terms == Terms.NOT_STATED) {
+                // Names no document, so it has no address.
+                assertEquals(0, terms.getIndex());
+                assertNull(terms.getUrl());
+            } else {
+                assertNotNull(
+                    "member " + terms + " names a document with no address",
+                    terms.getUrl());
+                assertTrue(
+                    "address for " + terms + " is not an https address",
+                    terms.getUrl().startsWith("https://"));
+            }
+        }
+    }
+
+    /**
+     * The Reserved type has no defined match key length, so the reader
+     * takes every byte after the header as the match key and leaves none
+     * to read as the Terms. Such an identifier therefore states no terms,
+     * which is the right answer rather than a gap to close, because an
+     * identifier of a type this package cannot lay out is one whose Terms
+     * it cannot place either.
+     */
+    @Test
+    public void getTerms_ReservedType_StatesNoTerms() throws Exception {
+        byte[] payload = canonicalPayloadWithTerms(1);
+        payload[FodId.FLAGS_OFFSET] =
+            (byte) ((CANONICAL_FLAGS & 0b0011_1111) | 0b1100_0000);
+
+        FodId fodId = assertParsed(FodId.tryFromBase64(
+            factory.signedOwidAt(payload, DATE).asBase64()));
+
+        assertEquals(IdType.RESERVED, fodId.getType());
+        assertNull(fodId.getTerms());
+        // The byte that would have been the Terms is inside the match key,
+        // which is what taking every byte after the header means.
+        assertEquals(
+            payload.length - FodId.HEADER_LENGTH,
+            fodId.getMatchKey().length);
     }
 
     @Test

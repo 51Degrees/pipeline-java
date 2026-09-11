@@ -114,7 +114,16 @@ public enum FodIdParseStatus {
      * anything past the match key is a creator context section whose lengths
      * belong to the cloud.
      */
-    INVALID_TYPE_PAYLOAD_LENGTH;
+    INVALID_TYPE_PAYLOAD_LENGTH,
+
+    /**
+     * Bits 4 and 5 of the Flags byte name a payload layout version this
+     * package does not know, so no field is read. A later version exists
+     * precisely because a field moved, so reading the payload under the
+     * layout this package knows would answer with values that are wrong
+     * rather than absent.
+     */
+    UNSUPPORTED_PAYLOAD_VERSION;
 
     /**
      * Carries an OWID status across unchanged.

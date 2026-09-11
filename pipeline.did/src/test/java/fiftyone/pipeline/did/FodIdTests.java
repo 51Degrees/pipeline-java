@@ -178,13 +178,18 @@ public class FodIdTests {
     }
 
     @Test
-    public void flags_AllBitsSet_Exposed() throws Exception {
+    public void flags_EveryBitOutsideTheVersionSet_Exposed()
+            throws Exception {
+        // Bits 4 and 5 are the payload version and only version 0 is read,
+        // so every other bit is set and those two are left clear. A payload
+        // with them set is refused rather than read, which FodIdParseTests
+        // covers.
         byte[] payload = canonicalPayload();
-        payload[FodId.FLAGS_OFFSET] = (byte) 0xFF;
+        payload[FodId.FLAGS_OFFSET] = (byte) 0xCF;
 
         FodId fodId = FodId.fromBase64(factory.signedOwidBase64(payload));
 
-        assertEquals(255, fodId.getFlags());
+        assertEquals(0xCF, fodId.getFlags());
     }
 
     @Test

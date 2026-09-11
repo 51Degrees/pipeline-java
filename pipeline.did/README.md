@@ -32,9 +32,9 @@ layout out from this package. What follows is a summary of the part that
 changes how this package behaves.
 
 The identifier carries a five byte header of Flags and License Id, then the
-match key, then an optional creator context section. Bits 6-7 of Flags
-select the type, which decides how long the match key is and so what the
-least a payload can hold is.
+match key, then the Terms byte, then an optional creator context section.
+Bits 6-7 of Flags select the type, which decides how long the match key is
+and so what the least a payload can hold is.
 
 | Bits 7-6 | `IdType`        | Match key length | Minimum payload |
 |---------:|-----------------|-------------:|----------------:|
@@ -45,6 +45,29 @@ least a payload can hold is.
 
 Identifiers issued before the type tag existed have bits 6-7 zeroed and decode
 as `PROBABILISTIC`.
+
+The Terms byte is not counted in those minimums. An identifier whose
+payload ends at the match key has no Terms byte, and a missing byte is read
+as index zero, which says the terms are not stated in the identifier.
+Absence and zero mean the same thing, so no reader has to tell them apart
+and no presence flag exists. See the terms section below.
+
+## The payload version
+
+Bits 4 and 5 of the Flags byte say which payload layout the identifier
+follows, and this package reads version 0. A payload naming version 1, 2
+or 3 is refused with `FodIdParseStatus.UNSUPPORTED_PAYLOAD_VERSION`, and
+the throwing readers name the version they found in the message.
+
+The fields are never read under the layout this package knows once the
+version says otherwise. A later version exists precisely because a field
+moved, so reading such a payload here would answer with values that are
+wrong rather than absent, which is worse than refusing. A version that
+nothing checks protects nothing.
+
+The version is not exposed. Either this package read the layout, in which
+case the accessors are the answer, or it did not, in which case there is
+no identifier to read fields from.
 
 The minimums in that table are the only lengths this package enforces. There
 is no upper bound. An identifier carrying a creator context is longer than
@@ -187,6 +210,10 @@ Usage   usage      = fodId.getUsage();     // what the identifier may be used fo
 boolean fromConsent = fodId.isUsageFromConsent();
 long    licenseId  = fodId.getLicenseId();
 byte[]  matchKey   = fodId.getMatchKey();  // SHA-256 or GUID bytes, see type
+String  terms      = fodId.getTerms();     // address of the terms document
+                                           // it was created under, null
+                                           // where it names none this
+                                           // package knows
 
 // Delegated OWID-level fields and operations.
 String  domain   = fodId.getDomain();
@@ -243,6 +270,60 @@ if (fodId.getUsage() == Usage.NON_MARKETING) {
     // Do not pass this identifier to a demand source.
 }
 ```
+
+## Which terms a 51Did was created under
+
+`getTerms()` answers with the address of the terms document the identifier
+was created under. The answer travels inside the identifier, so a receiver
+always has it, rather than depending on the surrounding protocol to carry
+the terms alongside the identifier where any hop can drop them without the
+identifier looking any different. The package turns the index into the
+address, so a caller never handles the byte.
+
+The byte after the match key is an index into a table in the specification
+and is not a version number, so that a later document can live at any
+address rather than only at one a number could compose. An index is never
+reused and never repointed once published, because repointing one would
+rewrite what an identifier already issued says it agreed to.
+
+| Index | Document | `getTerms()` |
+|---|---|---|
+| `0` | Not stated in the identifier | `null` |
+| `1` | Model Terms for Marketing, version 2 | `https://m4ow.uk/mtm/2.txt` |
+| any other | One this package cannot name | `null` |
+
+An index added to the specification after this package was released answers
+with no address, and the package never builds an address from the index,
+because that would name a document nobody wrote and a receiver would record
+having accepted terms that do not exist. A caller therefore cannot tell an
+index of zero from an index this package cannot name, which is deliberate,
+since both lead to the same place.
+
+```java
+if (fodId.getTerms() == null) {
+    // The identifier does not say which terms it was created under, so the
+    // answer has to come from the data accompanying it.
+}
+```
+
+No address does not mean the identifier is unrestricted. It means only
+that the identifier does not carry the answer, so the answer has to come
+from somewhere else, being the Terms Document Locator in an OpenRTB request
+or whatever the surrounding protocol provides. Carrying the terms in the
+identifier does not remove the need to carry a locator where a protocol has
+one, and where the two disagree the identifier's own value is the one that
+describes the identifier, because it is inside the signature and the
+accompanying data is not.
+
+The terms and the usage answer different questions and a receiver needs
+both. `getUsage()` says where an identifier may go and `getTerms()` says
+which document it was created under. An identifier created for non-marketing
+carries index zero and so answers with no address, because the Model Terms
+govern marketing use and a non-marketing identifier is not created under
+them, and it stays barred from a demand source by its usage.
+
+This package never fetches the address. It returns it and the receiver
+decides what to do with it.
 
 ## Verifying on your server
 
