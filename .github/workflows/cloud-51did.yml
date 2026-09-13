@@ -1,0 +1,69 @@
+name: Cloud 51Did Tests
+
+# Runs the live cloud 51Did integration test (pipeline.did,
+# DidClientLiveTests) once for every resource key the central common-ci script
+# exports from the _51DEGREES_RESOURCE_KEY* secrets (free, paid and any added
+# later). Each run sets the single _51DEGREES_RESOURCE_KEY the test reads. New
+# resource keys are added once at the organisation level; this workflow needs
+# no change.
+#
+# The test skips itself when no key is set, so a run with no secrets is green
+# and proves nothing. That is deliberate, because a pull request from a fork
+# has no secrets, and it is the reason the loop below reports which key each
+# run used.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'pipeline.did/**'
+      - 'owid-java/**'
+      - '.github/workflows/cloud-51did.yml'
+
+jobs:
+  cloud-51did:
+    name: Cloud 51Did
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # pipeline.did builds against the owid-java submodule source.
+          submodules: recursive
+      - name: Checkout common-ci
+        uses: actions/checkout@v4
+        with:
+          # Provides steps/set-resource-keys.ps1, the central script that
+          # exports the _51DEGREES_RESOURCE_KEY* secrets as environment
+          # variables.
+          repository: 51Degrees/common-ci
+          path: common-ci
+      - uses: actions/setup-java@v4
+        with:
+          # The reactor targets 1.8, so the tests are compiled and run on a
+          # toolchain that can still produce it.
+          distribution: temurin
+          java-version: '8'
+          cache: maven
+      - name: Cloud 51Did test for each resource key secret
+        shell: pwsh
+        env:
+          SECRETS: ${{ toJSON(secrets) }}
+        run: |
+          ./common-ci/steps/set-resource-keys.ps1 -Keys (ConvertFrom-Json -AsHashtable $env:SECRETS)
+          $keys = Get-ChildItem env: |
+            Where-Object { $_.Name -like '_51DEGREES_RESOURCE_KEY*' -and $_.Value }
+          if (-not $keys) {
+            Write-Host 'No _51DEGREES_RESOURCE_KEY* secrets available; skipping.'
+            exit 0
+          }
+          $failed = $false
+          foreach ($k in $keys) {
+            Write-Host "::group::DidClientLiveTests with $($k.Name)"
+            $env:_51DEGREES_RESOURCE_KEY = $k.Value
+            mvn -B -pl pipeline.did -am test `
+              -Dtest=DidClientLiveTests -DfailIfNoTests=false
+            if ($LASTEXITCODE -ne 0) { $failed = $true }
+            Write-Host '::endgroup::'
+          }
+          if ($failed) { exit 1 }
