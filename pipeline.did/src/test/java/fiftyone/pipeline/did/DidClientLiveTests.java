@@ -264,11 +264,15 @@ public class DidClientLiveTests {
             }
         }
 
-        if (checked == 0) {
-            System.err.println("NOTHING PROVEN: this resource key returned "
-                + "no marketing 51Did, so no terms address was read. Use a "
-                + "key entitled to the standard or personalized usage.");
-        }
+        // Reported as a skip rather than written to stderr, because
+        // surefire captures test output and prints only the counts, so a
+        // run that proved nothing would otherwise look identical to one
+        // that proved everything.
+        Assume.assumeTrue(
+            "This resource key returned no marketing 51Did, so no terms "
+            + "address was read and this run did not prove it. Use a key "
+            + "entitled to the standard or personalized usage.",
+            checked > 0);
     }
 
     /**
@@ -319,10 +323,11 @@ public class DidClientLiveTests {
             proven += identifiers.size();
         }
 
-        if (proven == 0) {
-            System.err.println("NOTHING PROVEN: this resource key returned "
-                + "no identifier for either consent string, so the "
-                + "usage-from-consent bit was never read.");
-        }
+        // Same reasoning as the usage test above.
+        Assume.assumeTrue(
+            "This resource key returned no identifier for either consent "
+            + "string, so the usage-from-consent bit was never read and "
+            + "this run did not prove it.",
+            proven > 0);
     }
 }
