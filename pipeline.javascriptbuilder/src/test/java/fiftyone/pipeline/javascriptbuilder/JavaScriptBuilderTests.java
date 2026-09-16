@@ -242,6 +242,53 @@ public class JavaScriptBuilderTests {
         assertTrue(javaScript.contains(lon), "JavaScript does not contain expected longitude query parameter '" + lon + "'.");
     }
 
+    /**
+     * The script appends the session id and the sequence to its own request,
+     * after taking the record of that request's inputs. That record decides
+     * whether a later page view in the same tab can be served from the cached
+     * response, and a session id is different on every page view, so one
+     * named in the parameters would put a value in the record that can never
+     * match. The cache would be thrown away and the snippets would run again
+     * on every page.
+     */
+    @Test
+    public void JavaScriptBuilderElement_ParametersExcludeSessionAndSequence()
+            throws Exception {
+        configureMocks();
+
+        javaScriptBuilderElement =
+                new JavaScriptBuilderElementBuilder(loggerFactory)
+                        .build();
+        javaScriptBuilderElement.process(flowData);
+        String javaScript = result.getJavaScript();
+
+        // The session id is rendered on its own as well, because the script
+        // appends it to its request, so only the line assigning the
+        // parameters is read here.
+        String parameters = null;
+        for (String line : javaScript.split("\\r?\\n")) {
+            if (line.contains("parameters = {")) {
+                assertNull(parameters,
+                        "the script should assign its parameters once");
+                parameters = line;
+            }
+        }
+        assertNotNull(parameters,
+                "the script should assign its parameters");
+
+        assertFalse(parameters.contains("session-id"),
+                "the session id must not be in the script's parameters, or "
+                + "the record of a request's inputs can never match the next "
+                + "page view's and the cached response is thrown away every "
+                + "time: " + parameters);
+        assertFalse(parameters.contains("sequence"),
+                "the sequence must not be in the script's parameters, for "
+                + "the same reason as the session id: " + parameters);
+        assertTrue(parameters.contains(latitude),
+                "every other query parameter is still there, or this test "
+                + "would pass with no parameters at all: " + parameters);
+    }
+
     public enum ExceptionCase {
 
         PROPERTY_MISSING(new PropertyMissingException(), false),

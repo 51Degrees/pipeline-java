@@ -44,8 +44,8 @@ import java.net.URLEncoder;
 import java.util.*;
 
 import static fiftyone.pipeline.core.Constants.*;
-import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.EVIDENCE_SEQUENCE;
 import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.EVIDENCE_SESSIONID;
+import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.EVIDENCE_SEQUENCE;
 import static fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_ENABLE_COOKIES;
 import static fiftyone.pipeline.javascriptbuilder.Constants.EVIDENCE_OBJECT_NAME;
 
@@ -287,6 +287,21 @@ public class JavaScriptBuilderElement
         return jsonObject;
     }
 
+    /**
+     * Evidence the rendered script is not configured with. The script appends
+     * both to its own request itself, so naming them here as well would send
+     * each twice and, worse, put the session id into the record the script
+     * keeps of a request's inputs. That record decides whether a later page
+     * view in the same tab can be served from the cached response, and a
+     * session id is different on every page view, so a record holding one
+     * could never match. The .NET builder excludes the same two and is the
+     * reference for this behaviour.
+     */
+    private static final Set<String> EXCLUDED_PARAMETERS =
+            Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+                    EVIDENCE_SESSIONID,
+                    EVIDENCE_SEQUENCE)));
+
     private Map<String, String> getParameters(FlowData data) throws UnsupportedEncodingException {
         HashMap<String, String> parameters = new HashMap<>();
 
@@ -295,7 +310,8 @@ public class JavaScriptBuilderElement
                 .asKeyMap();
 
         for(Map.Entry<String, Object> entry : queryEvidence.entrySet()){
-            if(entry.getKey().startsWith(EVIDENCE_QUERY_PREFIX)){
+            if(entry.getKey().startsWith(EVIDENCE_QUERY_PREFIX) &&
+                    EXCLUDED_PARAMETERS.contains(entry.getKey()) == false){
                 String key = entry.getKey().substring(entry.getKey().indexOf(EVIDENCE_SEPERATOR) + 1);
                 key = URLEncoder.encode(key, "UTF-8");
                 String value = URLEncoder.encode(entry.getValue().toString(), "UTF-8");
