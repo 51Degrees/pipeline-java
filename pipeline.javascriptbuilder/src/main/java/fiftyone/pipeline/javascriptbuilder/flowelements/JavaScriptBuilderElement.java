@@ -82,7 +82,9 @@ public class JavaScriptBuilderElement
      * Words the pattern accepts that cannot be the name of the object. These
      * are the reserved words of the language, including those reserved only
      * in strict mode, plus the three global values a top level var cannot
-     * replace, where the object would silently never be created.
+     * replace, where the object would silently never be created. The last
+     * entry is the constructor the script itself defines and calls to create
+     * the object, so that name would clash with it.
      */
     private static final Set<String> RESERVED_OBJECT_NAMES =
         Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
@@ -93,7 +95,8 @@ public class JavaScriptBuilderElement
             "new", "null", "package", "private", "protected", "public",
             "return", "static", "super", "switch", "this", "throw", "true",
             "try", "typeof", "var", "void", "while", "with", "yield",
-            "Infinity", "NaN", "undefined")));
+            "Infinity", "NaN", "undefined",
+            "fiftyoneDegreesManager")));
 
     /**
      * The message of the exception thrown when a configured object name is

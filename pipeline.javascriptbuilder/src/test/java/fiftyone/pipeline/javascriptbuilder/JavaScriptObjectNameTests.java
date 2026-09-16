@@ -149,7 +149,9 @@ public class JavaScriptObjectNameTests {
             Arguments.of("x\"y",
                 new String[] { "x\"y", "x&quot;y", "var x&", "var x\"" }),
             Arguments.of("", new String[] { "var  =" }),
-            Arguments.of("class", new String[] { "var class" }));
+            Arguments.of("class", new String[] { "var class" }),
+            Arguments.of("fiftyoneDegreesManager",
+                new String[] { "var fiftyoneDegreesManager" }));
     }
 
     @ParameterizedTest
@@ -191,7 +193,8 @@ public class JavaScriptObjectNameTests {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"a;b", "9bad", "x\"y", "", "var"})
+    @ValueSource(strings = {
+        "a;b", "9bad", "x\"y", "", "var", "fiftyoneDegreesManager"})
     public void ObjectName_InvalidFromBuilder_Refused(String name) {
         assertThrows(
             PipelineConfigurationException.class,
@@ -206,7 +209,8 @@ public class JavaScriptObjectNameTests {
      * default, as it always has.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"a;b", "9bad", "x\"y", "var"})
+    @ValueSource(strings = {
+        "a;b", "9bad", "x\"y", "var", "fiftyoneDegreesManager"})
     public void ObjectName_InvalidFromConstructor_Refused(String name) {
         assertThrows(
             PipelineConfigurationException.class,
