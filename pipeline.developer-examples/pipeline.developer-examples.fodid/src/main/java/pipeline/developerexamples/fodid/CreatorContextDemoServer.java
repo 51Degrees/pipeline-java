@@ -43,6 +43,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -314,9 +315,11 @@ public class CreatorContextDemoServer {
             JSONObject factors = new JSONObject();
             for (Map.Entry<String, RedeemResult.Factor> factor
                     : redeemed.getFactors().entrySet()) {
+                // Misconfigured is passed on as itself, because it says
+                // the checking service could not judge the factor, which
+                // must never be shown as a mismatch.
                 factors.put(factor.getKey(),
-                    factor.getValue() == RedeemResult.Factor.VERIFIED
-                        ? "verified" : "mismatch");
+                    factor.getValue().name().toLowerCase(Locale.ROOT));
             }
             json.put("factors", factors);
         }

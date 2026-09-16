@@ -523,7 +523,7 @@ public class DidClientTests {
         // Only the Reserved type parses with a payload below the 37-byte
         // base, which is exactly the shape the cloud refuses on length.
         byte[] payload = new byte[FodId.HEADER_LENGTH + 4];
-        payload[FodId.FLAGS_OFFSET] = (byte) 0b1100_0000;
+        payload[FodId.FLAGS_OFFSET] = (byte) 0b1100_0001;
         FodId fodId = key2.fodIdAt(payload, WEEK2.plus(Duration.ofDays(1)));
 
         assertEquals(DidClient.SignatureCheck.MALFORMED_PAYLOAD,
@@ -650,7 +650,10 @@ public class DidClientTests {
         String body = "{\"signature\":\"verified\",\"context\":\"mismatch\","
             + "\"factors\":{\"transport\":\"verified\",\"device\":\"mismatch\","
             + "\"browserip\":\"verified\",\"connectionip\":\"verified\","
-            + "\"asn\":\"verified\",\"browser\":\"mismatch\"},"
+            + "\"asn\":\"verified\",\"platformname\":\"verified\","
+            + "\"platformversion\":\"mismatch\","
+            + "\"browsername\":\"verified\","
+            + "\"browserversion\":\"misconfigured\"},"
             + "\"verifiedAt\":\"2026-08-07T09:15:32Z\","
             + "\"secondsSinceVerified\":2}";
         transport.queue(200, body);
@@ -663,13 +666,18 @@ public class DidClientTests {
         assertEquals("mismatch", result.getContextValue());
         assertEquals(RedeemResult.Signature.VERIFIED, result.getSignature());
         assertTrue(result.hasFactors());
-        assertEquals(Arrays.asList("transport", "device", "browserip",
-            "connectionip", "asn", "browser"),
-            new ArrayList<String>(result.getFactors().keySet()));
         assertEquals(RedeemResult.Factor.VERIFIED,
             result.getFactors().get("transport"));
         assertEquals(RedeemResult.Factor.MISMATCH,
             result.getFactors().get("device"));
+        assertEquals(RedeemResult.Factor.VERIFIED,
+            result.getFactors().get("platformname"));
+        assertEquals(RedeemResult.Factor.MISMATCH,
+            result.getFactors().get("platformversion"));
+        assertEquals(RedeemResult.Factor.VERIFIED,
+            result.getFactors().get("browsername"));
+        assertEquals(RedeemResult.Factor.MISCONFIGURED,
+            result.getFactors().get("browserversion"));
         assertEquals(Instant.parse("2026-08-07T09:15:32Z"),
             result.getVerifiedAt());
         assertEquals(Integer.valueOf(2), result.getSecondsSinceVerified());
@@ -689,6 +697,67 @@ public class DidClientTests {
         assertTrue(form.contains("&result=sealed"));
         assertTrue(form.contains("&challenge=abc"));
         assertTrue(form.contains("&license=licence"));
+    }
+
+    /**
+     * The nine factors come back in the order the cloud documents them,
+     * whatever order they arrive in and whatever order the JSON parser
+     * keeps them in, with the four operating system and browser factors
+     * after asn.
+     */
+    @Test
+    public void redeem_FactorsIterateInTheDocumentedOrder()
+            throws Exception {
+        transport.queue(200, "{\"signature\":\"verified\","
+            + "\"context\":\"mismatch\","
+            + "\"factors\":{\"browserversion\":\"mismatch\","
+            + "\"browsername\":\"verified\","
+            + "\"platformversion\":\"verified\","
+            + "\"platformname\":\"verified\",\"asn\":\"verified\","
+            + "\"connectionip\":\"verified\",\"browserip\":\"verified\","
+            + "\"device\":\"verified\",\"transport\":\"verified\"}}");
+        FodId fodId = key2.fodIdAt(canonicalPayload(), WEEK2);
+
+        RedeemResult result =
+            client.redeem(fodId, "sealed", "abc").join();
+
+        assertEquals(Arrays.asList("transport", "device", "browserip",
+            "connectionip", "asn", "platformname", "platformversion",
+            "browsername", "browserversion"),
+            new ArrayList<String>(result.getFactors().keySet()));
+    }
+
+    /**
+     * A response carrying only the single browser factor that cloud
+     * releases before 4.4.38 sent fills none of the four factors that
+     * replaced it. The old name is kept under its own name, as any name
+     * this client does not know is, and after the documented ones.
+     */
+    @Test
+    public void redeem_OldBrowserFactor_FillsNoneOfTheFour()
+            throws Exception {
+        transport.queue(200, "{\"signature\":\"verified\","
+            + "\"context\":\"mismatch\","
+            + "\"factors\":{\"transport\":\"verified\","
+            + "\"device\":\"verified\",\"browserip\":\"verified\","
+            + "\"connectionip\":\"verified\",\"asn\":\"verified\","
+            + "\"browser\":\"mismatch\"}}");
+        FodId fodId = key2.fodIdAt(canonicalPayload(), WEEK2);
+
+        RedeemResult result =
+            client.redeem(fodId, "sealed", "abc").join();
+
+        assertTrue(result.hasFactors());
+        for (String name : new String[] {
+                "platformname", "platformversion",
+                "browsername", "browserversion" }) {
+            assertFalse(name, result.getFactors().containsKey(name));
+        }
+        assertEquals(Arrays.asList("transport", "device", "browserip",
+            "connectionip", "asn", "browser"),
+            new ArrayList<String>(result.getFactors().keySet()));
+        assertEquals(RedeemResult.Factor.MISMATCH,
+            result.getFactors().get("browser"));
     }
 
     @Test

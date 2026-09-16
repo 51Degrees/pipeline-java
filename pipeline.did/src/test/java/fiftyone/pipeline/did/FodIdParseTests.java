@@ -22,6 +22,7 @@
 
 package fiftyone.pipeline.did;
 
+import com.swancommunity.owid.Owid;
 import com.swancommunity.owid.OwidException;
 import com.swancommunity.owid.OwidParseStatus;
 import com.swancommunity.owid.OwidSignatureStatus;
@@ -29,6 +30,7 @@ import com.swancommunity.owid.OwidVerificationResult;
 import com.swancommunity.owid.Version;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.function.ThrowingRunnable;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -187,10 +189,10 @@ public class FodIdParseTests {
      */
     @Test
     public void getUsage_IsTheHighestGranted() throws Exception {
-        int[] bits = {0b000, 0b001, 0b011, 0b111};
+        int[] bits = {0b001, 0b011, 0b111};
         Usage[] expected = {
-            Usage.NONE, Usage.NON_MARKETING, Usage.STANDARD, Usage.PERSONALIZED};
-        String[] idUsage = {null, "non-marketing", "standard", "personalized"};
+            Usage.NON_MARKETING, Usage.STANDARD, Usage.PERSONALIZED};
+        String[] idUsage = {"non-marketing", "standard", "personalized"};
         for (int i = 0; i < bits.length; i++) {
             byte[] payload = canonicalRandomPayload();
             payload[FodId.FLAGS_OFFSET] = (byte) ((1 << 6) | bits[i]);
@@ -199,22 +201,124 @@ public class FodIdParseTests {
             assertEquals("usage bits " + bits[i], expected[i], fodId.getUsage());
             assertEquals(idUsage[i], fodId.getUsage().getIdUsage());
             assertEquals(IdType.RANDOM, fodId.getType());
-            assertFalse(fodId.isUsageFromConsent());
+            assertFalse(fodId.isUsageIndirect());
         }
     }
 
     /**
-     * Bit 3 records that the usage came from a consent string rather than
-     * being stated, and reads independently of which usage it is.
+     * The usage has exactly three values, so the type has no member for a
+     * payload that states none.
      */
     @Test
-    public void isUsageFromConsent_IsBitThree() throws Exception {
-        byte[] payload = canonicalRandomPayload();
-        payload[FodId.FLAGS_OFFSET] = (byte) ((1 << 6) | 0b1011);
-        FodId fodId = assertParsed(FodId.tryFromBase64(
-            factory.signedOwidAt(payload, DATE).asBase64()));
-        assertTrue(fodId.isUsageFromConsent());
-        assertEquals(Usage.STANDARD, fodId.getUsage());
+    public void usage_HasExactlyThreeValues() {
+        assertArrayEquals(
+            new Usage[] {
+                Usage.NON_MARKETING, Usage.STANDARD, Usage.PERSONALIZED },
+            Usage.values());
+        // Asked directly, the type refuses 000 rather than naming it.
+        assertThrows(IllegalArgumentException.class,
+            () -> Usage.fromFlags(0b1111_1000));
+    }
+
+    /**
+     * The patterns the cloud does not write, other than 000, keep their
+     * reading as the highest usage granted, because only 000 is refused.
+     */
+    @Test
+    public void getUsage_OtherPatternsKeepTheirReading() throws Exception {
+        int[] bits = {0b010, 0b100, 0b101, 0b110};
+        Usage[] expected = {
+            Usage.STANDARD, Usage.PERSONALIZED,
+            Usage.PERSONALIZED, Usage.PERSONALIZED};
+        for (int i = 0; i < bits.length; i++) {
+            byte[] payload = canonicalRandomPayload();
+            payload[FodId.FLAGS_OFFSET] = (byte) ((1 << 6) | bits[i]);
+            FodId fodId = assertParsed(FodId.tryFromBase64(
+                factory.signedOwidAt(payload, DATE).asBase64()));
+            assertEquals(
+                "usage bits " + bits[i], expected[i], fodId.getUsage());
+        }
+    }
+
+    /**
+     * Bit 3 records that the usage is indirect, being worked out by the
+     * issuer rather than stated by the caller. It answers true when set and
+     * false when clear, and reads independently of which usage it is.
+     */
+    @Test
+    public void isUsageIndirect_IsBitThree() throws Exception {
+        for (int usage : new int[] { 0b001, 0b011, 0b111 }) {
+            byte[] set = canonicalRandomPayload();
+            set[FodId.FLAGS_OFFSET] = (byte) ((1 << 6) | 0b1000 | usage);
+            byte[] clear = canonicalRandomPayload();
+            clear[FodId.FLAGS_OFFSET] = (byte) ((1 << 6) | usage);
+
+            FodId indirect = assertParsed(FodId.tryFromBase64(
+                factory.signedOwidAt(set, DATE).asBase64()));
+            FodId direct = assertParsed(FodId.tryFromBase64(
+                factory.signedOwidAt(clear, DATE).asBase64()));
+
+            assertTrue("usage bits " + usage, indirect.isUsageIndirect());
+            assertFalse("usage bits " + usage, direct.isUsageIndirect());
+            assertEquals(direct.getUsage(), indirect.getUsage());
+        }
+    }
+
+    // ----- Usage bits 000 -----
+
+    /**
+     * A payload whose usage bits are all clear states no usage, so both
+     * non-throwing readers refuse it with the status that names that,
+     * whatever the type, and hand back no value. Bit 3 set on its own does
+     * not make it a usage.
+     */
+    @Test
+    public void usageBitsAllClear_IsRefused() throws Exception {
+        int[] flagsCases = {
+            0b0000_0000, 0b1000_0000, 0b1100_0000, 0b0000_1000,
+            0b1000_1000 };
+        for (int flags : flagsCases) {
+            byte[] payload = canonicalPayload();
+            payload[FodId.FLAGS_OFFSET] = (byte) flags;
+            assertFailed(FodId.tryFromBase64(
+                    factory.signedOwidAt(payload, DATE).asBase64()),
+                FodIdParseStatus.NO_USAGE);
+            assertFailed(FodId.tryFromByteArray(
+                    factory.signedOwidAt(payload, DATE).asByteArray()),
+                FodIdParseStatus.NO_USAGE);
+        }
+        byte[] random = canonicalRandomPayload();
+        random[FodId.FLAGS_OFFSET] = (byte) 0b0100_0000;
+        assertFailed(FodId.tryFromBase64(
+                factory.signedOwidAt(random, DATE).asBase64()),
+            FodIdParseStatus.NO_USAGE);
+    }
+
+    /**
+     * The throwing readers refuse the same payload and say in the message
+     * that the usage bits are 000, so whoever reads a log can tell this
+     * refusal from the others.
+     */
+    @Test
+    public void usageBitsAllClear_MessageNamesWhatWasFound()
+            throws Exception {
+        byte[] payload = canonicalPayload();
+        payload[FodId.FLAGS_OFFSET] = (byte) 0b1000_0000;
+        Owid owid = factory.signedOwidAt(payload, DATE);
+        String base64 = owid.asBase64();
+        byte[] bytes = owid.asByteArray();
+
+        ThrowingRunnable[] readers = {
+            () -> FodId.fromBase64(base64),
+            () -> FodId.fromByteArray(bytes),
+            () -> FodId.fromOwid(owid),
+        };
+        for (ThrowingRunnable read : readers) {
+            IllegalArgumentException thrown =
+                assertThrows(IllegalArgumentException.class, read);
+            assertTrue(thrown.getMessage(),
+                thrown.getMessage().contains("usage bits are 000"));
+        }
     }
 
     /**
@@ -417,7 +521,7 @@ public class FodIdParseTests {
     @Test
     public void version_IsReadApartFromTheUsageAndTypeBits()
             throws Exception {
-        for (int usage : new int[] { 0b000, 0b001, 0b011, 0b111 }) {
+        for (int usage : new int[] { 0b001, 0b011, 0b111 }) {
             for (int type : new int[] { 0b00, 0b10, 0b11 }) {
                 int flags = (type << 6) | usage;
                 byte[] payload = payloadEndingAtMatchKey();
@@ -527,7 +631,7 @@ public class FodIdParseTests {
     public void tryFromBase64_ReservedHeaderOnly_ParsedBestEffort()
             throws Exception {
         byte[] payload = new byte[FodId.HEADER_LENGTH];
-        payload[FodId.FLAGS_OFFSET] = (byte) 0b1100_0000;
+        payload[FodId.FLAGS_OFFSET] = (byte) 0b1100_0001;
 
         FodId fodId = assertParsed(FodId.tryFromBase64(
             factory.signedOwidAt(payload, DATE).asBase64()));
@@ -554,7 +658,7 @@ public class FodIdParseTests {
             throws Exception {
         byte[] payload = Arrays.copyOf(
             canonicalPayload(), FodId.PAYLOAD_LENGTH - 1);
-        payload[FodId.FLAGS_OFFSET] = 0;
+        payload[FodId.FLAGS_OFFSET] = 0b0000_0001;
 
         assertFailed(
             FodId.tryFromBase64(factory.signedOwidAt(payload, DATE).asBase64()),

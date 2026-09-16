@@ -124,7 +124,10 @@ public class ExampleTests {
             + "\"context\":\"mismatch\","
             + "\"factors\":{\"transport\":\"verified\",\"device\":\"mismatch\","
             + "\"browserip\":\"verified\",\"connectionip\":\"verified\","
-            + "\"asn\":\"verified\",\"browser\":\"verified\"},"
+            + "\"asn\":\"verified\",\"platformname\":\"verified\","
+            + "\"platformversion\":\"misconfigured\","
+            + "\"browsername\":\"verified\","
+            + "\"browserversion\":\"mismatch\"},"
             + "\"verifiedAt\":\"2026-08-07T09:15:32Z\","
             + "\"secondsSinceVerified\":3}");
 
@@ -138,6 +141,17 @@ public class ExampleTests {
             json.getJSONObject("factors").getString("device"));
         assertEquals("verified",
             json.getJSONObject("factors").getString("transport"));
+        // The four factors that replaced browser are relayed as they came,
+        // and misconfigured is never turned into a mismatch.
+        assertEquals("verified",
+            json.getJSONObject("factors").getString("platformname"));
+        assertEquals("misconfigured",
+            json.getJSONObject("factors").getString("platformversion"));
+        assertEquals("verified",
+            json.getJSONObject("factors").getString("browsername"));
+        assertEquals("mismatch",
+            json.getJSONObject("factors").getString("browserversion"));
+        assertEquals(9, json.getJSONObject("factors").length());
     }
 
     @Test
@@ -249,7 +263,8 @@ public class ExampleTests {
     }
 
     /**
-     * A canonical 37-byte Probabilistic payload with flags 0x00, License Id
+     * A canonical 37-byte Probabilistic payload with flags 0x01, being the
+     * non-marketing usage, which a payload has to state, License Id
      * 0x12345678 (little-endian) and a 32-byte match key 0x20..0x3F. The
      * offsets are spelled out here because writing a payload is the cloud's
      * job rather than a reader's, so the layout is not part of the reader's
@@ -261,6 +276,7 @@ public class ExampleTests {
         final int matchKeyOffset = 5;
         final int matchKeyLength = 32;
         byte[] payload = new byte[matchKeyOffset + matchKeyLength];
+        payload[0] = 0x01;
         payload[licenseIdOffset] = 0x78;
         payload[licenseIdOffset + 1] = 0x56;
         payload[licenseIdOffset + 2] = 0x34;

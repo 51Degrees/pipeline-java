@@ -212,11 +212,11 @@ public class DidClientLiveTests {
             FodId fodId,
             Usage usage,
             String terms,
-            boolean fromConsent) {
+            boolean indirect) {
         assertEquals(label + ": usage", usage, fodId.getUsage());
         assertEquals(
-            label + ": whether the usage came from a consent string",
-            fromConsent, fodId.isUsageFromConsent());
+            label + ": whether the usage is indirect",
+            indirect, fodId.isUsageIndirect());
         assertEquals(label + ": terms", terms, fodId.getTerms());
         assertEquals(
             label + ": an idprob* value must be a probabilistic identifier",
@@ -278,8 +278,9 @@ public class DidClientLiveTests {
     /**
      * A consent management platform sends an IAB TCF consent string and no
      * usage of its own. The service decodes the string, decides the usage
-     * from the purposes it grants, and records in the identifier that it
-     * did so, which is bit 3 of the flags byte.
+     * from the purposes it grants, and records in the identifier that the
+     * usage is indirect, which is bit 3 of the flags byte. A consent string
+     * is the only indirect signal today.
      * <p>
      * This is the half a caller cannot state for itself. An identifier
      * whose usage was stated in the request and one whose usage was decoded
@@ -293,7 +294,7 @@ public class DidClientLiveTests {
      * Appendix 1 standard set of 1, 2, 7, 8 and 11.
      */
     @Test
-    public void consentStringSetsTheUsageFromConsentBit() throws Exception {
+    public void consentStringSetsTheUsageIsIndirectBit() throws Exception {
         String[][] cases = {
             { "AAAAAAAAAAAAAAAAAAAAAAAAAP_w", "PERSONALIZED" },
             { "AAAAAAAAAAAAAAAAAAAAAAAAAMMg", "STANDARD" },
@@ -326,7 +327,7 @@ public class DidClientLiveTests {
         // Same reasoning as the usage test above.
         Assume.assumeTrue(
             "This resource key returned no identifier for either consent "
-            + "string, so the usage-from-consent bit was never read and "
+            + "string, so the usage is indirect bit was never read and "
             + "this run did not prove it.",
             proven > 0);
     }
