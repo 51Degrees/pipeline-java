@@ -42,6 +42,7 @@ import org.slf4j.Logger;
 import java.io.*;
 import java.net.URLEncoder;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static fiftyone.pipeline.core.Constants.*;
 import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.EVIDENCE_SESSIONID;
@@ -161,7 +162,7 @@ public class JavaScriptBuilderElement
         String url = getUrl(reqProtocol, reqHost, queryParams);
 
         String sessionId = getSessionId(data);
-        Integer sequence = getSequence(data);
+        int sequence = getSequence(data);
         String serializedParameters = serializeParameters(parameters);
 
         // With the gathered resources, build a new JavaScriptResource.
@@ -376,25 +377,69 @@ public class JavaScriptBuilderElement
         return url;
     }
 
+    /**
+     * The session id is written into the script inside double quotes with no
+     * escaping, so only a value of 1 to 64 ASCII letters, digits and hyphens
+     * is written. Any other value could break the script or change what it
+     * does, and is written as an empty string instead. The id the Sequence Element
+     * creates always matches.
+     */
+    private static final Pattern SESSION_ID_PATTERN =
+        Pattern.compile("[A-Za-z0-9-]{1,64}");
+
+    /**
+     * A sequence given as text is only read when it is made of digits, and
+     * one of more than ten digits cannot be a 32 bit integer.
+     */
+    private static final Pattern SEQUENCE_PATTERN =
+        Pattern.compile("[0-9]{1,10}");
+
+    /**
+     * Gets the session id to write into the script. This is the session id
+     * evidence, set by the Sequence Element or by the request, when it
+     * matches SESSION_ID_PATTERN, and an empty string otherwise.
+     * @param data the flow data
+     * @return the session id, or an empty string
+     */
     private String getSessionId(FlowData data) {
-        String sessionId = "";
-        TryGetResult<String> trySessionId = data.tryGetEvidence(EVIDENCE_SESSIONID, String.class);
-
-        if (trySessionId.hasValue()) {
-            sessionId = trySessionId.getValue();
+        TryGetResult<Object> trySessionId =
+            data.tryGetEvidence(EVIDENCE_SESSIONID, Object.class);
+        if (trySessionId.hasValue() &&
+            trySessionId.getValue() instanceof String) {
+            String sessionId = (String) trySessionId.getValue();
+            if (SESSION_ID_PATTERN.matcher(sessionId).matches()) {
+                return sessionId;
+            }
         }
-
-        return sessionId;
+        return "";
     }
 
-    private Integer getSequence(FlowData data) {
-        Integer sequence = 1;
-        TryGetResult<Integer> trySequence = data.tryGetEvidence(EVIDENCE_SEQUENCE, Integer.class);
+    /**
+     * Gets the sequence to write into the script. This is the sequence
+     * evidence, as a number or as text, when it is a positive 32 bit
+     * integer, and 1 otherwise, including when there is no Sequence Element.
+     * The value is written into the script as code, so text that is not a
+     * number could break the script, and a number below 1 is not a sequence
+     * the Sequence Element would ever give.
+     * @param data the flow data
+     * @return the sequence, which is always at least 1
+     */
+    private int getSequence(FlowData data) {
+        TryGetResult<Object> trySequence =
+            data.tryGetEvidence(EVIDENCE_SEQUENCE, Object.class);
+        long sequence = 0;
         if (trySequence.hasValue()) {
-            sequence = trySequence.getValue();
+            Object value = trySequence.getValue();
+            if (value instanceof Integer) {
+                sequence = (Integer) value;
+            } else if (value instanceof String &&
+                SEQUENCE_PATTERN.matcher((String) value).matches()) {
+                sequence = Long.parseLong((String) value);
+            }
         }
-
-        return sequence;
+        return sequence >= 1 && sequence <= Integer.MAX_VALUE
+            ? (int) sequence
+            : 1;
     }
 
     private void buildJavaScript(
