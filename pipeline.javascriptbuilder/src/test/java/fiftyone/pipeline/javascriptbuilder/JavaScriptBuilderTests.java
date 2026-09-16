@@ -310,8 +310,19 @@ public class JavaScriptBuilderTests {
         String javaScript = result.getJavaScript();
         assertTrue(javaScript.contains("https://localhost/json"),
                 "JavaScript does not contain the expected URL.");
-        assertTrue(javaScript.contains("parameters = {}"),
-                "JavaScript should assign empty parameters.");
+
+        // The template has named this declaration differently over time, so
+        // the line is found by the word rather than the exact name.
+        String parameters = null;
+        for (String line : javaScript.split("\\r?\\n")) {
+            if (line.toLowerCase().contains("parameters =")
+                    && line.contains("{")) {
+                parameters = line;
+            }
+        }
+        assertNotNull(parameters, "the script should assign its parameters");
+        assertTrue(parameters.contains("{}"),
+                "JavaScript should assign empty parameters: " + parameters);
     }
 
     public enum ExceptionCase {
