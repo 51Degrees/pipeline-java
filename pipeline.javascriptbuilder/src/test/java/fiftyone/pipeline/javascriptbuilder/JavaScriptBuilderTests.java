@@ -289,6 +289,42 @@ public class JavaScriptBuilderTests {
                 + "would pass with no parameters at all: " + parameters);
     }
 
+    /**
+     * A request whose only query evidence is the session id and the sequence
+     * leaves the script with no parameters, and the URL is still built.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void JavaScriptBuilderElement_NoParameters() throws Exception {
+        configureMocks();
+        evidence.remove(EVIDENCE_QUERY_USERAGENT_KEY);
+        evidence.remove("query.latitude");
+        evidence.remove("query.longitude");
+
+        javaScriptBuilderElement =
+                new JavaScriptBuilderElementBuilder(loggerFactory)
+                        .setEndpoint("/json")
+                        .build();
+        javaScriptBuilderElement.process(flowData);
+
+        String javaScript = result.getJavaScript();
+        assertTrue(javaScript.contains("https://localhost/json"),
+                "JavaScript does not contain the expected URL.");
+
+        // The template has named this declaration differently over time, so
+        // the line is found by the word rather than the exact name.
+        String parameters = null;
+        for (String line : javaScript.split("\\r?\\n")) {
+            if (line.toLowerCase().contains("parameters =")
+                    && line.contains("{")) {
+                parameters = line;
+            }
+        }
+        assertNotNull(parameters, "the script should assign its parameters");
+        assertTrue(parameters.contains("{}"),
+                "JavaScript should assign empty parameters: " + parameters);
+    }
+
     public enum ExceptionCase {
 
         PROPERTY_MISSING(new PropertyMissingException(), false),
