@@ -42,6 +42,7 @@ import org.slf4j.Logger;
 import java.io.*;
 import java.net.URLEncoder;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static fiftyone.pipeline.core.Constants.*;
 import static fiftyone.pipeline.engines.fiftyone.flowelements.Constants.EVIDENCE_SESSIONID;
@@ -66,7 +67,55 @@ public class JavaScriptBuilderElement
     protected final String objName;
     protected final boolean enableCookies;
     private final Mustache mustache;
-    
+
+    /**
+     * The object name is written into the script as the name of a global
+     * variable, as a session storage key and inside string literals, with no
+     * escaping of JavaScript. A name that is not a plain JavaScript identifier
+     * would therefore break the script or change what it does, so only names
+     * matching this pattern are used.
+     */
+    private static final Pattern OBJECT_NAME_PATTERN =
+        Pattern.compile("[A-Za-z_$][A-Za-z0-9_$]*");
+
+    /**
+     * Words the pattern accepts that cannot be the name of the object. These
+     * are the reserved words of the language, including those reserved only
+     * in strict mode, plus the three global values a top level var cannot
+     * replace, where the object would silently never be created.
+     */
+    private static final Set<String> RESERVED_OBJECT_NAMES =
+        Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "await", "break", "case", "catch", "class", "const", "continue",
+            "debugger", "default", "delete", "do", "else", "enum", "export",
+            "extends", "false", "finally", "for", "function", "if",
+            "implements", "import", "in", "instanceof", "interface", "let",
+            "new", "null", "package", "private", "protected", "public",
+            "return", "static", "super", "switch", "this", "throw", "true",
+            "try", "typeof", "var", "void", "while", "with", "yield",
+            "Infinity", "NaN", "undefined")));
+
+    /**
+     * The message of the exception thrown when a configured object name is
+     * not valid.
+     */
+    public static final String INVALID_OBJECT_NAME_MESSAGE =
+        "JavaScriptBuilder ObjectName is invalid. This must be a valid " +
+        "JavaScript identifier that is not a reserved word.";
+
+    /**
+     * Whether a name can be used as the name of the object instantiated by
+     * the client JavaScript.
+     * @param name the requested name
+     * @return true if the name is a valid JavaScript identifier and not a
+     * reserved word
+     */
+    public static boolean isValidObjectName(String name) {
+        return name != null &&
+            OBJECT_NAME_PATTERN.matcher(name).matches() &&
+            RESERVED_OBJECT_NAMES.contains(name) == false;
+    }
+
     //! [constructor]
     /**
      * Default constructor.
@@ -114,6 +163,8 @@ public class JavaScriptBuilderElement
      *                 then the protocol from the request will be used
      * @param contextRoot The &lt;context-root&gt; setting from the web.xml.
      *                 This is needed when creating the callback URL.
+     * @throws PipelineConfigurationException if objName is not empty and is
+     * not a valid JavaScript identifier, see {@link #isValidObjectName}
      */
     public JavaScriptBuilderElement(
             Logger logger,
@@ -134,7 +185,14 @@ public class JavaScriptBuilderElement
         this.host = host;
         this.endpoint = endpoint;
         this.protocol = protocol;
-        this.objName = objName.isEmpty() ? Constants.DEFAULT_OBJECT_NAME : objName;
+        if (objName == null || objName.isEmpty()) {
+            this.objName = Constants.DEFAULT_OBJECT_NAME;
+        } else if (isValidObjectName(objName)) {
+            this.objName = objName;
+        } else {
+            throw new PipelineConfigurationException(
+                INVALID_OBJECT_NAME_MESSAGE);
+        }
         this.enableCookies = enableCookies;
         this.contextRoot = contextRoot;
     }
@@ -410,16 +468,21 @@ public class JavaScriptBuilderElement
                 getElementDataKey(),
                 getDataFactory());
 
-        String objectName;
-        // Try and get the requested object name from evidence.
+        String objectName = objName;
+        // Try and get the requested object name from evidence. A name that
+        // is not a valid identifier is ignored and the configured name is
+        // used.
         TryGetResult<String> res = data.tryGetEvidence(
             EVIDENCE_OBJECT_NAME,
             String.class );
-        if (res.hasValue() == false ||
-            res.getValue().isEmpty()) {
-            objectName = objName;
-        } else {
-            objectName = res.getValue();
+        if (res.hasValue()) {
+            if (isValidObjectName(res.getValue())) {
+                objectName = res.getValue();
+            } else {
+                logger.warn("The requested JavaScript object name is not a " +
+                    "valid JavaScript identifier, so the configured name '" +
+                    objName + "' was used instead.");
+            }
         }
 
         boolean cookies;

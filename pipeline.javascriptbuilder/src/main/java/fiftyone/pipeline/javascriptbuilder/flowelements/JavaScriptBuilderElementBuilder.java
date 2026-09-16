@@ -30,8 +30,6 @@ import fiftyone.pipeline.core.flowelements.FlowElement;
 import fiftyone.pipeline.core.exceptions.*;
 import fiftyone.pipeline.javascriptbuilder.Constants;
 import fiftyone.pipeline.javascriptbuilder.data.JavaScriptBuilderData;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 
@@ -129,28 +127,21 @@ public class JavaScriptBuilderElementBuilder {
      * The default name of the object instantiated by the client
      * JavaScript.
      * <p>
-     * Default is "fod"
-     * @param objName the object name to use
+     * Default is "fod". This can be overridden per request with the
+     * "query.fod-js-object-name" evidence, which is ignored with a warning
+     * when it is not a valid name.
+     * @param objName the object name to use, which must be a valid JavaScript
+     *                identifier that is not a reserved word
      * @return this builder
+     * @throws PipelineConfigurationException if the name is not valid
      */
     @DefaultValue(Constants.DEFAULT_OBJECT_NAME)
     public JavaScriptBuilderElementBuilder setObjectName(String objName) {
-        Pattern pattern = Pattern.compile("[a-zA-Z_$][0-9a-zA-Z_$]*");
-        Matcher match = pattern.matcher(objName);
-        if (match.matches())
-        {
-            this.objName = objName;
+        if (JavaScriptBuilderElement.isValidObjectName(objName) == false) {
+            throw new PipelineConfigurationException(
+                JavaScriptBuilderElement.INVALID_OBJECT_NAME_MESSAGE);
         }
-        else
-        {
-            PipelineConfigurationException ex =
-                new PipelineConfigurationException("JavaScriptBuilder" +
-                " ObjectName is invalid. This must be a valid JavaScript" +
-                " type identifier.");
-            
-            throw ex;
-        }
-
+        this.objName = objName;
         return this;
     }
     
