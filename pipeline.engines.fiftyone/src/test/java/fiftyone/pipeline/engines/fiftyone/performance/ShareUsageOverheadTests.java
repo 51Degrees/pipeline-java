@@ -32,6 +32,8 @@ import fiftyone.pipeline.engines.fiftyone.flowelements.ShareUsageElement;
 import fiftyone.pipeline.engines.flowelements.AspectEngine;
 import fiftyone.pipeline.engines.services.HttpClient;
 import fiftyone.pipeline.engines.testhelpers.flowelements.EmptyEngineBuilder;
+import org.json.JSONObject;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,9 +41,14 @@ import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -52,6 +59,22 @@ import static org.mockito.Mockito.when;
 public class ShareUsageOverheadTests {
     static Logger logger = LoggerFactory.getLogger("testLogger");
     private Pipeline pipeline;
+
+    private static final Map<String, Double> overheadMillis = new LinkedHashMap<>();
+
+    /**
+     * Writes the measured overheads to the results file, if one was asked for.
+     */
+    @AfterAll
+    public static void writeResults() throws IOException {
+        String path = System.getProperty("fiftyone.performance.json");
+        if (path == null) {
+            return;
+        }
+        JSONObject results = new JSONObject()
+            .put("LowerIsBetter", new JSONObject(overheadMillis));
+        Files.write(Paths.get(path), results.toString(2).getBytes(StandardCharsets.UTF_8));
+    }
 
     @SuppressWarnings("unchecked")
     @BeforeEach
@@ -111,6 +134,7 @@ public class ShareUsageOverheadTests {
         });
 
         double msOverheadPerCall = (double)(end - start) / iterations;
+        overheadMillis.put("ShareUsageOverhead_SingleEvidence_ms", msOverheadPerCall);
 		System.out.println("ShareUsageOverhead_SingleEvidence: " + msOverheadPerCall + "ms per call");
         logger.info("Overhead was {} millis", msOverheadPerCall);
         Assertions.assertTrue(msOverheadPerCall < maxOverheadPerCall,
@@ -150,6 +174,7 @@ public class ShareUsageOverheadTests {
         });
 
         double msOverheadPerCall = (double)(end - start) / iterations;
+        overheadMillis.put("ShareUsageOverhead_HundredEvidence_ms", msOverheadPerCall);
 		System.out.println("ShareUsageOverhead_HundredEvidence: " + msOverheadPerCall + "ms per call");
         logger.info("Overhead was {} millis", msOverheadPerCall);
         Assertions.assertTrue(msOverheadPerCall < maxOverheadPerCallMillis,
