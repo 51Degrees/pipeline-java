@@ -155,10 +155,12 @@ public class JavaScriptBuilderElement
         // Get the JSON include to embed into the JavaScript include.
         String jsonObject = getJsonObject(data);
         // Generate any required parameters for the JSON request.
+        // The parameters reach the script only through the serialized
+        // parameters object, so the URL carries no query string. The .NET
+        // builder renders the URL the same way.
         Map<String, String> parameters = getParameters(data);
-        String queryParams = getQueryParams(parameters);
 
-        String url = getUrl(reqProtocol, reqHost, queryParams);
+        String url = getUrl(reqProtocol, reqHost);
 
         String sessionId = getSessionId(data);
         Integer sequence = getSequence(data);
@@ -322,29 +324,12 @@ public class JavaScriptBuilderElement
         return parameters;
     }
 
-    private String getQueryParams(Map<String, String> parameters) throws UnsupportedEncodingException {
-        StringBuilder sb = new StringBuilder();
-
-        Set<String> keys = parameters.keySet();
-        for (String key : keys) {
-            sb.append(key);
-            sb.append("=");
-            sb.append(parameters.get(key));
-            sb.append("&");
-        }
-        if (sb.length() > 0) {
-            sb.deleteCharAt(sb.length() - 1);
-        }
-
-        return sb.toString();
-    }
-
     private String serializeParameters(Map<String, String> parameters) {
         JSONObject jsonObject = new JSONObject(parameters);
         return jsonObject.toString(0);
     }
 
-    private String getUrl(String protocol, String host, String queryParams) {
+    private String getUrl(String protocol, String host) {
         String url = null;
         if (protocol != null && !protocol.isEmpty() &&
                 host != null && !host.isEmpty() &&
@@ -369,8 +354,7 @@ public class JavaScriptBuilderElement
 
             url = protocol + "://" + host +
                     (contextRootPopulated ? contextRoot : "") +
-                    endpoint +
-                    (queryParams.isEmpty() ? "" : "?" + queryParams);
+                    endpoint;
         }
 
         return url;
