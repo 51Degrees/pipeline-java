@@ -205,12 +205,11 @@ public class JavaScriptObjectNameTests {
 
     /**
      * The element's constructor is public, so a name that does not come
-     * through the builder is checked as well. An empty name still means the
-     * default, as it always has.
+     * through the builder is checked as well.
      */
     @ParameterizedTest
     @ValueSource(strings = {
-        "a;b", "9bad", "x\"y", "var", "fiftyoneDegreesManager"})
+        "a;b", "9bad", "x\"y", "", "var", "fiftyoneDegreesManager"})
     public void ObjectName_InvalidFromConstructor_Refused(String name) {
         assertThrows(
             PipelineConfigurationException.class,
@@ -222,6 +221,34 @@ public class JavaScriptObjectNameTests {
                 false,
                 "",
                 ""));
+    }
+
+    /**
+     * No name configured means the default name, whether the name was never
+     * set or was set to null.
+     */
+    @Test
+    public void ObjectName_NotConfigured_DefaultUsed() {
+        String fromBuilder = render(
+            new JavaScriptBuilderElementBuilder(loggerFactory).build());
+        assertWorkingObject(fromBuilder, Constants.DEFAULT_OBJECT_NAME);
+
+        String fromNull = render(
+            new JavaScriptBuilderElementBuilder(loggerFactory)
+                .setObjectName(null)
+                .build());
+        assertWorkingObject(fromNull, Constants.DEFAULT_OBJECT_NAME);
+
+        // The element's constructor is public, so a null name there means
+        // the default as well, where an empty name is refused.
+        assertDoesNotThrow(() -> new JavaScriptBuilderElement(
+            loggerFactory.getLogger("test"),
+            null,
+            "",
+            null,
+            false,
+            "",
+            ""));
     }
 
     private void assertWorkingObject(String script, String name) {

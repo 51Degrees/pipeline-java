@@ -47,7 +47,7 @@ public class JavaScriptBuilderElementBuilder {
     protected String endpoint = "";
     protected String protocol = "";
     protected String contextRoot = "";
-    protected String objName = "";
+    protected String objName = Constants.DEFAULT_OBJECT_NAME;
     private boolean enableCookies = ENABLE_COOKIES;
 
     /**
@@ -131,12 +131,17 @@ public class JavaScriptBuilderElementBuilder {
      * "query.fod-js-object-name" evidence, which is ignored with a warning
      * when it is not a valid name.
      * @param objName the object name to use, which must be a valid JavaScript
-     *                identifier that is not a reserved word
+     *                identifier that is not a reserved word. A null name
+     *                leaves the default in place, as no name was configured
      * @return this builder
      * @throws PipelineConfigurationException if the name is not valid
      */
     @DefaultValue(Constants.DEFAULT_OBJECT_NAME)
     public JavaScriptBuilderElementBuilder setObjectName(String objName) {
+        if (objName == null) {
+            this.objName = Constants.DEFAULT_OBJECT_NAME;
+            return this;
+        }
         if (JavaScriptBuilderElement.isValidObjectName(objName) == false) {
             throw new PipelineConfigurationException(
                 JavaScriptBuilderElement.INVALID_OBJECT_NAME_MESSAGE);

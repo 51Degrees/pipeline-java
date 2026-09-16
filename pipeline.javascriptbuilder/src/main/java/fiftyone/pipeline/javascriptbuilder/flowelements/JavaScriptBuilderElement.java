@@ -166,8 +166,10 @@ public class JavaScriptBuilderElement
      *                 then the protocol from the request will be used
      * @param contextRoot The &lt;context-root&gt; setting from the web.xml.
      *                 This is needed when creating the callback URL.
-     * @throws PipelineConfigurationException if objName is not empty and is
-     * not a valid JavaScript identifier, see {@link #isValidObjectName}
+     * @throws PipelineConfigurationException if objName is not null and is
+     * not a valid JavaScript identifier, see {@link #isValidObjectName}.
+     * A null name means the default name is used, as no name was
+     * configured, and an empty name is refused
      */
     public JavaScriptBuilderElement(
             Logger logger,
@@ -188,7 +190,7 @@ public class JavaScriptBuilderElement
         this.host = host;
         this.endpoint = endpoint;
         this.protocol = protocol;
-        if (objName == null || objName.isEmpty()) {
+        if (objName == null) {
             this.objName = Constants.DEFAULT_OBJECT_NAME;
         } else if (isValidObjectName(objName)) {
             this.objName = objName;
