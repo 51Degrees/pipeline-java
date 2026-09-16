@@ -265,9 +265,16 @@ public class JavaScriptBuilderTests {
         // The session id is rendered on its own as well, because the script
         // appends it to its request, so only the line assigning the
         // parameters is read here.
+        // Matched without naming the declaration, because the template has
+        // called it both "parameters" and "renderedParameters" and a test
+        // that names one of them passes or fails on which revision of the
+        // template the module happens to embed rather than on the builder.
+        // The line that assigns it is the one mentioning parameters with a
+        // brace on it; the line that merely calls it has no brace.
         String parameters = null;
         for (String line : javaScript.split("\\r?\\n")) {
-            if (line.contains("parameters = {")) {
+            if (line.toLowerCase().contains("parameters =")
+                    && line.contains("{")) {
                 assertNull(parameters,
                         "the script should assign its parameters once");
                 parameters = line;
