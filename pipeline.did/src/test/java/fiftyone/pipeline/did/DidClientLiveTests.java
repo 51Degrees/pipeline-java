@@ -35,9 +35,11 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -95,6 +97,96 @@ public class DidClientLiveTests {
 
         assertEquals(200, result.getStatusCode());
         assertEquals(RedeemResult.Context.UNREADABLE, result.getContext());
+    }
+
+    /**
+     * The whole creator context round trip, with no browser in it. A
+     * marketing 51Did is created, the sealed verdict is fetched the way a
+     * page fetches it, and the acting party redeems that verdict with its
+     * licence key, which is the call a server makes.
+     * <p>
+     * Written out as plain requests rather than through the client, because
+     * the client deliberately offers no verify-full method. That call
+     * belongs to the browser, and a server calling it learns nothing about
+     * the browser it is asking about. Here both calls come from one
+     * process, so the connection that created the identifier is the
+     * connection presenting it and the verdict has to be verified.
+     */
+    @Test
+    public void verifyFullThenRedeemWithTheLicence_ReadsTheVerdict()
+            throws Exception {
+        Assume.assumeTrue(
+            "Set _51DEGREES_LICENSE_KEY to redeem a sealed result.",
+            client.hasLicenceKey());
+
+        List<FodId> identifiers = identifiersFor("id.usage", "standard");
+        Assume.assumeTrue(
+            "This resource key returned no marketing 51Did, so there was "
+            + "nothing to verify. Use a key entitled to the standard usage.",
+            identifiers.isEmpty() == false);
+        FodId fodId = identifiers.get(0);
+        assertEquals(Usage.STANDARD, fodId.getUsage());
+
+        String sealed = verifyFull(fodId.asBase64());
+
+        RedeemResult redeemed;
+        try {
+            redeemed = client.redeem(fodId, sealed, null).join();
+        } catch (CompletionException reported) {
+            if (reported.getCause() instanceof DidNotSupportedException) {
+                Assume.assumeNoException(
+                    "The host does not offer the creator context.",
+                    reported.getCause());
+                return;
+            }
+            throw reported;
+        }
+
+        assertEquals("Redeeming: " + redeemed.getRaw(),
+            200, redeemed.getStatusCode());
+        assertEquals("The identifier was just created by this client, so "
+            + "its signature has to read as genuine: " + redeemed.getRaw(),
+            RedeemResult.Signature.VERIFIED, redeemed.getSignature());
+        assertEquals("The identifier was created and presented on one "
+            + "connection, so every factor has to match. The service "
+            + "answered: " + redeemed.getRaw(),
+            RedeemResult.Context.VERIFIED, redeemed.getContext());
+        assertNotNull("A redeemed verdict says when it was made.",
+            redeemed.getVerifiedAt());
+        // A verified verdict matched everywhere, so the service sends no
+        // factor breakdown with it and there is nothing to read. Where it
+        // does send one, every name in it is read.
+        for (Map.Entry<String, RedeemResult.Factor> factor
+                : redeemed.getFactors().entrySet()) {
+            assertNotNull("Factor " + factor.getKey() + " was not read.",
+                factor.getValue());
+        }
+    }
+
+    /**
+     * The sealed verdict for one identifier, fetched as a page fetches it.
+     *
+     * @param fodId the identifier as base64
+     * @return the sealed result to redeem
+     */
+    private String verifyFull(String fodId) throws Exception {
+        String url = client.getEndpoint() + "id/verify-full/"
+            + DidClient.encode(resourceKey)
+            + "?51did=" + DidClient.encode(fodId);
+        HttpURLConnection connection = (HttpURLConnection)
+            URI.create(url).toURL().openConnection();
+        connection.setRequestProperty("User-Agent", "pipeline.did live test");
+        int status = connection.getResponseCode();
+        String body = readAll(status >= 400
+            ? connection.getErrorStream()
+            : connection.getInputStream());
+        assertEquals("Verifying in full: " + body, 200, status);
+        String sealed = new JSONObject(body).optString("result", null);
+        Assume.assumeTrue(
+            "This host answered verify-full in the open, so it holds no "
+            + "context secret and there is nothing to redeem: " + body,
+            sealed != null && sealed.isEmpty() == false);
+        return sealed;
     }
 
     /**
