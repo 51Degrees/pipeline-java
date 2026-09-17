@@ -57,12 +57,19 @@ import java.util.concurrent.CompletionException;
  * binds the identifier to the browser and connection it was created on.
  * The flow has three steps:
  * <ol>
- * <li><b>Create</b> a 51Did by calling the {@code json} endpoint, which
- * issues an identifier for the calling connection.</li>
+ * <li><b>Create</b> a 51Did by loading the 51Degrees client script,
+ * which runs the snippets the service asks for, sends what they
+ * collected, and hands the page the answer with the identifier in it,
+ * created for the browser's own connection. The service issues an
+ * identifier only once those values are in, so a page asking for one by
+ * itself is told the page has not finished and is given nothing.</li>
  * <li><b>Verify</b> it with {@code verify-full}, which returns both the
  * signature outcome and the creator context verdict only as an encrypted
  * {@code result} that the caller cannot read or forge. (A deployment
- * holding no context secret answers in the open instead.)</li>
+ * holding no context secret answers in the open instead.) The page sends
+ * what the snippets collected with this call as well, because the
+ * service compares this browser against the creator from those values
+ * and gives no verdict without them.</li>
  * <li><b>Redeem</b> the encrypted result with {@code redeem}, presenting
  * the 51Did, the encrypted result and the account's licence key, and
  * receive the true creator context verdict, when the verification
