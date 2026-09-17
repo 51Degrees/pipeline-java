@@ -43,7 +43,9 @@ import org.mockito.ArgumentMatchers;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -460,6 +462,64 @@ public class CloudRequestEngineTests extends CloudRequestEngineTestsBase {
             Map<String, Object> result = engine.getFormData(data);
             assertEquals(expectedValue, result.get("User-Agent"));
         }
+    }
+
+    /**
+     * An evidence key whose name itself holds a dot, such as
+     * {@code query.id.usage}, must reach the cloud service under its whole
+     * name, {@code id.usage}. The cloud service creates no 51Did unless
+     * {@code id.usage} is sent, so cutting the name at its second dot
+     * (sending {@code id} instead) means a server never gets a 51Did.
+     */
+    @Test
+    public void getFormData_KeepsDotsInEvidenceName() throws Exception {
+        configureMockedClient();
+        CloudRequestEngineDefault engine = (CloudRequestEngineDefault)
+            new CloudRequestEngineBuilder(loggerFactory, httpClient)
+                .setResourceKey("resourcekey")
+                .build();
+
+        Pipeline pipeline = new PipelineBuilder(loggerFactory)
+                .addFlowElement(engine)
+                .build();
+
+        try (FlowData data = pipeline.createFlowData()) {
+            data.addEvidence("query.id.usage", "non-marketing");
+            data.addEvidence("header.id.email", "someone@example.com");
+
+            Map<String, Object> result = engine.getFormData(data);
+            assertEquals("non-marketing", result.get("id.usage"));
+            assertEquals("someone@example.com", result.get("id.email"));
+            assertFalse(result.containsKey("id"),
+                "The evidence name was cut at its second dot: " + result);
+        }
+    }
+
+    /**
+     * The body posted to the cloud service carries {@code id.usage} under
+     * its whole name.
+     */
+    @Test
+    public void process_PostsWholeEvidenceName() throws Exception {
+        configureMockedClient();
+        CloudRequestEngine engine =
+            new CloudRequestEngineBuilder(loggerFactory, httpClient)
+                .setResourceKey("resourcekey")
+                .build();
+
+        try (Pipeline pipeline = new PipelineBuilder(loggerFactory)
+                .addFlowElement(engine).build();
+             FlowData data = pipeline.createFlowData()) {
+            data.addEvidence("query.id.usage", "non-marketing");
+            data.process();
+        }
+
+        ArgumentCaptor<byte[]> body = ArgumentCaptor.forClass(byte[].class);
+        verify(httpClient, times(1)).postData(any(), any(), body.capture());
+        List<String> items = Arrays.asList(
+            new String(body.getValue(), StandardCharsets.UTF_8).split("&"));
+        assertTrue(items.contains("id.usage=non-marketing"),
+            "The posted body does not carry id.usage: " + items);
     }
 
     /**
