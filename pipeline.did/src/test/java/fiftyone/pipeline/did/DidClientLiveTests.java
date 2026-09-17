@@ -164,6 +164,83 @@ public class DidClientLiveTests {
     }
 
     /**
+     * The address the identifier is created for. It is a documentation
+     * address, reserved so that it belongs to nobody, and so it is never
+     * the address this test's own connection comes from.
+     */
+    private static final String CREATED_FOR = "192.0.2.10";
+
+    /**
+     * Every factor the service compares, read by name. The identifier is
+     * created for a stated address rather than for the connection that
+     * asked, so when the same connection then presents it the address the
+     * identifier carries is not the one being checked and the verdict is a
+     * mismatch. That is the one mismatch a test can arrange without a
+     * browser, and a mismatch is the only verdict that carries the
+     * breakdown, since a verified verdict matched everywhere and has
+     * nothing to diagnose.
+     * <p>
+     * The names are written out rather than taken from the package,
+     * because a list the package supplied would agree with itself whatever
+     * the package said. These are the names the service sends.
+     */
+    @Test
+    public void anIdentifierForAnotherAddress_ReportsEveryFactor()
+            throws Exception {
+        Assume.assumeTrue(
+            "Set _51DEGREES_LICENSE_KEY to redeem a sealed result.",
+            client.hasLicenceKey());
+
+        List<FodId> identifiers = identifiersFor(
+            "id.usage", "standard", CREATED_FOR);
+        Assume.assumeTrue(
+            "This resource key returned no marketing 51Did, so there was "
+            + "nothing to verify. Use a key entitled to the standard usage.",
+            identifiers.isEmpty() == false);
+        FodId fodId = identifiers.get(0);
+
+        String sealed = verifyFull(fodId.asBase64());
+
+        RedeemResult redeemed;
+        try {
+            redeemed = client.redeem(fodId, sealed, null).join();
+        } catch (CompletionException reported) {
+            if (reported.getCause() instanceof DidNotSupportedException) {
+                Assume.assumeNoException(
+                    "The host does not offer the creator context.",
+                    reported.getCause());
+                return;
+            }
+            throw reported;
+        }
+
+        assertEquals("Redeeming: " + redeemed.getRaw(),
+            200, redeemed.getStatusCode());
+        assertEquals("The identifier is genuine whatever address it "
+            + "carries: " + redeemed.getRaw(),
+            RedeemResult.Signature.VERIFIED, redeemed.getSignature());
+        assertEquals("It carries another address than the one presenting "
+            + "it, so the context cannot be verified: " + redeemed.getRaw(),
+            RedeemResult.Context.MISMATCH, redeemed.getContext());
+        assertTrue("A mismatch has to say which factor differed: "
+            + redeemed.getRaw(), redeemed.hasFactors());
+
+        String[] names = {
+            "transport", "device", "browserip", "connectionip", "asn",
+            "platformname", "platformversion", "browsername",
+            "browserversion",
+        };
+        Map<String, RedeemResult.Factor> factors = redeemed.getFactors();
+        for (String name : names) {
+            assertNotNull("No " + name + " factor was reported: "
+                + redeemed.getRaw(), factors.get(name));
+        }
+        assertEquals("The address is the one thing that differs, so that "
+            + "is the factor that has to say so: " + redeemed.getRaw(),
+            RedeemResult.Factor.MISMATCH, factors.get("browserip"));
+    }
+
+    /**
      * The sealed verdict for one identifier, fetched as a page fetches it.
      *
      * @param fodId the identifier as base64
@@ -265,9 +342,22 @@ public class DidClientLiveTests {
      */
     private List<FodId> identifiersFor(String name, String value)
             throws Exception {
+        return identifiersFor(name, value, null);
+    }
+
+    /**
+     * As above, creating from the given address where one is given, so a
+     * test can create from one address and present the identifier from
+     * another.
+     */
+    private List<FodId> identifiersFor(
+            String name, String value, String clientIp) throws Exception {
         String url = client.getEndpoint() + "json?resource="
             + DidClient.encode(resourceKey)
             + "&" + name + "=" + DidClient.encode(value)
+            + (clientIp == null
+                ? ""
+                : "&client-ip=" + DidClient.encode(clientIp))
             + "&values=FODiD.IdProbGlobal&values=FODiD.IdProbLic";
         HttpURLConnection connection = (HttpURLConnection)
             URI.create(url).toURL().openConnection();
