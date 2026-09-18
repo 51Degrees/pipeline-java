@@ -23,7 +23,6 @@
 package fiftyone.pipeline.did;
 
 import org.json.JSONObject;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,15 +38,21 @@ import java.util.concurrent.CompletionException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
- * Tests against the live cloud, skipped unless {@code _51DEGREES_RESOURCE_KEY}
- * (or the older {@code RESOURCE_KEY}) is set. {@code FOD_CLOUD_API_URL}
- * points them at another host, and {@code _51DEGREES_LICENSE_KEY} (or
- * {@code LICENSE_KEY}) supplies the licence key where the account holds
- * one. Each test creates a 51Did through the cloud {@code json} endpoint,
- * which is one use against the resource key, plus one for each cloud call
- * it then makes.
+ * Tests against the live cloud service. They need a resource key, read
+ * from the names {@link LiveCloudKeys} lists, and they fail rather than
+ * skip when there is none, because a run that called nothing must not
+ * report success. {@code FOD_CLOUD_API_URL} points them at another host,
+ * and a licence key is taken from the names {@link LiveCloudKeys} lists
+ * where the account holds one. Each test creates a 51Did through the
+ * cloud {@code json} endpoint, which is one use against the resource key,
+ * plus one for each cloud call it then makes.
+ * <p>
+ * The resource key has to carry the fodid product. A key without it gets
+ * an answer from the service with no identifier in it, which these tests
+ * report as an entitlement failure naming the product.
  */
 public class DidClientLiveTests {
 
@@ -56,12 +61,12 @@ public class DidClientLiveTests {
 
     @Before
     public void init() {
-        resourceKey = env("_51DEGREES_RESOURCE_KEY", "RESOURCE_KEY");
-        Assume.assumeTrue(
-            "Set _51DEGREES_RESOURCE_KEY to run the live 51Did cloud tests.",
-            resourceKey != null);
+        resourceKey = LiveCloudKeys.find(LiveCloudKeys.RESOURCE_KEY_NAMES);
+        if (resourceKey == null) {
+            fail(LiveCloudKeys.noResourceKey());
+        }
         client = new DidClient(
-            resourceKey, env("_51DEGREES_LICENSE_KEY", "LICENSE_KEY"));
+            resourceKey, LiveCloudKeys.find(LiveCloudKeys.LICENCE_KEY_NAMES));
     }
 
     @Test
@@ -85,10 +90,17 @@ public class DidClientLiveTests {
                 .join();
         } catch (CompletionException reported) {
             if (reported.getCause() instanceof DidNotSupportedException) {
-                Assume.assumeNoException(
-                    "The host does not offer the creator context.",
-                    reported.getCause());
-                return;
+                // Reported rather than skipped. The redeem endpoint is
+                // part of the cloud service these tests exist to check,
+                // so a host that does not offer it is a real result and
+                // has to be seen.
+                throw new AssertionError(
+                    "The cloud service at " + client.getEndpoint()
+                    + " answered that it does not offer the creator "
+                    + "context, so the redeem endpoint could not be "
+                    + "called. Point FOD_CLOUD_API_URL at a service that "
+                    + "offers it, or leave it unset for the 51Degrees "
+                    + "cloud.", reported.getCause());
             }
             throw reported;
         }
@@ -103,9 +115,7 @@ public class DidClientLiveTests {
      */
     private FodId create() throws Exception {
         // id.usage is required. Without it the service takes the caller
-        // as not having asked for a 51Did at all and creates none, so this
-        // skipped on every run and the job reported success having tested
-        // nothing.
+        // as not having asked for a 51Did at all and creates none.
         String url = client.getEndpoint() + "json?resource="
             + DidClient.encode(resourceKey)
             + "&id.usage=non-marketing&values=FODiD.IdProbGlobal";
@@ -121,9 +131,11 @@ public class DidClientLiveTests {
         String value = fodid == null
             ? null
             : fodid.optString("idprobglobal", null);
-        Assume.assumeTrue(
-            "The resource key does not return FODiD.IdProbGlobal.",
-            value != null);
+        if (value == null) {
+            fail(LiveCloudKeys.notEntitled(
+                "a request for FODiD.IdProbGlobal with "
+                + "id.usage=non-marketing"));
+        }
         return FodId.fromBase64(value);
     }
 
@@ -144,15 +156,6 @@ public class DidClientLiveTests {
         }
     }
 
-    private static String env(String... names) {
-        for (String name : names) {
-            String value = System.getenv(name);
-            if (value != null && value.trim().isEmpty() == false) {
-                return value.trim();
-            }
-        }
-        return null;
-    }
     /**
      * The versioned Model Terms for Marketing document a marketing 51Did is
      * created under.
@@ -169,7 +172,7 @@ public class DidClientLiveTests {
      * Asks the {@code json} endpoint for a 51Did with the given query
      * parameter and returns every identifier it answered with. An empty
      * list means the resource key is not entitled to that usage, which the
-     * caller reports rather than fails.
+     * caller fails on, naming the product the key is missing.
      */
     private List<FodId> identifiersFor(String name, String value)
             throws Exception {
@@ -251,9 +254,7 @@ public class DidClientLiveTests {
 
             List<FodId> identifiers = identifiersFor("id.usage", name);
             if (identifiers.isEmpty()) {
-                System.err.println("id.usage=" + name + ": no identifier "
-                    + "returned, so this key is not entitled to that usage.");
-                continue;
+                fail(LiveCloudKeys.notEntitled("id.usage=" + name));
             }
             for (int i = 0; i < identifiers.size(); i++) {
                 assertAligned(name + "[" + i + "]", identifiers.get(i),
@@ -264,14 +265,13 @@ public class DidClientLiveTests {
             }
         }
 
-        // Reported as a skip rather than written to stderr, because
-        // surefire captures test output and prints only the counts, so a
-        // run that proved nothing would otherwise look identical to one
-        // that proved everything.
-        Assume.assumeTrue(
-            "This resource key returned no marketing 51Did, so no terms "
-            + "address was read and this run did not prove it. Use a key "
-            + "entitled to the standard or personalized usage.",
+        // A run that read no marketing identifier read no terms address
+        // either, so it proved nothing and must not report success.
+        assertTrue(
+            "The live cloud service returned no marketing 51Did, so no "
+            + "terms address was read. The resource key has to carry the "
+            + "fodid product and be entitled to the standard or "
+            + "personalized usage.",
             checked > 0);
     }
 
@@ -308,10 +308,8 @@ public class DidClientLiveTests {
             // would prove the opposite of what it says.
             List<FodId> identifiers = identifiersFor("tcstring", one[0]);
             if (identifiers.isEmpty()) {
-                System.err.println("consent string granting " + usage
-                    + ": no identifier returned, so this key is not entitled "
-                    + "to that marketing usage.");
-                continue;
+                fail(LiveCloudKeys.notEntitled(
+                    "a consent string granting " + usage));
             }
             for (int i = 0; i < identifiers.size(); i++) {
                 // A consent string granting a marketing usage produces a
@@ -324,10 +322,10 @@ public class DidClientLiveTests {
         }
 
         // Same reasoning as the usage test above.
-        Assume.assumeTrue(
-            "This resource key returned no identifier for either consent "
-            + "string, so the usage-from-consent bit was never read and "
-            + "this run did not prove it.",
+        assertTrue(
+            "The live cloud service returned no identifier for either "
+            + "consent string, so the usage-from-consent bit was never "
+            + "read and this run proved nothing.",
             proven > 0);
     }
 }

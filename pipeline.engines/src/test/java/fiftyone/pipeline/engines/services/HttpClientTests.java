@@ -35,6 +35,17 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
+/**
+ * Calls the live 51Degrees cloud service, and fails rather than skips when
+ * it cannot be reached, because a test of an HTTP client that passes
+ * without making a request proves nothing.
+ * <p>
+ * The resource key below is fixed on purpose and must not be replaced with
+ * a key from the environment. It is restricted to the 51degrees.com
+ * origin, which is what gives the two answers these tests need from one
+ * address, being 401 with no Origin header and 200 with one. A key without
+ * that restriction would answer 200 to both.
+ */
 public class HttpClientTests {
   private HttpClient client;
 

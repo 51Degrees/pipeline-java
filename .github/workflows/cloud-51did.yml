@@ -1,16 +1,21 @@
 name: Cloud 51Did Tests
 
 # Runs the live cloud 51Did integration test (pipeline.did,
-# DidClientLiveTests) once for every resource key the central common-ci script
-# exports from the _51DEGREES_RESOURCE_KEY* secrets (free, paid and any added
-# later). Each run sets the single _51DEGREES_RESOURCE_KEY the test reads. New
-# resource keys are added once at the organisation level; this workflow needs
-# no change.
+# DidClientLiveTests) against the resource key that carries the fodid
+# product, which is _51DEGREES_RESOURCE_KEY_BESPOKE. The central common-ci
+# script exports the _51DEGREES_RESOURCE_KEY* secrets as environment
+# variables, and this workflow sets the single _51DEGREES_RESOURCE_KEY the
+# test reads from the bespoke one.
 #
-# The test skips itself when no key is set, so a run with no secrets is green
-# and proves nothing. That is deliberate, because a pull request from a fork
-# has no secrets, and it is the reason the loop below reports which key each
-# run used.
+# The tests ask the cloud for a marketing 51Did, so a key without the fodid
+# product gets an answer with no identifier in it and the tests fail saying
+# so. Running them once per key would therefore report a failure for every
+# key below bespoke, which is entitlement working correctly rather than a
+# fault, so only the bespoke key is used.
+#
+# A run with no key available fails. A cloud test that passes without
+# calling the cloud reports success having proved nothing, and that is
+# worse than a red job.
 
 on:
   workflow_dispatch:
@@ -53,25 +58,21 @@ jobs:
           distribution: temurin
           java-version: '8'
           cache: maven
-      - name: Cloud 51Did test for each resource key secret
+      - name: Cloud 51Did test against the fodid entitled key
         shell: pwsh
         env:
           SECRETS: ${{ toJSON(secrets) }}
         run: |
           ./common-ci/steps/set-resource-keys.ps1 -Keys (ConvertFrom-Json -AsHashtable $env:SECRETS)
-          $keys = Get-ChildItem env: |
-            Where-Object { $_.Name -like '_51DEGREES_RESOURCE_KEY*' -and $_.Value }
-          if (-not $keys) {
-            Write-Host 'No _51DEGREES_RESOURCE_KEY* secrets available; skipping.'
-            exit 0
+          $key = $env:_51DEGREES_RESOURCE_KEY_BESPOKE
+          if (-not $key) {
+            throw ('No _51DEGREES_RESOURCE_KEY_BESPOKE secret is available, ' +
+              'so the live 51Did tests cannot call the cloud service. That ' +
+              'key carries the fodid product these tests need. A pull ' +
+              'request from a fork gets no secrets, so run this workflow ' +
+              'from a branch in this repository.')
           }
-          $failed = $false
-          foreach ($k in $keys) {
-            Write-Host "::group::DidClientLiveTests with $($k.Name)"
-            $env:_51DEGREES_RESOURCE_KEY = $k.Value
-            mvn -B -pl pipeline.did -am test `
-              -Dtest=DidClientLiveTests -DfailIfNoTests=false
-            if ($LASTEXITCODE -ne 0) { $failed = $true }
-            Write-Host '::endgroup::'
-          }
-          if ($failed) { exit 1 }
+          $env:_51DEGREES_RESOURCE_KEY = $key
+          mvn -B -pl pipeline.did -am test `
+            -Dtest=DidClientLiveTests -DfailIfNoTests=false
+          exit $LASTEXITCODE
