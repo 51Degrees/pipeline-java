@@ -1,11 +1,14 @@
 name: Cloud 51Did Tests
 
 # Runs the live cloud 51Did integration test (pipeline.did,
-# DidClientLiveTests) once for every resource key the central common-ci script
-# exports from the _51DEGREES_RESOURCE_KEY* secrets (free, paid and any added
-# later). Each run sets the single _51DEGREES_RESOURCE_KEY the test reads. New
-# resource keys are added once at the organisation level; this workflow needs
-# no change.
+# DidClientLiveTests) once for every _51DEGREES_RESOURCE_KEY* secret passed in
+# below. Each run sets the single _51DEGREES_RESOURCE_KEY the test reads.
+#
+# The secrets are named one by one rather than passed as toJSON(secrets).
+# GitHub marks a workflow that hands every secret to a step as possibly
+# malicious and holds each run for manual approval, so the nightly never ran.
+# A new resource key therefore needs a line here as well as the organisation
+# secret.
 #
 # The test skips itself when no key is set, so a run with no secrets is green
 # and proves nothing. That is deliberate, because a pull request from a fork
@@ -38,14 +41,6 @@ jobs:
         with:
           # pipeline.did builds against the owid-java submodule source.
           submodules: recursive
-      - name: Checkout common-ci
-        uses: actions/checkout@v4
-        with:
-          # Provides steps/set-resource-keys.ps1, the central script that
-          # exports the _51DEGREES_RESOURCE_KEY* secrets as environment
-          # variables.
-          repository: 51Degrees/common-ci
-          path: common-ci
       - uses: actions/setup-java@v4
         with:
           # The reactor targets 1.8, so the tests are compiled and run on a
@@ -56,9 +51,10 @@ jobs:
       - name: Cloud 51Did test for each resource key secret
         shell: pwsh
         env:
-          SECRETS: ${{ toJSON(secrets) }}
+          _51DEGREES_RESOURCE_KEY_FREE: ${{ secrets._51DEGREES_RESOURCE_KEY_FREE }}
+          _51DEGREES_RESOURCE_KEY_PAID: ${{ secrets._51DEGREES_RESOURCE_KEY_PAID }}
+          _51DEGREES_RESOURCE_KEY_BESPOKE: ${{ secrets._51DEGREES_RESOURCE_KEY_BESPOKE }}
         run: |
-          ./common-ci/steps/set-resource-keys.ps1 -Keys (ConvertFrom-Json -AsHashtable $env:SECRETS)
           $keys = Get-ChildItem env: |
             Where-Object { $_.Name -like '_51DEGREES_RESOURCE_KEY*' -and $_.Value }
           if (-not $keys) {
