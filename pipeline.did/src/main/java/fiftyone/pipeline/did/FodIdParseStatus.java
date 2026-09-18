@@ -31,9 +31,9 @@ import com.swancommunity.owid.OwidParseStatus;
  * either layer. The members up to {@link #ABSENT_NODE} are the OWID
  * library's own {@link OwidParseStatus} vocabulary carried across one for
  * one, under the same names and with the same meanings, so a caller reading
- * a 51Did learns exactly what the envelope reader found. The two members
- * after them are the 51Did payload rules that apply once the envelope has
- * been read.
+ * a 51Did learns exactly what the envelope reader found. The members after
+ * them are the 51Did payload rules that apply once the envelope has been
+ * read.
  * <p>
  * Java cannot extend an enum, so the OWID members are mirrored rather than
  * inherited. {@link #fromOwid(OwidParseStatus)} maps by name and refuses to
@@ -123,7 +123,17 @@ public enum FodIdParseStatus {
      * layout this package knows would answer with values that are wrong
      * rather than absent.
      */
-    UNSUPPORTED_PAYLOAD_VERSION;
+    UNSUPPORTED_PAYLOAD_VERSION,
+
+    /**
+     * Bits 0 to 2 of the Flags byte are all clear, so the payload states no
+     * usage. The cloud never writes a Flags byte without a usage, so such a
+     * payload is damaged or did not come from the cloud, and it is refused
+     * rather than offered as a fourth {@link Usage}, because the only safe
+     * answer to it is not to pass the identifier on, which a refusal
+     * already gives.
+     */
+    NO_USAGE;
 
     /**
      * Carries an OWID status across unchanged.

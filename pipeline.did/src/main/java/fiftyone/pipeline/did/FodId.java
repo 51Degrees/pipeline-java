@@ -157,6 +157,15 @@ public final class FodId {
      */
     static final int SUPPORTED_PAYLOAD_VERSION = 0;
 
+    /**
+     * Bits 0 to 2 of the Flags byte, which carry the usage. A payload with
+     * all three clear is refused.
+     */
+    static final int USAGE_MASK = 0b111;
+
+    /** Bit 3 of the Flags byte, set when the usage is indirect. */
+    static final int USAGE_IS_INDIRECT_MASK = 0b1000;
+
     private final Owid owid;
     private final int flags;
     private final long licenseId;
@@ -195,7 +204,7 @@ public final class FodId {
      * result reports whether the read worked, the 51Did only when it did,
      * and a named reason either way. An envelope failure carries the OWID
      * library's own status unchanged, and a payload failure is one of the
-     * two 51Did statuses. See {@link FodIdParseStatus}.
+     * 51Did payload statuses. See {@link FodIdParseStatus}.
      * <p>
      * Success means the input is structurally a 51Did. The signature has
      * not been checked.
@@ -260,6 +269,14 @@ public final class FodId {
         if (payloadVersion != SUPPORTED_PAYLOAD_VERSION) {
             return FodIdParseResult.unsupportedPayloadVersion(payloadVersion);
         }
+        // A payload with no usage bit set states no usage at all. The cloud
+        // never writes one, so it is damaged or forged, and it is refused
+        // here rather than read, because the only safe answer to it is not
+        // to pass the identifier on. Only 000 is refused. Every other
+        // pattern is read as the highest usage granted.
+        if ((flags & USAGE_MASK) == 0) {
+            return FodIdParseResult.failed(FodIdParseStatus.NO_USAGE);
+        }
         int matchKeyLength;
         switch (IdType.fromFlags(flags)) {
             case RANDOM:
@@ -319,7 +336,9 @@ public final class FodId {
      *                              valid OWID envelope, with the
      *                              {@link FodIdParseStatus} in the message
      * @throws IllegalArgumentException if the payload is shorter than the
-     *                              minimum for its identifier type
+     *                              minimum for its identifier type, names a
+     *                              payload version this package does not
+     *                              know, or has usage bits 000
      */
     public static FodId fromBase64(String base64) throws OwidException {
         Objects.requireNonNull(base64, "base64");
@@ -367,7 +386,9 @@ public final class FodId {
      *                              envelope, with the
      *                              {@link FodIdParseStatus} in the message
      * @throws IllegalArgumentException if the payload is shorter than the
-     *                              minimum for its identifier type
+     *                              minimum for its identifier type, names a
+     *                              payload version this package does not
+     *                              know, or has usage bits 000
      */
     public static FodId fromByteArray(byte[] buffer) throws OwidException {
         Objects.requireNonNull(buffer, "buffer");
@@ -390,19 +411,15 @@ public final class FodId {
      *                              Declared so that callers written against
      *                              the earlier library keep compiling.
      * @throws IllegalArgumentException if the payload is shorter than the
-     *                              minimum for its identifier type
+     *                              minimum for its identifier type, names a
+     *                              payload version this package does not
+     *                              know, or has usage bits 000
      */
     public static FodId fromOwid(Owid owid) throws OwidException {
         Objects.requireNonNull(owid, "owid");
         return valueOrThrow(read(owid), "owid");
     }
 
-    /**
-     * Turns a failed read into the exception the throwing readers document
-     * for it. A payload rule failure is an argument failure and an envelope
-     * failure is an OWID one, which is the split the readers have always
-     * made. The message names the status and the parameter, never the input.
-     */
     /**
      * Bits 4 and 5 of the Flags byte, being the version of the payload
      * layout the identifier follows. The envelope carries a version of its
@@ -416,6 +433,12 @@ public final class FodId {
         return (flags >> 4) & 0b11;
     }
 
+    /**
+     * Turns a failed read into the exception the throwing readers document
+     * for it. A payload rule failure is an argument failure and an envelope
+     * failure is an OWID one, which is the split the readers have always
+     * made. The message names the status and the parameter, never the input.
+     */
     private static FodId valueOrThrow(FodIdParseResult result, String paramName)
             throws OwidException {
         switch (result.getStatus()) {
@@ -434,6 +457,10 @@ public final class FodId {
                     "51Did payload version " + result.getPayloadVersion()
                     + " is not one this package can read ("
                     + paramName + ").");
+            case NO_USAGE:
+                throw new IllegalArgumentException(
+                    "51Did usage bits are 000, which is not a usage, so the "
+                    + "payload is refused (" + paramName + ").");
             default:
                 throw new OwidException(
                     "The value is not an OWID envelope: "
@@ -446,7 +473,7 @@ public final class FodId {
     /**
      * The raw Flags byte. Package-private on purpose, because
      * {@link #getType()}, {@link #getUsage()} and
-     * {@link #isUsageFromConsent()} name every bit a caller needs and
+     * {@link #isUsageIndirect()} name every bit a caller needs and
      * masking the byte by hand is how the cumulative usage bits get read
      * backwards. Kept because those three accessors are built on it.
      *
@@ -473,15 +500,21 @@ public final class FodId {
     }
 
     /**
-     * Whether the usage was derived from an IAB consent string the caller
-     * sent, rather than stated by the caller directly. This is bit 3 of
-     * the Flags byte. Both are legitimate ways to arrive at a usage,
-     * and this says nothing about which usage it is.
+     * Whether the usage is indirect, being worked out by the issuer from a
+     * signal the caller sent other than the usage itself, rather than
+     * stated by the caller directly. This is bit 3 of the Flags byte.
+     * <p>
+     * False means the caller stated the usage, for example with
+     * {@code id.usage}. True means the issuer worked it out from another
+     * signal. Today a consent string is the only such signal, so today
+     * true means the usage was derived from one, but a later signal of
+     * another kind sets the same bit. Both are legitimate ways to arrive at
+     * a usage, and this says nothing about which usage it is.
      *
-     * @return whether the usage came from a consent string
+     * @return whether the usage is indirect
      */
-    public boolean isUsageFromConsent() {
-        return (flags & 0b1000) != 0;
+    public boolean isUsageIndirect() {
+        return (flags & USAGE_IS_INDIRECT_MASK) != 0;
     }
 
     /**

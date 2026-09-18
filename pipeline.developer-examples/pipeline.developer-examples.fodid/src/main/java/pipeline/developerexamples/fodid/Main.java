@@ -72,8 +72,8 @@ public class Main {
             System.out.println("  Domain       : " + fodId.getDomain());
             System.out.println("  Type         : " + fodId.getType());
             System.out.println("  Usage        : " + fodId.getUsage());
-            System.out.println("  From consent : "
-                    + fodId.isUsageFromConsent());
+            System.out.println("  Indirect     : "
+                    + fodId.isUsageIndirect());
             System.out.println("  LicenseId    : " + fodId.getLicenseId());
             System.out.println("  Match key    : "
                     + toHex(fodId.getMatchKey()));

@@ -35,9 +35,11 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -95,6 +97,173 @@ public class DidClientLiveTests {
 
         assertEquals(200, result.getStatusCode());
         assertEquals(RedeemResult.Context.UNREADABLE, result.getContext());
+    }
+
+    /**
+     * The whole creator context round trip, with no browser in it. A
+     * marketing 51Did is created, the sealed verdict is fetched the way a
+     * page fetches it, and the acting party redeems that verdict with its
+     * licence key, which is the call a server makes.
+     * <p>
+     * Written out as plain requests rather than through the client, because
+     * the client deliberately offers no verify-full method. That call
+     * belongs to the browser, and a server calling it learns nothing about
+     * the browser it is asking about. Here both calls come from one
+     * process, so the connection that created the identifier is the
+     * connection presenting it and the verdict has to be verified.
+     */
+    @Test
+    public void verifyFullThenRedeemWithTheLicence_ReadsTheVerdict()
+            throws Exception {
+        Assume.assumeTrue(
+            "Set _51DEGREES_LICENSE_KEY to redeem a sealed result.",
+            client.hasLicenceKey());
+
+        List<FodId> identifiers = identifiersFor("id.usage", "standard");
+        Assume.assumeTrue(
+            "This resource key returned no marketing 51Did, so there was "
+            + "nothing to verify. Use a key entitled to the standard usage.",
+            identifiers.isEmpty() == false);
+        FodId fodId = identifiers.get(0);
+        assertEquals(Usage.STANDARD, fodId.getUsage());
+
+        String sealed = verifyFull(fodId.asBase64());
+
+        RedeemResult redeemed;
+        try {
+            redeemed = client.redeem(fodId, sealed, null).join();
+        } catch (CompletionException reported) {
+            if (reported.getCause() instanceof DidNotSupportedException) {
+                Assume.assumeNoException(
+                    "The host does not offer the creator context.",
+                    reported.getCause());
+                return;
+            }
+            throw reported;
+        }
+
+        assertEquals("Redeeming: " + redeemed.getRaw(),
+            200, redeemed.getStatusCode());
+        assertEquals("The identifier was just created by this client, so "
+            + "its signature has to read as genuine: " + redeemed.getRaw(),
+            RedeemResult.Signature.VERIFIED, redeemed.getSignature());
+        assertEquals("The identifier was created and presented on one "
+            + "connection, so every factor has to match. The service "
+            + "answered: " + redeemed.getRaw(),
+            RedeemResult.Context.VERIFIED, redeemed.getContext());
+        assertNotNull("A redeemed verdict says when it was made.",
+            redeemed.getVerifiedAt());
+        // A verified verdict matched everywhere, so the service sends no
+        // factor breakdown with it and there is nothing to read. Where it
+        // does send one, every name in it is read.
+        for (Map.Entry<String, RedeemResult.Factor> factor
+                : redeemed.getFactors().entrySet()) {
+            assertNotNull("Factor " + factor.getKey() + " was not read.",
+                factor.getValue());
+        }
+    }
+
+    /**
+     * The address the identifier is created for. It is a documentation
+     * address, reserved so that it belongs to nobody, and so it is never
+     * the address this test's own connection comes from.
+     */
+    private static final String CREATED_FOR = "192.0.2.10";
+
+    /**
+     * Every factor the service compares, read by name. The identifier is
+     * created for a stated address rather than for the connection that
+     * asked, so when the same connection then presents it the address the
+     * identifier carries is not the one being checked and the verdict is a
+     * mismatch. That is the one mismatch a test can arrange without a
+     * browser, and a mismatch is the only verdict that carries the
+     * breakdown, since a verified verdict matched everywhere and has
+     * nothing to diagnose.
+     * <p>
+     * The names are written out rather than taken from the package,
+     * because a list the package supplied would agree with itself whatever
+     * the package said. These are the names the service sends.
+     */
+    @Test
+    public void anIdentifierForAnotherAddress_ReportsEveryFactor()
+            throws Exception {
+        Assume.assumeTrue(
+            "Set _51DEGREES_LICENSE_KEY to redeem a sealed result.",
+            client.hasLicenceKey());
+
+        List<FodId> identifiers = identifiersFor(
+            "id.usage", "standard", CREATED_FOR);
+        Assume.assumeTrue(
+            "This resource key returned no marketing 51Did, so there was "
+            + "nothing to verify. Use a key entitled to the standard usage.",
+            identifiers.isEmpty() == false);
+        FodId fodId = identifiers.get(0);
+
+        String sealed = verifyFull(fodId.asBase64());
+
+        RedeemResult redeemed;
+        try {
+            redeemed = client.redeem(fodId, sealed, null).join();
+        } catch (CompletionException reported) {
+            if (reported.getCause() instanceof DidNotSupportedException) {
+                Assume.assumeNoException(
+                    "The host does not offer the creator context.",
+                    reported.getCause());
+                return;
+            }
+            throw reported;
+        }
+
+        assertEquals("Redeeming: " + redeemed.getRaw(),
+            200, redeemed.getStatusCode());
+        assertEquals("The identifier is genuine whatever address it "
+            + "carries: " + redeemed.getRaw(),
+            RedeemResult.Signature.VERIFIED, redeemed.getSignature());
+        assertEquals("It carries another address than the one presenting "
+            + "it, so the context cannot be verified: " + redeemed.getRaw(),
+            RedeemResult.Context.MISMATCH, redeemed.getContext());
+        assertTrue("A mismatch has to say which factor differed: "
+            + redeemed.getRaw(), redeemed.hasFactors());
+
+        String[] names = {
+            "transport", "device", "browserip", "connectionip", "asn",
+            "platformname", "platformversion", "browsername",
+            "browserversion",
+        };
+        Map<String, RedeemResult.Factor> factors = redeemed.getFactors();
+        for (String name : names) {
+            assertNotNull("No " + name + " factor was reported: "
+                + redeemed.getRaw(), factors.get(name));
+        }
+        assertEquals("The address is the one thing that differs, so that "
+            + "is the factor that has to say so: " + redeemed.getRaw(),
+            RedeemResult.Factor.MISMATCH, factors.get("browserip"));
+    }
+
+    /**
+     * The sealed verdict for one identifier, fetched as a page fetches it.
+     *
+     * @param fodId the identifier as base64
+     * @return the sealed result to redeem
+     */
+    private String verifyFull(String fodId) throws Exception {
+        String url = client.getEndpoint() + "id/verify-full/"
+            + DidClient.encode(resourceKey)
+            + "?51did=" + DidClient.encode(fodId);
+        HttpURLConnection connection = (HttpURLConnection)
+            URI.create(url).toURL().openConnection();
+        connection.setRequestProperty("User-Agent", "pipeline.did live test");
+        int status = connection.getResponseCode();
+        String body = readAll(status >= 400
+            ? connection.getErrorStream()
+            : connection.getInputStream());
+        assertEquals("Verifying in full: " + body, 200, status);
+        String sealed = new JSONObject(body).optString("result", null);
+        Assume.assumeTrue(
+            "This host answered verify-full in the open, so it holds no "
+            + "context secret and there is nothing to redeem: " + body,
+            sealed != null && sealed.isEmpty() == false);
+        return sealed;
     }
 
     /**
@@ -173,9 +342,22 @@ public class DidClientLiveTests {
      */
     private List<FodId> identifiersFor(String name, String value)
             throws Exception {
+        return identifiersFor(name, value, null);
+    }
+
+    /**
+     * As above, creating from the given address where one is given, so a
+     * test can create from one address and present the identifier from
+     * another.
+     */
+    private List<FodId> identifiersFor(
+            String name, String value, String clientIp) throws Exception {
         String url = client.getEndpoint() + "json?resource="
             + DidClient.encode(resourceKey)
             + "&" + name + "=" + DidClient.encode(value)
+            + (clientIp == null
+                ? ""
+                : "&client-ip=" + DidClient.encode(clientIp))
             + "&values=FODiD.IdProbGlobal&values=FODiD.IdProbLic";
         HttpURLConnection connection = (HttpURLConnection)
             URI.create(url).toURL().openConnection();
@@ -212,11 +394,11 @@ public class DidClientLiveTests {
             FodId fodId,
             Usage usage,
             String terms,
-            boolean fromConsent) {
+            boolean indirect) {
         assertEquals(label + ": usage", usage, fodId.getUsage());
         assertEquals(
-            label + ": whether the usage came from a consent string",
-            fromConsent, fodId.isUsageFromConsent());
+            label + ": whether the usage is indirect",
+            indirect, fodId.isUsageIndirect());
         assertEquals(label + ": terms", terms, fodId.getTerms());
         assertEquals(
             label + ": an idprob* value must be a probabilistic identifier",
@@ -278,8 +460,9 @@ public class DidClientLiveTests {
     /**
      * A consent management platform sends an IAB TCF consent string and no
      * usage of its own. The service decodes the string, decides the usage
-     * from the purposes it grants, and records in the identifier that it
-     * did so, which is bit 3 of the flags byte.
+     * from the purposes it grants, and records in the identifier that the
+     * usage is indirect, which is bit 3 of the flags byte. A consent string
+     * is the only indirect signal today.
      * <p>
      * This is the half a caller cannot state for itself. An identifier
      * whose usage was stated in the request and one whose usage was decoded
@@ -293,7 +476,7 @@ public class DidClientLiveTests {
      * Appendix 1 standard set of 1, 2, 7, 8 and 11.
      */
     @Test
-    public void consentStringSetsTheUsageFromConsentBit() throws Exception {
+    public void consentStringSetsTheUsageIsIndirectBit() throws Exception {
         String[][] cases = {
             { "AAAAAAAAAAAAAAAAAAAAAAAAAP_w", "PERSONALIZED" },
             { "AAAAAAAAAAAAAAAAAAAAAAAAAMMg", "STANDARD" },
@@ -326,7 +509,7 @@ public class DidClientLiveTests {
         // Same reasoning as the usage test above.
         Assume.assumeTrue(
             "This resource key returned no identifier for either consent "
-            + "string, so the usage-from-consent bit was never read and "
+            + "string, so the usage is indirect bit was never read and "
             + "this run did not prove it.",
             proven > 0);
     }

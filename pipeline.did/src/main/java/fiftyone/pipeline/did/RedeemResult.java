@@ -198,7 +198,8 @@ public final class RedeemResult {
      * parser hands the keys back in.
      */
     private static final String[] FACTOR_ORDER = {
-        "transport", "device", "browserip", "connectionip", "asn", "browser",
+        "transport", "device", "browserip", "connectionip", "asn",
+        "platformname", "platformversion", "browsername", "browserversion",
     };
 
     private final Context context;
@@ -314,8 +315,21 @@ public final class RedeemResult {
      * The per-factor outcomes, present only when the cloud sent
      * {@code factors}, which it does on the mismatch verdict, the one with
      * something to diagnose. Names are {@code transport}, {@code device},
-     * {@code browserip}, {@code connectionip}, {@code asn} and
-     * {@code browser}.
+     * {@code browserip}, {@code connectionip}, {@code asn},
+     * {@code platformname}, {@code platformversion}, {@code browsername}
+     * and {@code browserversion}, in that order.
+     * <p>
+     * The operating system and the browser are each two factors, a name and
+     * a version. A version mismatch beside a verified name means the same
+     * operating system or browser has been upgraded since creation, whilst
+     * a mismatched name means a different one. A factor reported as
+     * {@link Factor#MISCONFIGURED} is never a mismatch.
+     * <p>
+     * A name the cloud sends that is not in the list above is kept after
+     * those, in the order the JSON parser gives it, so a factor added later
+     * is still visible. Cloud releases before 4.4.38 sent a single
+     * {@code browser} factor, which appears under that name and fills none
+     * of the four that replaced it.
      *
      * @return factor name to outcome, read only, empty when the cloud sent
      *         none (see {@link #hasFactors()})

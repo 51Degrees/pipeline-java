@@ -41,14 +41,13 @@ package fiftyone.pipeline.did;
  * The names match the cloud's {@code id.usage} values, {@code non-marketing},
  * {@code standard} and {@code personalized}, and are the same in every 51Did
  * package.
+ * <p>
+ * There are exactly three values. A payload with none of bits 0 to 2 set
+ * is not a usage at all, so it is refused when it is read, with
+ * {@link FodIdParseStatus#NO_USAGE}, rather than offered as a fourth
+ * value every caller would have to remember to handle.
  */
 public enum Usage {
-    /**
-     * No usage bit is set. The cloud never issues such an identifier, so
-     * this is an identifier from somewhere else or a damaged one, and it
-     * should be treated as though it may not be passed on.
-     */
-    NONE(null),
     /** Created for use that is not marketing. Must not be passed to a demand source. */
     NON_MARKETING("non-marketing"),
     /** Created for standard marketing, being targeting unrelated to the person's browsing history or interactions. */
@@ -68,6 +67,11 @@ public enum Usage {
      *
      * @param flags the 1-byte flags value (0-255)
      * @return the usage
+     * @throws IllegalArgumentException if none of bits 0 to 2 is set, which
+     *                                  is not a usage. The readers of a
+     *                                  51Did refuse such a payload before
+     *                                  asking, with
+     *                                  {@link FodIdParseStatus#NO_USAGE}.
      */
     public static Usage fromFlags(int flags) {
         if ((flags & 0b100) != 0) {
@@ -79,12 +83,12 @@ public enum Usage {
         if ((flags & 0b001) != 0) {
             return NON_MARKETING;
         }
-        return NONE;
+        throw new IllegalArgumentException(
+            "Usage bits 0 to 2 are all clear, which is not a usage.");
     }
 
     /**
-     * @return the cloud's {@code id.usage} value for this usage, or null for
-     *         {@link #NONE}
+     * @return the cloud's {@code id.usage} value for this usage
      */
     public String getIdUsage() {
         return idUsage;

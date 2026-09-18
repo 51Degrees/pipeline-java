@@ -162,7 +162,7 @@ conversion by the caller.
 
 `FodIdParseStatus` carries the OWID library's own statuses across under the
 same names, so an envelope fault is reported exactly as the envelope reader
-found it, and adds two of its own for the payload rules.
+found it, and adds its own for the payload rules.
 
 | Status | Meaning | Layer |
 |---|---|---|
@@ -179,6 +179,8 @@ found it, and adds two of its own for the payload rules.
 | `INVALID_INPUT_TYPE` | Kept for the cross language vocabulary. Not reachable in Java. | OWID |
 | `PAYLOAD_TOO_SHORT` | The envelope read, but the payload cannot hold the five byte header, so the type cannot be read. | 51Did |
 | `INVALID_TYPE_PAYLOAD_LENGTH` | The header names a type and the payload is shorter than that type's minimum. | 51Did |
+| `UNSUPPORTED_PAYLOAD_VERSION` | Bits 4 and 5 of the Flags byte name a payload layout version this package does not know. | 51Did |
+| `NO_USAGE` | Bits 0 to 2 of the Flags byte are all clear, so the payload states no usage. | 51Did |
 
 Every one of those is an expected data result and comes back as a status.
 What remains exceptional is a `null` passed to a throwing reader, and on the
@@ -207,7 +209,7 @@ FodId fodId = FodId.fromBase64(base64FromCloudService);
 
 IdType  type       = fodId.getType();      // PROBABILISTIC / RANDOM / HASHED_EMAIL
 Usage   usage      = fodId.getUsage();     // what the identifier may be used for
-boolean fromConsent = fodId.isUsageFromConsent();
+boolean indirect   = fodId.isUsageIndirect(); // worked out, not stated
 long    licenseId  = fodId.getLicenseId();
 byte[]  matchKey   = fodId.getMatchKey();  // SHA-256 or GUID bytes, see type
 String  terms      = fodId.getTerms();     // address of the terms document
@@ -246,10 +248,17 @@ accessor a data protection decision turns on.
 | `NON_MARKETING` | `non-marketing` | Created for use that is not marketing. Must never be passed to a demand source. |
 | `STANDARD` | `standard` | Created for standard marketing, being targeting unrelated to the person's browsing history or interactions. |
 | `PERSONALIZED` | `personalized` | Created for personalized marketing, being targeting related to the person's browsing history or interactions. |
-| `NONE` | none | No usage bit is set. The cloud never issues such an identifier, so treat it as one that may not be passed on. |
 
 `STANDARD` and `PERSONALIZED` may be passed only to a recipient that has
 accepted the applicable terms.
+
+Those are the only three values. A payload with none of the usage bits set
+states no usage at all, and the cloud never writes one, so it is damaged or
+did not come from the cloud. The readers refuse it with
+`FodIdParseStatus.NO_USAGE`, and the throwing readers say in the message
+that the usage bits are `000`, rather than offering it as a fourth value
+that every caller would have to remember to handle. Any other pattern of
+the usage bits reads as the highest usage granted.
 
 The three usages are cumulative in the byte rather than exclusive, because
 non-marketing sets one bit, standard sets two and personalized sets three,
@@ -260,10 +269,16 @@ non-marketing identifier must never reach a demand source. `getUsage()`
 answers with the highest usage granted, so that mistake cannot be made, and
 the package offers no raw flags accessor with which to make it.
 
-`isUsageFromConsent()` says whether the usage came from an IAB consent
-string the caller sent rather than being stated by the caller directly.
-Both are legitimate ways to arrive at a usage and this says nothing about
-which usage it is.
+`isUsageIndirect()` says whether the usage is direct or indirect. It is
+false when the caller stated the usage, for example with `id.usage`, and
+true when the cloud worked the usage out from some other signal the caller
+sent. Today a consent string is the only such signal, so today true means
+the usage was derived from one, but a later signal of another kind sets the
+same bit. Both are legitimate ways to arrive at a usage and this says
+nothing about which usage it is. The accessor was called
+`isUsageFromConsent()` in earlier releases and was renamed with no alias,
+following
+[specifications pull request 30](https://github.com/51Degrees/specifications/pull/30).
 
 ```java
 if (fodId.getUsage() == Usage.NON_MARKETING) {
@@ -396,17 +411,43 @@ In the order a server uses them:
            case VERIFIED:      // presented from where it was created
            case MISMATCH:      // redeemed.getFactors() says which differs
            case NO_CONTEXT:    // the identifier carries no creator context
-           case NOT_CHECKABLE: // the cloud could not check it
+           case MISCONFIGURED: // the checking service is at fault
+           case INVALID_DATE:  // a creation date the scheme cannot produce
            case EXPIRED:       // redeemed outside the freshness window
            case REPLAYED:      // already redeemed
            case UNREADABLE:    // tampered, wrong identifier, challenge or key
            case UNCONFIRMED:   // answered 503, retry
+           case NOT_CHECKABLE: // no longer sent by the cloud
        }
        redeemed.getSignature();            // VERIFIED, INVALID or UNKNOWN
        redeemed.getVerifiedAt();           // when the cloud sealed the result
        redeemed.getSecondsSinceVerified(); // how long before this redemption
    });
    ```
+
+   Where the cloud has something to diagnose, `redeemed.getFactors()`
+   holds one outcome per factor, keyed by the cloud's own name and in this
+   order.
+
+   | Factor | What it compares |
+   | --- | --- |
+   | `transport` | The characteristics of the browser's connection |
+   | `device` | The device hardware |
+   | `browserip` | The network of the public address the browser presents through the request chain |
+   | `connectionip` | The network of the address the connection actually arrived from |
+   | `asn` | The operator that announces the visitor's address to the internet |
+   | `platformname` | The operating system |
+   | `platformversion` | The operating system version |
+   | `browsername` | The browser |
+   | `browserversion` | The browser version |
+
+   Each is `VERIFIED`, `MISMATCH` or `MISCONFIGURED`, and `MISCONFIGURED`
+   is never a mismatch, because it says the checking service could not
+   determine that factor for any request. A version mismatch beside a
+   verified name means the operating system or browser has been upgraded
+   since creation, whilst a mismatched name means a different one. Cloud
+   releases before 4.4.38 sent a single `browser` factor in place of the
+   last four, which appears under that name and fills none of them.
 
    A failure completes the future exceptionally. A malformed identifier
    fails it with `IllegalArgumentException`, a host without the creator

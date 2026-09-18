@@ -168,13 +168,15 @@ public class FodIdTests {
     }
 
     @Test
-    public void flags_ZeroValue_Exposed() throws Exception {
+    public void flags_LowestValueThatReads_Exposed() throws Exception {
+        // Zero states no usage and is refused, so the lowest Flags byte
+        // that reads is the non-marketing bit alone.
         byte[] payload = canonicalPayload();
-        payload[FodId.FLAGS_OFFSET] = 0x00;
+        payload[FodId.FLAGS_OFFSET] = 0x01;
 
         FodId fodId = FodId.fromBase64(factory.signedOwidBase64(payload));
 
-        assertEquals(0, fodId.getFlags());
+        assertEquals(1, fodId.getFlags());
     }
 
     @Test
@@ -208,8 +210,11 @@ public class FodIdTests {
 
     @Test
     public void constructor_PayloadOneByteShort_Throws() throws Exception {
-        // 36 bytes - one short of the minimum 37 (flags 0 -> Probabilistic).
-        String base64 = factory.signedOwidBase64(new byte[FodId.PAYLOAD_LENGTH - 1]);
+        // 36 bytes - one short of the minimum 37 (flags 1 -> Probabilistic,
+        // non-marketing, so the length is the only fault).
+        byte[] payload = new byte[FodId.PAYLOAD_LENGTH - 1];
+        payload[FodId.FLAGS_OFFSET] = 0x01;
+        String base64 = factory.signedOwidBase64(payload);
         assertThrows(IllegalArgumentException.class, () -> FodId.fromBase64(base64));
     }
 
@@ -364,7 +369,7 @@ public class FodIdTests {
     @Test
     public void constructor_ReservedHeaderOnly_Parses() throws Exception {
         byte[] payload = new byte[FodId.MATCH_KEY_OFFSET];
-        payload[FodId.FLAGS_OFFSET] = (byte) 0b1100_0000;
+        payload[FodId.FLAGS_OFFSET] = (byte) 0b1100_0001;
 
         FodId fodId = FodId.fromBase64(factory.signedOwidBase64(payload));
 
