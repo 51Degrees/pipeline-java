@@ -297,8 +297,11 @@ public class CloudRequestEngineDefault
         Collections.sort(evidenceKeys, Collections.reverseOrder());
 
         for (String evidenceKey : evidenceKeys) {
-            // Get the key parts
-            String[] evidenceKeyParts = evidenceKey.split(Pattern.quote(Constants.EVIDENCE_SEPERATOR));
+            // Split at the first separator only. Everything after the prefix
+            // is the name the cloud service expects, and that name can hold
+            // a dot itself, as id.usage does in query.id.usage.
+            String[] evidenceKeyParts = evidenceKey.split(
+                Pattern.quote(Constants.EVIDENCE_SEPERATOR), 2);
             String prefix = evidenceKeyParts[0];
             String suffix = evidenceKeyParts[1];
 
