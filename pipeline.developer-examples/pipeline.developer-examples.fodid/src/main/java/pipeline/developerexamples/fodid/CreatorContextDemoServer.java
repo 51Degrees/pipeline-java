@@ -43,7 +43,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -322,11 +321,10 @@ public class CreatorContextDemoServer {
             JSONObject factors = new JSONObject();
             for (Map.Entry<String, RedeemResult.Factor> factor
                     : redeemed.getFactors().entrySet()) {
-                // Misconfigured is passed on as itself, because it says
-                // the checking service could not judge the factor, which
-                // must never be shown as a mismatch.
-                factors.put(factor.getKey(),
-                    factor.getValue().name().toLowerCase(Locale.ROOT));
+                // Each outcome keeps the cloud's own word, because
+                // misconfigured and notrecorded are not mismatches and
+                // must never be shown as one.
+                factors.put(factor.getKey(), factor.getValue().getValue());
             }
             json.put("factors", factors);
         }

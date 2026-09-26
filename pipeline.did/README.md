@@ -441,13 +441,17 @@ In the order a server uses them:
    | `browsername` | The browser |
    | `browserversion` | The browser version |
 
-   Each is `VERIFIED`, `MISMATCH` or `MISCONFIGURED`, and `MISCONFIGURED`
-   is never a mismatch, because it says the checking service could not
-   determine that factor for any request. A version mismatch beside a
-   verified name means the operating system or browser has been upgraded
-   since creation, whilst a mismatched name means a different one. Cloud
-   releases before 4.4.38 sent a single `browser` factor in place of the
-   last four, which appears under that name and fills none of them.
+   Each is `VERIFIED`, `MISMATCH`, `MISCONFIGURED` or `NOT_RECORDED`.
+   Neither `MISCONFIGURED` nor `NOT_RECORDED` is a mismatch, and they say
+   different things, because `MISCONFIGURED` means the checking service
+   could not determine that factor for any request whilst `NOT_RECORDED`
+   means the creating service recorded no value for it, so the identifier
+   says nothing about it. `getValue()` gives the cloud's own word for
+   each. A version mismatch beside a verified name means the operating
+   system or browser has been upgraded since creation, whilst a
+   mismatched name means a different one. Cloud releases before 4.4.38
+   sent a single `browser` factor in place of the last four, which
+   appears under that name and fills none of them.
 
    A failure completes the future exceptionally. A malformed identifier
    fails it with `IllegalArgumentException`, a host without the creator
