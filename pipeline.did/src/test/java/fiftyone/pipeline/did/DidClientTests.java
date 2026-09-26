@@ -52,6 +52,7 @@ import static fiftyone.pipeline.did.FodIdTestFactory.canonicalPayloadWithSection
 import static fiftyone.pipeline.did.FodIdTestFactory.canonicalRandomPayload;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -697,6 +698,79 @@ public class DidClientTests {
         assertTrue(form.contains("&result=sealed"));
         assertTrue(form.contains("&challenge=abc"));
         assertTrue(form.contains("&license=licence"));
+    }
+
+    /**
+     * A factor the creating service recorded no value for reads as
+     * {@link RedeemResult.Factor#NOT_RECORDED}, which is its own outcome and
+     * neither a mismatch nor misconfigured, so the three sit side by side in
+     * one answer without being confused for each other.
+     */
+    @Test
+    public void redeem_NotRecordedFactors_AreTheirOwnOutcome()
+            throws Exception {
+        transport.queue(200, "{\"signature\":\"verified\","
+            + "\"context\":\"mismatch\","
+            + "\"factors\":{\"transport\":\"notrecorded\","
+            + "\"device\":\"verified\",\"browserip\":\"mismatch\","
+            + "\"connectionip\":\"verified\",\"asn\":\"misconfigured\","
+            + "\"platformname\":\"verified\","
+            + "\"platformversion\":\"notrecorded\","
+            + "\"browsername\":\"verified\","
+            + "\"browserversion\":\"verified\"}}");
+        FodId fodId = key2.fodIdAt(canonicalPayload(), WEEK2);
+
+        RedeemResult result =
+            client.redeem(fodId, "sealed", "abc").join();
+
+        assertTrue(result.hasFactors());
+        assertEquals(RedeemResult.Factor.NOT_RECORDED,
+            result.getFactors().get("transport"));
+        assertEquals(RedeemResult.Factor.NOT_RECORDED,
+            result.getFactors().get("platformversion"));
+        assertEquals(RedeemResult.Factor.MISMATCH,
+            result.getFactors().get("browserip"));
+        assertEquals(RedeemResult.Factor.MISCONFIGURED,
+            result.getFactors().get("asn"));
+        assertEquals(RedeemResult.Factor.VERIFIED,
+            result.getFactors().get("device"));
+        assertNotEquals("a factor with no recorded value is not a mismatch",
+            RedeemResult.Factor.MISMATCH,
+            result.getFactors().get("transport"));
+        assertNotEquals("a factor with no recorded value is not misconfigured",
+            RedeemResult.Factor.MISCONFIGURED,
+            result.getFactors().get("transport"));
+    }
+
+    /**
+     * A factor value this client does not know still reads as a mismatch, so
+     * adding notrecorded has not turned an unexpected word into a pass or
+     * into an outcome that says nothing was checked.
+     */
+    @Test
+    public void redeem_UnknownFactorValue_IsStillAMismatch()
+            throws Exception {
+        transport.queue(200, "{\"signature\":\"verified\","
+            + "\"context\":\"mismatch\","
+            + "\"factors\":{\"transport\":\"somethingnewer\"}}");
+        FodId fodId = key2.fodIdAt(canonicalPayload(), WEEK2);
+
+        RedeemResult result =
+            client.redeem(fodId, "sealed", "abc").join();
+
+        assertEquals(RedeemResult.Factor.MISMATCH,
+            result.getFactors().get("transport"));
+    }
+
+    /** Every outcome reports the cloud's own word for itself. */
+    @Test
+    public void factor_GetValue_IsTheCloudsWord() {
+        assertEquals("verified", RedeemResult.Factor.VERIFIED.getValue());
+        assertEquals("mismatch", RedeemResult.Factor.MISMATCH.getValue());
+        assertEquals("misconfigured",
+            RedeemResult.Factor.MISCONFIGURED.getValue());
+        assertEquals("notrecorded",
+            RedeemResult.Factor.NOT_RECORDED.getValue());
     }
 
     /**
