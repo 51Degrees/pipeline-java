@@ -263,9 +263,8 @@ public class DidClientTests {
     @Test
     public void publicKeyFor_DoesNotRefetchForADateBeforeTheSchedule()
             throws Exception {
-        // A fetch only adds keys from the newest held onwards, so it could
-        // not find one for a date before the first, and an early date,
-        // forged or not, costs no request.
+        // Only a date at or near the end of the held keys causes a fetch,
+        // so an early date, forged or not, costs no request.
         transport.queue(200, keyList("startsAt", false));
         client.publicKeys().join();
         FodId fodId = key1.fodIdAt(
