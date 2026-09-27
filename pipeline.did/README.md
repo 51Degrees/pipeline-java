@@ -398,9 +398,10 @@ In the order a server uses them:
    signature failure.
 
    A key may be replaced before its `endsAt` if it is compromised. A
-   signature that no held key verifies is therefore checked once more
-   against newly fetched keys, within the same once a minute limit, before
-   it is reported invalid, and the daily fetch picks up a replacement in any
+   signature that no held key verifies is therefore checked once more,
+   after fetching the key in force at the identifier's date and every later
+   one, within the same once a minute limit, before it is reported invalid,
+   and the daily fetch of the whole list picks up a replacement in any
    case. Callers that arrive while a fetch is under way wait on that one
    fetch rather than starting their own. A key list that cannot be fetched
    fails the future with `IOException`, never with a false, because not

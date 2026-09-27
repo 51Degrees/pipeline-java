@@ -387,12 +387,23 @@ public class DidClientTests {
     }
 
     @Test
-    public void publicKeys_AnEndNotAfterTheStartIsUnreadable() {
+    public void publicKeys_AnEndNotAfterTheStartIsUnreadable()
+            throws Exception {
         transport.queue(200, list(keyEntry(WEEK2, WEEK2, key2)));
 
         failure(DidHttpException.class, client.publicKeys());
         assertThrows(IllegalArgumentException.class,
             () -> new SigningKey(WEEK2, key2.publicPem, WEEK1));
+
+        // A later answer holding one such entry is refused whole, so its
+        // good entry is not merged either.
+        transport.queue(200, startedList());
+        transport.queue(200, list(
+            keyEntry(WEEK3, WEEK4, key3), keyEntry(WEEK4, WEEK4, key3)));
+        client.publicKeys().join();
+        failure(DidHttpException.class, client.verifySignatureDetailed(
+            key3.fodIdAt(canonicalPayload(), WEEK3.plus(WELL_OUTSIDE))));
+        assertEquals(2, client.publicKeys().join().size());
     }
 
     @Test
@@ -583,6 +594,36 @@ public class DidClientTests {
             client.verifySignatureDetailed(
                 key2.fodIdAt(canonicalPayload(), after)).join());
         assertEquals(2, transport.requests.size());
+    }
+
+    @Test
+    public void verifySignature_AFailureFetchesFromTheKeyInForceNotTheNewest()
+            throws Exception {
+        // Keys held from a cloud that publishes ahead, so the key in force,
+        // key2, is not the newest held. The cloud answers with the keys
+        // starting at or after the start asked for, so only a fetch from
+        // key2's start brings back its replacement.
+        FodIdTestFactory later = new FodIdTestFactory();
+        FodIdTestFactory replacement = new FodIdTestFactory();
+        Instant replaced = clock.instant().plus(Duration.ofHours(2));
+        transport.queue(200, list(
+            keyEntry("startsAt", WEEK2, key2),
+            keyEntry("startsAt", WEEK3, key3),
+            keyEntry("startsAt", WEEK4, later)));
+        transport.queue(200, list(
+            keyEntry(WEEK2, replaced, key2),
+            keyEntry(replaced, WEEK3, replacement)));
+        client.publicKeys().join();
+        clock.advance(Duration.ofHours(3));
+
+        assertEquals(DidClient.SignatureCheck.VERIFIED,
+            client.verifySignatureDetailed(replacement.fodIdAt(
+                canonicalPayload(), replaced.plus(WELL_OUTSIDE))).join());
+
+        assertEquals(2, transport.requests.size());
+        assertEquals(
+            ENDPOINT + "id/key/resource?datetime=2026-08-10T00%3A00%3A00Z",
+            transport.last().getUrl());
     }
 
     // ----- Selection -----

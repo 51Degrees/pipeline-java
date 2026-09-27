@@ -389,9 +389,9 @@ public final class DidClient {
      * one fetch answers them all. A failure leaves whatever was held in
      * place. Called with the lock held.
      *
-     * @param since the newest start held, sent so that the cloud answers
-     *              with that key and newer ones only, or null to fetch the
-     *              whole list, which also resets its age
+     * @param since a start held, sent so that the cloud answers with the
+     *              key starting then and every later one only, or null to
+     *              fetch the whole list, which also resets its age
      */
     private CompletableFuture<List<SigningKey>> fetchKeys(Instant since) {
         if (inFlight != null) {
@@ -548,7 +548,7 @@ public final class DidClient {
      * than {@link #KEY_LIST_MAX_AGE} old, that is the whole list. Where the
      * date plus the boundary tolerance reaches where the held keys stop, it
      * is the keys from the newest held onwards, within the limit
-     * {@link #refetch()} applies. Called with the lock held.
+     * {@link #refetch(Instant)} applies. Called with the lock held.
      */
     private CompletableFuture<List<SigningKey>> fetchFor(Instant date) {
         if (keys == null
@@ -559,18 +559,22 @@ public final class DidClient {
         Instant end = heldUntil(keys);
         if (end == null
                 || date.plus(BOUNDARY_TOLERANCE).isBefore(end) == false) {
-            return refetch();
+            return refetch(keys.isEmpty()
+                ? null
+                : keys.get(keys.size() - 1).getStartsAt());
         }
         return null;
     }
 
     /**
-     * A fetch of the keys from the newest held onwards, because the held
-     * list may lack the key a question needs. It joins a fetch under way,
-     * and otherwise starts at most once per {@link #REFETCH_INTERVAL},
+     * A fetch of the keys starting at or after the given start, because the
+     * held list may lack the key a question needs. It joins a fetch under
+     * way, and otherwise starts at most once per {@link #REFETCH_INTERVAL},
      * answering null where that limit stops it. Called with the lock held.
+     *
+     * @param since the start to fetch from, or null for the whole list
      */
-    private CompletableFuture<List<SigningKey>> refetch() {
+    private CompletableFuture<List<SigningKey>> refetch(Instant since) {
         if (inFlight != null) {
             return inFlight;
         }
@@ -585,9 +589,7 @@ public final class DidClient {
             }
         }
         refetchedAt = now;
-        return fetchKeys(keys.isEmpty()
-            ? null
-            : keys.get(keys.size() - 1).getStartsAt());
+        return fetchKeys(since);
     }
 
     /**
@@ -602,6 +604,30 @@ public final class DidClient {
         return newest.getEndsAt() == null
             ? newest.getStartsAt()
             : newest.getEndsAt();
+    }
+
+    /**
+     * Where the fetch after a failed signature starts, being the start of
+     * the newest entry starting at or before the identifier's date, whatever
+     * its end, or of the first entry where none does. The answer then
+     * carries that entry and any replacement starting inside its period,
+     * even where later keys are held. Null when the list is empty.
+     *
+     * @param entries the held list, in order of start
+     * @param date    the identifier's date
+     */
+    static Instant recheckFrom(List<SigningKey> entries, Instant date) {
+        if (entries.isEmpty()) {
+            return null;
+        }
+        Instant from = entries.get(0).getStartsAt();
+        for (SigningKey entry : entries) {
+            if (entry.getStartsAt().isAfter(date)) {
+                break;
+            }
+            from = entry.getStartsAt();
+        }
+        return from;
     }
 
     /**
@@ -680,10 +706,10 @@ public final class DidClient {
      * verify with the key in force at the identifier's date or, within a
      * short tolerance either side of a key boundary, the neighbouring key.
      * Keys are fetched as {@link #publicKeyFor(FodId)} describes. Where no
-     * held key verifies a signature, the keys from the newest held onwards
-     * are fetched and the signature checked once more before it is
-     * reported invalid, because the key in force may have been replaced,
-     * within the same once a minute limit.
+     * held key verifies a signature, the key in force at the identifier's
+     * date and every later one are fetched, within the same once a minute
+     * limit, and the signature checked once more before it is reported
+     * invalid, because that key may have been replaced.
      *
      * @param fodId the identifier
      * @return the outcome, or a future failed with {@link IOException}
@@ -726,17 +752,18 @@ public final class DidClient {
 
     /**
      * Checks a signature no held key verified once more, because the key in
-     * force may have been replaced since the list was fetched. The second
-     * check uses the list a fetch leaves or, where the limit on fetching
-     * stops one, the list held by then, and only a failure there is
-     * reported as invalid.
+     * force may have been replaced since the list was fetched. The fetch
+     * starts from that key, as {@link #recheckFrom(List, Instant)} says. The
+     * second check uses the list the fetch leaves or, where the limit on
+     * fetching stops one, the list held by then, and only a failure there
+     * is reported as invalid.
      */
     private CompletableFuture<SignatureCheck> recheck(
             FodId fodId, List<SigningKey> checked, Instant date) {
         CompletableFuture<List<SigningKey>> fetch;
         List<SigningKey> held;
         synchronized (lock) {
-            fetch = refetch();
+            fetch = refetch(recheckFrom(keys, date));
             held = keys;
         }
         if (fetch != null) {
