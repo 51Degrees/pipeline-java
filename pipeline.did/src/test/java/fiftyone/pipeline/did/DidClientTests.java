@@ -69,6 +69,7 @@ public class DidClientTests {
     private static final Instant WEEK1 = Instant.parse("2026-08-03T00:00:00Z");
     private static final Instant WEEK2 = WEEK1.plus(Duration.ofDays(7));
     private static final Instant WEEK3 = WEEK2.plus(Duration.ofDays(7));
+    private static final Instant WEEK4 = WEEK3.plus(Duration.ofDays(7));
 
     // Offsets either side of a key boundary, chosen far apart so that each
     // one is plainly on its own side of the tolerance whatever the
@@ -260,9 +261,10 @@ public class DidClientTests {
     }
 
     @Test
-    public void publicKeyFor_RefetchesWhenNoKeyCoversTheDate()
+    public void publicKeyFor_DoesNotRefetchForADateBeforeTheSchedule()
             throws Exception {
-        transport.queue(200, keyList("startsAt", false));
+        // Only a date at or near the end of the held keys causes a fetch,
+        // so an early date, forged or not, costs no request.
         transport.queue(200, keyList("startsAt", false));
         client.publicKeys().join();
         FodId fodId = key1.fodIdAt(
@@ -271,7 +273,7 @@ public class DidClientTests {
         SigningKey key = client.publicKeyFor(fodId).join();
 
         assertNull(key);
-        assertEquals(2, transport.requests.size());
+        assertEquals(1, transport.requests.size());
     }
 
     @Test
@@ -365,6 +367,264 @@ public class DidClientTests {
         assertEquals(3, third.join().size());
     }
 
+    // ----- Where the held keys stop -----
+
+    @Test
+    public void publicKeys_ReadsEndsAtWhereTheCloudSendsIt() throws Exception {
+        JSONObject nullEnd = keyEntry("startsAt", WEEK2, key2);
+        nullEnd.put("endsAt", JSONObject.NULL);
+        transport.queue(200, list(
+            keyEntry("startsAt", WEEK1, key1),
+            nullEnd,
+            keyEntry(WEEK3, WEEK4, key3)));
+
+        List<SigningKey> keys = client.publicKeys().join();
+
+        assertNull(keys.get(0).getEndsAt());
+        assertNull(keys.get(1).getEndsAt());
+        assertEquals(WEEK4, keys.get(2).getEndsAt());
+    }
+
+    @Test
+    public void publicKeys_AnEndNotAfterTheStartIsUnreadable()
+            throws Exception {
+        transport.queue(200, list(keyEntry(WEEK2, WEEK2, key2)));
+
+        failure(DidHttpException.class, client.publicKeys());
+        assertThrows(IllegalArgumentException.class,
+            () -> new SigningKey(WEEK2, key2.publicPem, WEEK1));
+
+        // A later answer holding one such entry is refused whole, so its
+        // good entry is not merged either.
+        transport.queue(200, startedList());
+        transport.queue(200, list(
+            keyEntry(WEEK3, WEEK4, key3), keyEntry(WEEK4, WEEK4, key3)));
+        client.publicKeys().join();
+        failure(DidHttpException.class, client.verifySignatureDetailed(
+            key3.fodIdAt(canonicalPayload(), WEEK3.plus(WELL_OUTSIDE))));
+        assertEquals(2, client.publicKeys().join().size());
+    }
+
+    @Test
+    public void verifySignature_InsideTheHeldPeriodMakesNoRequest()
+            throws Exception {
+        // The newest key held ends days away, so every identifier dated
+        // before that end, less the tolerance, is checked with no request.
+        transport.queue(200, startedList());
+        Instant[] dates = {
+            WEEK2.plus(Duration.ofHours(1)),
+            WEEK2.plus(Duration.ofDays(1)),
+            WEEK2.plus(Duration.ofDays(3)),
+            WEEK2.plus(Duration.ofDays(5)),
+            WEEK3.minus(DidClient.BOUNDARY_TOLERANCE)
+                .minus(Duration.ofMinutes(1)),
+        };
+
+        for (Instant date : dates) {
+            assertEquals(DidClient.SignatureCheck.VERIFIED,
+                client.verifySignatureDetailed(
+                    key2.fodIdAt(canonicalPayload(), date)).join());
+        }
+
+        assertEquals(1, transport.requests.size());
+    }
+
+    @Test
+    public void verifySignature_AtTheEndLessTheToleranceFetchesNewerKeys()
+            throws Exception {
+        // One fetch, asking for the newest key held and newer ones only.
+        // Its answer brings the next key, which signed the identifier.
+        transport.queue(200, startedList());
+        transport.queue(200, list(
+            keyEntry(WEEK2, WEEK3, key2), keyEntry(WEEK3, WEEK4, key3)));
+        client.publicKeys().join();
+        FodId fodId = key3.fodIdAt(
+            canonicalPayload(), WEEK3.minus(DidClient.BOUNDARY_TOLERANCE));
+
+        assertEquals(DidClient.SignatureCheck.VERIFIED,
+            client.verifySignatureDetailed(fodId).join());
+
+        assertEquals(2, transport.requests.size());
+        assertEquals(
+            ENDPOINT + "id/key/resource?datetime=2026-08-10T00%3A00%3A00Z",
+            transport.last().getUrl());
+        List<SigningKey> keys = client.publicKeys().join();
+        assertEquals(3, keys.size());
+        assertEquals(WEEK4, keys.get(2).getEndsAt());
+    }
+
+    @Test
+    public void verifySignature_ListWithoutEndsAndWithFutureKeysMakesNoRequest()
+            throws Exception {
+        // The shape of a cloud that sends no end and publishes keys before
+        // they start. The held keys stop at the newest start, which is
+        // days ahead, so a current identifier needs no request.
+        transport.queue(200, keyList("startsAt", false));
+        client.publicKeys().join();
+
+        assertTrue(client.verifySignature(key2.fodIdAt(
+            canonicalPayload(), clock.instant().minus(Duration.ofHours(1))))
+            .join());
+        assertTrue(client.verifySignature(key2.fodIdAt(
+            canonicalPayload(), clock.instant())).join());
+
+        assertEquals(1, transport.requests.size());
+    }
+
+    @Test
+    public void verifySignature_AfterTheEndWithNothingNewerFetchesOnceAMinute()
+            throws Exception {
+        // No newer key is published, so both dates stay uncovered. Only the
+        // first lookup inside the minute fetches, and each answer is the one
+        // for a date no held key covers, never a signature failure.
+        transport.queue(200, startedList());
+        transport.queue(200, list(keyEntry(WEEK2, WEEK3, key2)));
+        transport.queue(200, list(keyEntry(WEEK2, WEEK3, key2)));
+        client.publicKeys().join();
+        FodId first = key3.fodIdAt(
+            canonicalPayload(), WEEK3.plus(WELL_OUTSIDE));
+        FodId second = key3.fodIdAt(
+            canonicalPayload(), WEEK3.plus(Duration.ofDays(1)));
+
+        assertEquals(DidClient.SignatureCheck.NO_KEY_COVERS_DATE,
+            client.verifySignatureDetailed(first).join());
+        assertEquals(DidClient.SignatureCheck.NO_KEY_COVERS_DATE,
+            client.verifySignatureDetailed(second).join());
+        assertNull(client.publicKeyFor(second).join());
+        assertEquals(2, transport.requests.size());
+
+        // Once the minute has passed, the next lookup asks again.
+        clock.advance(DidClient.REFETCH_INTERVAL);
+        assertEquals(DidClient.SignatureCheck.NO_KEY_COVERS_DATE,
+            client.verifySignatureDetailed(second).join());
+        assertEquals(3, transport.requests.size());
+    }
+
+    @Test
+    public void verifySignature_CallersAtTheEndShareOneFetch()
+            throws Exception {
+        // The second caller waits on the fetch the first started, rather
+        // than being held back by the once a minute limit and answered from
+        // the list that lacks the key.
+        HeldTransport held = new HeldTransport();
+        DidClient shared = DidClient.builder("resource")
+            .endpoint(ENDPOINT).transport(held).clock(clock).build();
+        CompletableFuture<List<SigningKey>> keys = shared.publicKeys();
+        held.answer(200, startedList());
+        keys.join();
+        FodId fodId = key3.fodIdAt(
+            canonicalPayload(), WEEK3.plus(WELL_OUTSIDE));
+
+        CompletableFuture<DidClient.SignatureCheck> first =
+            shared.verifySignatureDetailed(fodId);
+        CompletableFuture<DidClient.SignatureCheck> second =
+            shared.verifySignatureDetailed(fodId);
+
+        assertEquals(2, held.requests.size());
+        assertFalse(first.isDone());
+        assertFalse(second.isDone());
+        held.answer(200, list(
+            keyEntry(WEEK2, WEEK3, key2), keyEntry(WEEK3, WEEK4, key3)));
+        assertEquals(DidClient.SignatureCheck.VERIFIED, first.join());
+        assertEquals(DidClient.SignatureCheck.VERIFIED, second.join());
+        assertEquals(2, held.requests.size());
+    }
+
+    @Test
+    public void publicKeys_ALaterAnswerWithAnEndReplacesTheEntryWithout()
+            throws Exception {
+        // The held list came from a cloud that sends no end. The newest
+        // entry comes back with one, which replaces the held copy, keeps
+        // every older entry, and moves where the held keys stop.
+        transport.queue(200, keyList("startsAt", false));
+        transport.queue(200, list(keyEntry(WEEK3, WEEK4, key3)));
+        client.publicKeys().join();
+
+        assertTrue(client.verifySignature(key3.fodIdAt(
+            canonicalPayload(), WEEK3.plus(WELL_OUTSIDE))).join());
+
+        List<SigningKey> keys = client.publicKeys().join();
+        assertEquals(3, keys.size());
+        assertEquals(WEEK1, keys.get(0).getStartsAt());
+        assertEquals(key1.publicPem, keys.get(0).getPublicKeyPem());
+        assertNull(keys.get(1).getEndsAt());
+        assertEquals(WEEK3, keys.get(2).getStartsAt());
+        assertEquals(WEEK4, keys.get(2).getEndsAt());
+        assertEquals(2, transport.requests.size());
+        assertEquals(
+            ENDPOINT + "id/key/resource?datetime=2026-08-17T00%3A00%3A00Z",
+            transport.last().getUrl());
+
+        // The held keys now stop at that end, so a later date in the same
+        // period is checked with no request.
+        assertTrue(client.verifySignature(key3.fodIdAt(
+            canonicalPayload(), WEEK3.plus(Duration.ofDays(3)))).join());
+        assertEquals(2, transport.requests.size());
+    }
+
+    @Test
+    public void verifySignature_AKeyReplacedEarlyIsPickedUpOnTheFirstFailure()
+            throws Exception {
+        // The key in force is replaced part way through its period. The old
+        // entry comes back ending where the replacement starts.
+        FodIdTestFactory replacement = new FodIdTestFactory();
+        Instant replaced = clock.instant().plus(Duration.ofHours(2));
+        transport.queue(200, startedList());
+        transport.queue(200, list(
+            keyEntry(WEEK2, replaced, key2),
+            keyEntry(replaced, WEEK3, replacement)));
+        client.publicKeys().join();
+        clock.advance(Duration.ofHours(3));
+        Instant after = replaced.plus(WELL_OUTSIDE);
+
+        // Signed with the replacement, which no held key verifies, so the
+        // client fetches once and then verifies it.
+        assertEquals(DidClient.SignatureCheck.VERIFIED,
+            client.verifySignatureDetailed(
+                replacement.fodIdAt(canonicalPayload(), after)).join());
+        assertEquals(2, transport.requests.size());
+        assertEquals(
+            ENDPOINT + "id/key/resource?datetime=2026-08-10T00%3A00%3A00Z",
+            transport.last().getUrl());
+
+        // Signed with the old key after the replacement took over, which
+        // the merged list refuses.
+        assertEquals(DidClient.SignatureCheck.INVALID,
+            client.verifySignatureDetailed(
+                key2.fodIdAt(canonicalPayload(), after)).join());
+        assertEquals(2, transport.requests.size());
+    }
+
+    @Test
+    public void verifySignature_AFailureFetchesFromTheKeyInForceNotTheNewest()
+            throws Exception {
+        // Keys held from a cloud that publishes ahead, so the key in force,
+        // key2, is not the newest held. The cloud answers with the keys
+        // starting at or after the start asked for, so only a fetch from
+        // key2's start brings back its replacement.
+        FodIdTestFactory later = new FodIdTestFactory();
+        FodIdTestFactory replacement = new FodIdTestFactory();
+        Instant replaced = clock.instant().plus(Duration.ofHours(2));
+        transport.queue(200, list(
+            keyEntry("startsAt", WEEK2, key2),
+            keyEntry("startsAt", WEEK3, key3),
+            keyEntry("startsAt", WEEK4, later)));
+        transport.queue(200, list(
+            keyEntry(WEEK2, replaced, key2),
+            keyEntry(replaced, WEEK3, replacement)));
+        client.publicKeys().join();
+        clock.advance(Duration.ofHours(3));
+
+        assertEquals(DidClient.SignatureCheck.VERIFIED,
+            client.verifySignatureDetailed(replacement.fodIdAt(
+                canonicalPayload(), replaced.plus(WELL_OUTSIDE))).join());
+
+        assertEquals(2, transport.requests.size());
+        assertEquals(
+            ENDPOINT + "id/key/resource?datetime=2026-08-10T00%3A00%3A00Z",
+            transport.last().getUrl());
+    }
+
     // ----- Selection -----
 
     @Test
@@ -429,6 +689,9 @@ public class DidClientTests {
     @Test
     public void verifySignature_FalseWithTheWrongKey() throws Exception {
         transport.queue(200, keyList("startsAt", false));
+        // The second check fails with the held keys, so it fetches once
+        // more before answering, in case the key has been replaced.
+        transport.queue(200, keyList("startsAt", false));
         FodIdTestFactory unpublished = new FodIdTestFactory();
         FodId fodId = unpublished.fodIdAt(
             canonicalPayload(), WEEK2.plus(Duration.ofDays(1)));
@@ -436,6 +699,7 @@ public class DidClientTests {
         assertFalse(client.verifySignature(fodId).join());
         assertEquals(DidClient.SignatureCheck.INVALID,
             client.verifySignatureDetailed(fodId).join());
+        assertEquals(2, transport.requests.size());
     }
 
     @Test
@@ -469,6 +733,8 @@ public class DidClientTests {
     public void verifySignature_EarlierNeighbourWithinToleranceAfterBoundary()
             throws Exception {
         transport.queue(200, keyList("startsAt", false));
+        // Answers the fetch made when the second fails with the held keys.
+        transport.queue(200, keyList("startsAt", false));
         FodId inside = key1.fodIdAt(
             canonicalPayload(), WEEK2.plus(JUST_INSIDE));
         FodId outside = key1.fodIdAt(
@@ -481,6 +747,8 @@ public class DidClientTests {
     @Test
     public void verifySignature_LaterNeighbourWithinToleranceBeforeBoundary()
             throws Exception {
+        transport.queue(200, keyList("startsAt", false));
+        // Answers the fetch made when the second fails with the held keys.
         transport.queue(200, keyList("startsAt", false));
         FodId inside = key2.fodIdAt(
             canonicalPayload(), WEEK2.minus(JUST_INSIDE));
@@ -495,13 +763,13 @@ public class DidClientTests {
     public void verifySignature_NoKeyCoversADateBeforeTheSchedule()
             throws Exception {
         transport.queue(200, keyList("startsAt", false));
-        transport.queue(200, keyList("startsAt", false));
         FodId fodId = key1.fodIdAt(
             canonicalPayload(), WEEK1.minus(Duration.ofDays(1)));
 
         assertEquals(DidClient.SignatureCheck.NO_KEY_COVERS_DATE,
             client.verifySignatureDetailed(fodId).join());
         assertFalse(client.verifySignature(fodId).join());
+        assertEquals(1, transport.requests.size());
     }
 
     @Test
@@ -1031,6 +1299,8 @@ public class DidClientTests {
     public void verifySignature_TamperedSignatureIsInvalidNotAnError()
             throws Exception {
         transport.queue(200, keyList("startsAt", false));
+        // Answers the fetch made when the second fails with the held keys.
+        transport.queue(200, keyList("startsAt", false));
         byte[] bytes = key2.fodIdAt(canonicalPayload(), WEEK2).asByteArray();
         bytes[bytes.length - 1] ^= (byte) 0xFF;
         FodIdParseResult read = FodId.tryFromByteArray(bytes);
@@ -1147,6 +1417,31 @@ public class DidClientTests {
         array.put(keyEntry(dateField, WEEK2, key2, withWeekStart));
         array.put(keyEntry(dateField, WEEK3, key3, withWeekStart));
         return array.toString();
+    }
+
+    /**
+     * The list a cloud that sends ends answers with during week 2, being
+     * the two keys whose periods have started.
+     */
+    private String startedList() {
+        return list(
+            keyEntry(WEEK1, WEEK2, key1), keyEntry(WEEK2, WEEK3, key2));
+    }
+
+    private static String list(JSONObject... entries) {
+        JSONArray array = new JSONArray();
+        for (JSONObject entry : entries) {
+            array.put(entry);
+        }
+        return array.toString();
+    }
+
+    /** An entry carrying the moment the key stops being in force. */
+    private static JSONObject keyEntry(
+            Instant startsAt, Instant endsAt, FodIdTestFactory key) {
+        JSONObject entry = keyEntry("startsAt", startsAt, key);
+        entry.put("endsAt", endsAt.toString().replace("Z", ".0000000Z"));
+        return entry;
     }
 
     private static JSONObject keyEntry(

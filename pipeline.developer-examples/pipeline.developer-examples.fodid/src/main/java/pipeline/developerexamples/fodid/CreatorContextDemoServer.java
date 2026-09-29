@@ -93,8 +93,9 @@ import java.util.concurrent.CompletionException;
  * the subscription behind the resource key. A browser check of a 51Did
  * makes two, verify-full from the page and redeem from this server, so
  * each browser-based context check is two uses. The offline signature
- * check this server also makes costs nothing, because the client fetches
- * the cloud's public keys once and holds them.
+ * check this server also makes costs little, because the client holds the
+ * cloud's public keys and fetches them only on first use, once a day, and
+ * when the keys it holds run out or a signature fails.
  * <p>
  * The web server is the one that ships with the JDK. The page and the
  * stylesheet are read from the classpath, under

@@ -371,11 +371,12 @@ In the order a server uses them:
    FodId fodId = read.getValue();
    ```
 
-2. **Verify offline.** The client fetches the cloud's signing keys once,
-   holds them, and checks the signature against the key in force when the
-   identifier was created. No use is charged. Every client method that may
-   reach the cloud returns at once with a `CompletableFuture`, so a request
-   thread is never held while the cloud is asked.
+2. **Verify offline.** The client fetches the cloud's signing keys, holds
+   them, and checks the signature against the key in force when the
+   identifier was created. The check itself makes no request, so no use is
+   charged beyond the key fetches described below. Every client method that
+   may reach the cloud returns at once with a `CompletableFuture`, so a
+   request thread is never held while the cloud is asked.
 
    ```java
    CompletableFuture<Boolean> genuine = client.verifySignature(fodId);
@@ -385,13 +386,26 @@ In the order a server uses them:
    ```
 
    `publicKeys()` answers with the held list and `publicKeyFor(fodId)` with
-   the key in force at the identifier's date. The list is refetched, once,
-   when it has no key for the date, when the date is later than the newest
-   start held, or when the list is more than a day old, and callers that
-   arrive while a fetch is under way wait on that one fetch rather than
-   starting their own. A key list that cannot be fetched fails the future
-   with `IOException`, never with a false, because not being able to check
-   is not the same as the signature being wrong.
+   the key in force at the identifier's date. The cloud publishes each key
+   when its period starts, with `endsAt`, the moment the next key takes
+   over, so the client checks every identifier dated inside the period it
+   holds with no request. Where the cloud sends no `endsAt`, the held
+   period ends at the newest key's start. The client fetches the newer keys
+   when an identifier is dated at or near the end of the held period, at
+   most once a minute, and fetches the whole list again once it is a day
+   old. An identifier dated before the first key or after the end of the
+   newest is answered with `NO_KEY_COVERS_DATE` rather than as a
+   signature failure.
+
+   A key may be replaced before its `endsAt` if it is compromised. A
+   signature that no held key verifies is therefore checked once more,
+   after fetching the key in force at the identifier's date and every later
+   one, within the same once a minute limit, before it is reported invalid,
+   and the daily fetch of the whole list picks up a replacement in any
+   case. Callers that arrive while a fetch is under way wait on that one
+   fetch rather than starting their own. A key list that cannot be fetched
+   fails the future with `IOException`, never with a false, because not
+   being able to check is not the same as the signature being wrong.
 
 3. **Verify through the cloud.** The open verify endpoint, one use against
    the resource key, needing no licence key.
