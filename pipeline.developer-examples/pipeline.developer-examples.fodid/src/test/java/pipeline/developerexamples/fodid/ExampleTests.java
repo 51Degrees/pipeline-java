@@ -154,6 +154,34 @@ public class ExampleTests {
         assertEquals(9, json.getJSONObject("factors").length());
     }
 
+    /**
+     * A factor the creating service recorded no value for is relayed as the
+     * cloud's own word, so the page is never shown a mismatch for something
+     * the identifier never claimed.
+     */
+    @Test
+    public void Redeem_Route_Relays_Not_Recorded() throws Exception {
+        transport.queue(200, keyList(crypto));
+        transport.queue(200, "{\"signature\":\"verified\","
+            + "\"context\":\"mismatch\","
+            + "\"factors\":{\"transport\":\"notrecorded\","
+            + "\"device\":\"mismatch\",\"asn\":\"misconfigured\","
+            + "\"browserip\":\"verified\"},"
+            + "\"verifiedAt\":\"2026-09-26T09:15:32Z\","
+            + "\"secondsSinceVerified\":3}");
+
+        CreatorContextDemoServer.Answer answer =
+            CreatorContextDemoServer.redeem(client, did, "sealed", "abc")
+                .join();
+
+        JSONObject factors =
+            new JSONObject(answer.bodyText()).getJSONObject("factors");
+        assertEquals("notrecorded", factors.getString("transport"));
+        assertEquals("mismatch", factors.getString("device"));
+        assertEquals("misconfigured", factors.getString("asn"));
+        assertEquals("verified", factors.getString("browserip"));
+    }
+
     @Test
     public void Redeem_Route_Reports_Its_Own_Signature_Check() throws Exception {
         // The published key is not the one that signed the identifier, so

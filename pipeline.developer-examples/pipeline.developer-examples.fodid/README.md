@@ -126,8 +126,9 @@ subscription behind the resource key. Checking a 51Did from the
 browser makes two, verify-full from the page and redeem from the
 server, so a browser-based context check is two uses every time.
 Checking only the signature with `verify` is one use. The server's
-offline signature check costs nothing beyond the one fetch of the
-public keys the client makes on first use.
+offline signature check costs nothing beyond the client's fetches of
+the public keys, being one on first use, one a day, and one when the
+keys it holds run out or a signature fails, at most once a minute.
 
 ### The web demo, and the copy-and-paste proof
 

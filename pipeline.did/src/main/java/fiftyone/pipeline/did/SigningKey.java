@@ -26,29 +26,57 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * One entry of the cloud's published signing key schedule: the public key
- * and the moment it came, or comes, into force. A key stays in force until
- * the next one starts, so the schedule never has a gap, and keys are
- * published ahead of their start.
+ * One entry of the cloud's published signing key schedule: the public key,
+ * the moment it came into force and, where the cloud sends one, the moment
+ * it stops being in force, when the next key starts. An entry without an
+ * end stays in force until the next one starts. The cloud publishes a key
+ * once its period starts, and a key replaced early has its end moved to
+ * the replacement's start, so an end is the scheduled end, not a promise.
  */
 public final class SigningKey {
 
     private final Instant startsAt;
     private final String publicKeyPem;
+    private final Instant endsAt;
 
     /**
+     * An entry without an end, in force until the next one starts.
+     *
      * @param startsAt     when the key comes into force, UTC
      * @param publicKeyPem the public key in SPKI PEM form
      */
     public SigningKey(Instant startsAt, String publicKeyPem) {
+        this(startsAt, publicKeyPem, null);
+    }
+
+    /**
+     * @param startsAt     when the key comes into force, UTC
+     * @param publicKeyPem the public key in SPKI PEM form
+     * @param endsAt       when the key stops being in force, UTC, which must
+     *                     be after {@code startsAt}, or null for no end
+     */
+    public SigningKey(Instant startsAt, String publicKeyPem, Instant endsAt) {
         this.startsAt = Objects.requireNonNull(startsAt, "startsAt");
         this.publicKeyPem = Objects.requireNonNull(
             publicKeyPem, "publicKeyPem");
+        if (endsAt != null && endsAt.isAfter(startsAt) == false) {
+            throw new IllegalArgumentException(
+                "A key must end after it starts.");
+        }
+        this.endsAt = endsAt;
     }
 
     /** @return when the key comes into force, UTC */
     public Instant getStartsAt() {
         return startsAt;
+    }
+
+    /**
+     * @return when the key stops being in force, UTC, or null where the
+     *         cloud sent no end
+     */
+    public Instant getEndsAt() {
+        return endsAt;
     }
 
     /** @return the public key in SPKI PEM form */
@@ -58,6 +86,8 @@ public final class SigningKey {
 
     @Override
     public String toString() {
-        return "SigningKey from " + startsAt;
+        return endsAt == null
+            ? "SigningKey from " + startsAt
+            : "SigningKey from " + startsAt + " to " + endsAt;
     }
 }

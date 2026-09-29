@@ -51,6 +51,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
@@ -66,8 +67,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * handling:
  * <ol>
  * <li>{@link #publicKeys()} and {@link #publicKeyFor(FodId)} fetch the
- * cloud's published signing keys once, keep them, and pick the key in force
- * when a given 51Did was created.</li>
+ * cloud's published signing keys, keep them, and pick the key in force when
+ * a given 51Did was created.</li>
  * <li>{@link #verifySignature(FodId)} checks a 51Did's signature offline
  * against that key.</li>
  * <li>{@link #verify(FodId)} checks a 51Did's signature through the cloud's
@@ -116,12 +117,22 @@ public final class DidClient {
     public static final String ENDPOINT_VARIABLE = "FOD_CLOUD_API_URL";
 
     /**
-     * How old the held key list may be before a request for a key refetches
-     * it.
+     * How old the whole held key list may be before a request for a key
+     * fetches it again. A key may be replaced before its end if it is
+     * compromised, and the client picks up the replacement on the first
+     * signature that no held key verifies or, at the latest, at this age.
      */
     public static final Duration KEY_LIST_MAX_AGE = Duration.ofDays(1);
 
     static final Duration BOUNDARY_TOLERANCE = Duration.ofMinutes(15);
+
+    /**
+     * The shortest time between two fetches asked for by a date at the end
+     * of the held keys or by a signature no held key verifies, so that a
+     * date the cloud has not published yet, or a forged one, cannot make
+     * the client call the cloud on every lookup.
+     */
+    static final Duration REFETCH_INTERVAL = Duration.ofMinutes(1);
 
     private static final String USER_AGENT = "pipeline.did/" + version();
 
@@ -141,7 +152,10 @@ public final class DidClient {
         VERIFIED,
         /** No candidate key verifies the signature. */
         INVALID,
-        /** The identifier's date precedes every key the cloud publishes. */
+        /**
+         * No held key covers the identifier's date, which is before the
+         * first key or after the end of the newest key published.
+         */
         NO_KEY_COVERS_DATE,
         /** The envelope version is not 3. */
         UNSUPPORTED_VERSION,
@@ -157,7 +171,10 @@ public final class DidClient {
 
     private final Object lock = new Object();
     private List<SigningKey> keys;
+    /** When the whole list was last fetched, which is what sets its age. */
     private Instant keysFetchedAt;
+    /** When {@code refetch} last started a fetch, or null. */
+    private Instant refetchedAt;
     /** The key list fetch under way, shared by every caller waiting. */
     private CompletableFuture<List<SigningKey>> inFlight;
 
@@ -321,8 +338,9 @@ public final class DidClient {
 
     /**
      * The cloud's published signing keys, fetched on first use and then
-     * held, in order of start. Keys are published ahead of their start, so
-     * the list normally reaches months into the future. A fetch already
+     * held, in order of start. The cloud publishes each key when its period
+     * starts, so the newest entry is normally the key in force now. Later
+     * fetches add to the held list and never drop an entry. A fetch already
      * under way is shared rather than repeated.
      *
      * @return the keys, read only, or a future failed with
@@ -332,7 +350,7 @@ public final class DidClient {
     public CompletableFuture<List<SigningKey>> publicKeys() {
         synchronized (lock) {
             if (keys == null) {
-                return fetchKeys();
+                return fetchKeys(null);
             }
             return CompletableFuture.completedFuture(keys);
         }
@@ -340,17 +358,20 @@ public final class DidClient {
 
     /**
      * The key in force when the identifier was created, being the entry
-     * whose start is latest on or before the identifier's date. A held list
-     * is refetched, once, before answering when it has no entry on or
-     * before the date, when the date is later than the newest start held,
-     * or when the list is more than {@link #KEY_LIST_MAX_AGE} old.
-     * Otherwise the answer comes from the held list. A list fetched for
-     * this very call is not fetched again, because it cannot get better.
+     * whose start is latest on or before the identifier's date, provided
+     * the date is before that entry's end. The held keys stop at the newest
+     * entry's end or, where the cloud sent none, at its start. The answer
+     * comes from the held list with no request, except that the whole list
+     * is fetched again first when it is more than {@link #KEY_LIST_MAX_AGE}
+     * old, and the keys from the newest held onwards are fetched first, at
+     * most once a minute, when the date is within a short tolerance of
+     * where the held keys stop or beyond it. A list fetched for this very
+     * call is not fetched again, because it cannot get better.
      *
      * @param fodId the identifier
-     * @return the key in force, or null where the date precedes every key,
-     *         or a future failed with {@link IOException} where the
-     *         required key list cannot be fetched
+     * @return the key in force, or null where no held key covers the date,
+     *         or a future failed with {@link IOException} where a fetch the
+     *         date needs fails
      */
     public CompletableFuture<SigningKey> publicKeyFor(FodId fodId) {
         try {
@@ -363,12 +384,16 @@ public final class DidClient {
     }
 
     /**
-     * Fetches the key list, records when it was fetched, and hands every
-     * caller that arrives while it is under way the same future, so one
-     * fetch answers them all. A failure leaves whatever was held in place.
-     * Called with the lock held.
+     * Fetches the key list and merges the answer into the held list, handing
+     * every caller that arrives while it is under way the same future, so
+     * one fetch answers them all. A failure leaves whatever was held in
+     * place. Called with the lock held.
+     *
+     * @param since a start held, sent so that the cloud answers with the
+     *              key starting then and every later one only, or null to
+     *              fetch the whole list, which also resets its age
      */
-    private CompletableFuture<List<SigningKey>> fetchKeys() {
+    private CompletableFuture<List<SigningKey>> fetchKeys(Instant since) {
         if (inFlight != null) {
             return inFlight;
         }
@@ -376,27 +401,34 @@ public final class DidClient {
             new CompletableFuture<List<SigningKey>>();
         inFlight = promise;
         String url = endpoint + "id/key/" + encode(resourceKey);
+        if (since != null) {
+            url += "?datetime=" + encode(since.toString());
+        }
         send("GET", url, null).whenComplete((response, failure) -> {
-            List<SigningKey> fetched = null;
+            List<SigningKey> answer = null;
             Throwable error = unwrap(failure);
             if (error == null) {
                 try {
-                    fetched = readKeys(response);
+                    answer = readKeys(response);
                 } catch (DidHttpException unreadable) {
                     error = unreadable;
                 }
             }
+            List<SigningKey> merged = null;
             synchronized (lock) {
                 inFlight = null;
                 if (error == null) {
-                    keys = fetched;
-                    keysFetchedAt = clock.instant();
+                    merged = merge(keys, answer);
+                    keys = merged;
+                    if (since == null) {
+                        keysFetchedAt = clock.instant();
+                    }
                 }
             }
             // Completed only after the held list is in place, so a caller
             // waiting on this future never sees the client mid-update.
             if (error == null) {
-                promise.complete(fetched);
+                promise.complete(merged);
             } else {
                 promise.completeExceptionally(new CompletionException(error));
             }
@@ -427,8 +459,9 @@ public final class DidClient {
 
     /**
      * Reads the key list the cloud answers with. Each entry carries
-     * {@code startsAt} and {@code publicKey}. Where {@code startsAt} is
-     * absent, the compatibility field {@code created} is read instead.
+     * {@code startsAt} and {@code publicKey}, and {@code endsAt} where the
+     * cloud sends when the key stops being in force. Where {@code startsAt}
+     * is absent, the compatibility field {@code created} is read instead.
      * {@code weekStart} is ignored.
      */
     static List<SigningKey> parseKeys(String body) {
@@ -445,7 +478,14 @@ public final class DidClient {
                 throw new JSONException(
                     "entry " + i + " has no start or no publicKey");
             }
-            parsed.add(new SigningKey(parseInstant(startsAt), publicKey));
+            Instant starts = parseInstant(startsAt);
+            String endsAt = entry.optString("endsAt", null);
+            Instant ends = endsAt == null ? null : parseInstant(endsAt);
+            if (ends != null && ends.isAfter(starts) == false) {
+                throw new JSONException(
+                    "entry " + i + " does not end after it starts");
+            }
+            parsed.add(new SigningKey(starts, publicKey, ends));
         }
         Collections.sort(parsed, new Comparator<SigningKey>() {
             @Override
@@ -462,35 +502,139 @@ public final class DidClient {
     }
 
     /**
-     * The key list to answer a question about the given date from,
-     * refetching once first where the held list may not have the answer. A
-     * failed fetch fails the future, because the held list may not contain
-     * the key needed for that date.
+     * The held list with an answer merged in by start, in order of start.
+     * An answer's entry replaces a held entry with the same start, because
+     * a later answer may carry an end the held copy lacks, or an earlier end
+     * where the key was replaced. No held entry is dropped, because
+     * identifiers made long ago verify against it.
+     *
+     * @param held   the list held, or null where nothing is
+     * @param answer the list the cloud answered with
+     */
+    static List<SigningKey> merge(
+            List<SigningKey> held, List<SigningKey> answer) {
+        TreeMap<Instant, SigningKey> byStart =
+            new TreeMap<Instant, SigningKey>();
+        if (held != null) {
+            for (SigningKey entry : held) {
+                byStart.put(entry.getStartsAt(), entry);
+            }
+        }
+        for (SigningKey entry : answer) {
+            byStart.put(entry.getStartsAt(), entry);
+        }
+        return Collections.unmodifiableList(
+            new ArrayList<SigningKey>(byStart.values()));
+    }
+
+    /**
+     * The key list to answer a question about the given date from, fetched
+     * first where {@link #fetchFor(Instant)} says so. A failed fetch fails
+     * the future, because the held list may not contain the key needed for
+     * that date.
      */
     private CompletableFuture<List<SigningKey>> keysFor(Instant date) {
         synchronized (lock) {
-            if (keys == null || needsRefetch(date)) {
-                return fetchKeys();
-            }
-            return CompletableFuture.completedFuture(keys);
+            CompletableFuture<List<SigningKey>> fetch = fetchFor(date);
+            return fetch == null
+                ? CompletableFuture.completedFuture(keys)
+                : fetch;
         }
     }
 
-    /** Called under the lock with a list held. */
-    private boolean needsRefetch(Instant date) {
-        boolean stale = Duration.between(keysFetchedAt, clock.instant())
-            .compareTo(KEY_LIST_MAX_AGE) > 0;
-        boolean uncovered = inForceAt(keys, date) == null;
-        boolean beyond = keys.isEmpty() == false
-            && date.isAfter(keys.get(keys.size() - 1).getStartsAt());
-        return stale || uncovered || beyond;
+    /**
+     * The fetch a question about the given date needs first, or null where
+     * the held list answers it. With nothing held, or a whole list more
+     * than {@link #KEY_LIST_MAX_AGE} old, that is the whole list. Where the
+     * date plus the boundary tolerance reaches where the held keys stop, it
+     * is the keys from the newest held onwards, within the limit
+     * {@link #refetch(Instant)} applies. Called with the lock held.
+     */
+    private CompletableFuture<List<SigningKey>> fetchFor(Instant date) {
+        if (keys == null
+                || Duration.between(keysFetchedAt, clock.instant())
+                    .compareTo(KEY_LIST_MAX_AGE) > 0) {
+            return fetchKeys(null);
+        }
+        Instant end = heldUntil(keys);
+        if (end == null
+                || date.plus(BOUNDARY_TOLERANCE).isBefore(end) == false) {
+            return refetch(keys.isEmpty()
+                ? null
+                : keys.get(keys.size() - 1).getStartsAt());
+        }
+        return null;
+    }
+
+    /**
+     * A fetch of the keys starting at or after the given start, because the
+     * held list may lack the key a question needs. It joins a fetch under
+     * way, and otherwise starts at most once per {@link #REFETCH_INTERVAL},
+     * answering null where that limit stops it. Called with the lock held.
+     *
+     * @param since the start to fetch from, or null for the whole list
+     */
+    private CompletableFuture<List<SigningKey>> refetch(Instant since) {
+        if (inFlight != null) {
+            return inFlight;
+        }
+        Instant now = clock.instant();
+        if (refetchedAt != null) {
+            Duration elapsed = Duration.between(refetchedAt, now);
+            // A clock set back is no reason to stop fetching, so only a
+            // recent fetch in the past holds the next one back.
+            if (elapsed.isNegative() == false
+                    && elapsed.compareTo(REFETCH_INTERVAL) < 0) {
+                return null;
+            }
+        }
+        refetchedAt = now;
+        return fetchKeys(since);
+    }
+
+    /**
+     * Where the held keys stop, being the newest entry's end or, where the
+     * cloud sent none, its start, or null when the list is empty.
+     */
+    static Instant heldUntil(List<SigningKey> entries) {
+        if (entries.isEmpty()) {
+            return null;
+        }
+        SigningKey newest = entries.get(entries.size() - 1);
+        return newest.getEndsAt() == null
+            ? newest.getStartsAt()
+            : newest.getEndsAt();
+    }
+
+    /**
+     * Where the fetch after a failed signature starts, being the start of
+     * the newest entry starting at or before the identifier's date, whatever
+     * its end, or of the first entry where none does. The answer then
+     * carries that entry and any replacement starting inside its period,
+     * even where later keys are held. Null when the list is empty.
+     *
+     * @param entries the held list, in order of start
+     * @param date    the identifier's date
+     */
+    static Instant recheckFrom(List<SigningKey> entries, Instant date) {
+        if (entries.isEmpty()) {
+            return null;
+        }
+        Instant from = entries.get(0).getStartsAt();
+        for (SigningKey entry : entries) {
+            if (entry.getStartsAt().isAfter(date)) {
+                break;
+            }
+            from = entry.getStartsAt();
+        }
+        return from;
     }
 
     /**
      * The entry in force at the moment, being the newest whose start has
-     * passed, or null when the moment precedes every entry. Because an entry
-     * is in force until the next one starts, this can only be null before
-     * the schedule begins.
+     * passed, or null when the moment precedes every entry or is not before
+     * that entry's end. An entry without an end is in force until the next
+     * one starts.
      */
     static SigningKey inForceAt(List<SigningKey> entries, Instant at) {
         SigningKey best = null;
@@ -501,6 +645,10 @@ public final class DidClient {
             if (best == null || entry.getStartsAt().isAfter(best.getStartsAt())) {
                 best = entry;
             }
+        }
+        if (best != null && best.getEndsAt() != null
+                && best.getEndsAt().isAfter(at) == false) {
+            return null;
         }
         return best;
     }
@@ -557,10 +705,15 @@ public final class DidClient {
      * creator context section and is accepted), and the signature must
      * verify with the key in force at the identifier's date or, within a
      * short tolerance either side of a key boundary, the neighbouring key.
+     * Keys are fetched as {@link #publicKeyFor(FodId)} describes. Where no
+     * held key verifies a signature, the key in force at the identifier's
+     * date and every later one are fetched, within the same once a minute
+     * limit, and the signature checked once more before it is reported
+     * invalid, because that key may have been replaced.
      *
      * @param fodId the identifier
      * @return the outcome, or a future failed with {@link IOException}
-     *         where the required key list cannot be fetched
+     *         where a fetch the check needs fails
      */
     public CompletableFuture<SignatureCheck> verifySignatureDetailed(
             FodId fodId) {
@@ -578,11 +731,48 @@ public final class DidClient {
                     SignatureCheck.MALFORMED_PAYLOAD);
             }
             Instant date = fodId.getDate();
-            return keysFor(date)
-                .thenApply(held -> checkSignature(fodId, held, date));
+            CompletableFuture<List<SigningKey>> fetch;
+            List<SigningKey> held;
+            synchronized (lock) {
+                fetch = fetchFor(date);
+                held = keys;
+            }
+            if (fetch != null) {
+                return fetch.thenApply(
+                    fetched -> checkSignature(fodId, fetched, date));
+            }
+            SignatureCheck offline = checkSignature(fodId, held, date);
+            return offline == SignatureCheck.INVALID
+                ? recheck(fodId, held, date)
+                : CompletableFuture.completedFuture(offline);
         } catch (RuntimeException refused) {
             return failed(refused);
         }
+    }
+
+    /**
+     * Checks a signature no held key verified once more, because the key in
+     * force may have been replaced since the list was fetched. The fetch
+     * starts from that key, as {@link #recheckFrom(List, Instant)} says. The
+     * second check uses the list the fetch leaves or, where the limit on
+     * fetching stops one, the list held by then, and only a failure there
+     * is reported as invalid.
+     */
+    private CompletableFuture<SignatureCheck> recheck(
+            FodId fodId, List<SigningKey> checked, Instant date) {
+        CompletableFuture<List<SigningKey>> fetch;
+        List<SigningKey> held;
+        synchronized (lock) {
+            fetch = refetch(recheckFrom(keys, date));
+            held = keys;
+        }
+        if (fetch != null) {
+            return fetch.thenApply(
+                fetched -> checkSignature(fodId, fetched, date));
+        }
+        return CompletableFuture.completedFuture(held == checked
+            ? SignatureCheck.INVALID
+            : checkSignature(fodId, held, date));
     }
 
     /** The offline check against the candidate keys for the date. */
