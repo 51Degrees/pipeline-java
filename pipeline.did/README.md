@@ -387,15 +387,16 @@ In the order a server uses them:
 
    `publicKeys()` answers with the held list and `publicKeyFor(fodId)` with
    the key in force at the identifier's date. The cloud publishes each key
-   when its period starts, with `endsAt`, the moment the next key takes
-   over, so the client checks every identifier dated inside the period it
-   holds with no request. Where the cloud sends no `endsAt`, the held
-   period ends at the newest key's start. The client fetches the newer keys
-   when an identifier is dated at or near the end of the held period, at
-   most once a minute, and fetches the whole list again once it is a day
-   old. An identifier dated before the first key or after the end of the
-   newest is answered with `NO_KEY_COVERS_DATE` rather than as a
-   signature failure.
+   from fifteen minutes before its period starts, and every entry carries
+   `startsAt` and `endsAt`, the moment the next key takes over, the newest
+   entry included although the next key is not yet published, so the
+   client checks every identifier dated inside the period it holds with no
+   request. Where a service sends no `endsAt`, the held period ends at the
+   newest key's start. The client fetches the newer keys when an identifier
+   is dated at or near the end of the held period, at most once a minute,
+   and fetches the whole list again once it is a day old. An identifier
+   dated before the first key or after the end of the newest is answered
+   with `NO_KEY_COVERS_DATE` rather than as a signature failure.
 
    A key may be replaced before its `endsAt` if it is compromised. A
    signature that no held key verifies is therefore checked once more,
@@ -439,9 +440,10 @@ In the order a server uses them:
    });
    ```
 
-   Where the cloud has something to diagnose, `redeemed.getFactors()`
-   holds one outcome per factor, keyed by the cloud's own name and in this
-   order.
+   On a mismatch, on a misconfigured result where the transport was
+   compared, and whenever any factor is `NOT_RECORDED`, whatever the
+   overall result, `redeemed.getFactors()` holds one outcome per factor,
+   keyed by the cloud's own name and in this order.
 
    | Factor | What it compares |
    | --- | --- |
@@ -460,10 +462,13 @@ In the order a server uses them:
    different things, because `MISCONFIGURED` means the checking service
    could not determine that factor for any request whilst `NOT_RECORDED`
    means the creating service recorded no value for it, so the identifier
-   says nothing about it. `getValue()` gives the cloud's own word for
-   each. A version mismatch beside a verified name means the operating
-   system or browser has been upgraded since creation, whilst a
-   mismatched name means a different one. Cloud releases before 4.4.38
+   says nothing about it. A `NOT_RECORDED` factor is left out of the
+   overall result, so `VERIFIED` can arrive beside factors that are
+   `NOT_RECORDED`, and the factors then say how many the verdict rests
+   on. `getValue()` gives the cloud's own word for each. A version
+   mismatch beside a verified name means the operating system or browser
+   has been upgraded since creation, whilst a mismatched name means a
+   different one. Cloud releases before 4.4.38
    sent a single `browser` factor in place of the last four, which
    appears under that name and fills none of them.
 
