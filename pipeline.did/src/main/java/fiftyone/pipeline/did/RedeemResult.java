@@ -162,33 +162,54 @@ public final class RedeemResult {
     /** The outcome for one factor of the creator context. */
     public enum Factor {
         /** The factor matches creation. */
-        VERIFIED,
+        VERIFIED("verified"),
         /** The factor differs from creation. */
-        MISMATCH,
+        MISMATCH("mismatch"),
         /**
          * The service that checked the identifier is not configured to
          * determine this factor, so it could not have checked it for any
          * request. This is NOT a mismatch and must not be read as one, since
          * the identifier says nothing about it either way.
          */
-        MISCONFIGURED;
+        MISCONFIGURED("misconfigured"),
+        /**
+         * The service that created the identifier recorded no value for this
+         * factor, so the identifier says nothing about it and there was
+         * nothing to compare. This is neither a mismatch nor
+         * {@link #MISCONFIGURED}, which says the checking service could not
+         * determine the factor.
+         */
+        NOT_RECORDED("notrecorded");
+
+        private final String value;
+
+        Factor(String value) {
+            this.value = value;
+        }
+
+        /** @return the word the cloud uses for this outcome */
+        public String getValue() {
+            return value;
+        }
 
         /**
-         * Misconfigured is read on its own, because it is the one value that
-         * must not fall through to a mismatch. Everything else that is not
-         * the word {@code verified} is a mismatch, so an unexpected value
+         * Verified, misconfigured and notrecorded are each read on their own,
+         * because none of them is a mismatch. Anything else, including a word
+         * this client does not know, is a mismatch, so an unexpected value
          * never reads as a pass.
          *
-         * @param value the factor's string from the cloud
-         * @return {@link #VERIFIED} for {@code verified},
-         *         {@link #MISCONFIGURED} for {@code misconfigured},
-         *         otherwise {@link #MISMATCH}
+         * @param value the factor's string from the cloud, or null
+         * @return the matching outcome, or {@link #MISMATCH}
          */
         public static Factor fromValue(String value) {
-            if ("verified".equals(value)) {
-                return VERIFIED;
+            if (value != null) {
+                for (Factor factor : values()) {
+                    if (factor.value.equals(value)) {
+                        return factor;
+                    }
+                }
             }
-            return "misconfigured".equals(value) ? MISCONFIGURED : MISMATCH;
+            return MISMATCH;
         }
     }
 
@@ -322,8 +343,11 @@ public final class RedeemResult {
      * The operating system and the browser are each two factors, a name and
      * a version. A version mismatch beside a verified name means the same
      * operating system or browser has been upgraded since creation, whilst
-     * a mismatched name means a different one. A factor reported as
-     * {@link Factor#MISCONFIGURED} is never a mismatch.
+     * a mismatched name means a different one. Neither
+     * {@link Factor#MISCONFIGURED} nor {@link Factor#NOT_RECORDED} is a
+     * mismatch, and they say different things, because misconfigured means
+     * the checking service could not determine the factor whilst not
+     * recorded means the creating service recorded no value for it.
      * <p>
      * A name the cloud sends that is not in the list above is kept after
      * those, in the order the JSON parser gives it, so a factor added later
