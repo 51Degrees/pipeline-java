@@ -31,7 +31,6 @@ import com.swancommunity.owid.Version;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.Objects;
 
 /**
@@ -652,7 +651,7 @@ public final class FodId {
      *                       cannot be encoded
      */
     public boolean verify(String publicPem) throws OwidException {
-        return owid.verifyWithPublicKey(publicPem, Collections.<Owid>emptyList());
+        return owid.verifyWithPublicKey(publicPem);
     }
 
     /**
@@ -668,6 +667,6 @@ public final class FodId {
      * @return the outcome of the check
      */
     public OwidVerificationResult verifyDetailed(String publicPem) {
-        return owid.verify(publicPem, Collections.<Owid>emptyList());
+        return owid.verify(publicPem);
     }
 }

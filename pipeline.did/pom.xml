@@ -69,10 +69,12 @@
     <build>
         <plugins>
             <!-- Compile the OWID submodule source directly into this module,
-                 excluding the HTTP-only classes (Endpoints and
-                 PublicKeyFetch), which are not needed for offline parse
-                 and verify. The 51Did client fetches the cloud's published
-                 key list itself, through its own transport. -->
+                 excluding the HTTP-only classes (Endpoints, PublicKeyFetch,
+                 PublicKeyResponse, PublicKeyTransport and
+                 HttpUrlConnectionTransport), which are not needed for
+                 offline parse and verify. The 51Did client fetches the
+                 cloud's published key list itself, through its own
+                 transport. -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
@@ -99,6 +101,9 @@
                     <excludes>
                         <exclude>**/com/swancommunity/owid/Endpoints.java</exclude>
                         <exclude>**/com/swancommunity/owid/PublicKeyFetch.java</exclude>
+                        <exclude>**/com/swancommunity/owid/PublicKeyResponse.java</exclude>
+                        <exclude>**/com/swancommunity/owid/PublicKeyTransport.java</exclude>
+                        <exclude>**/com/swancommunity/owid/HttpUrlConnectionTransport.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>
