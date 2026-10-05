@@ -42,11 +42,11 @@
     <url>https://51degrees.com?utm_source=maven&amp;utm_medium=package&amp;utm_campaign=pipeline-java&amp;utm_content=pipeline.did-pom.xml&amp;utm_term=url</url>
 
     <properties>
-        <!-- The OWID source is consumed from a git submodule of the
-             51Degrees/owid-java fork at the repo root (mirrors how
+        <!-- The OWID source is consumed from a git submodule of
+             SWAN-community/owid-java at the repo root (mirrors how
              pipeline-dotnet carries the owid-dotnet submodule). The source is
-             compiled in at this module's Java 8 level; no external runtime
-             dependency. -->
+             compiled in at this module's Java 8 level, so there is no
+             external runtime dependency. -->
         <owid.source.dir>${project.basedir}/../owid-java/src/main/java</owid.source.dir>
     </properties>
 
