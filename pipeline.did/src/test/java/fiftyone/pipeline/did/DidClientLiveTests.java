@@ -30,6 +30,7 @@ import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -54,6 +55,7 @@ import static org.junit.Assert.assertTrue;
 public class DidClientLiveTests {
 
     private String resourceKey;
+    private String licenceKey;
     private DidClient client;
 
     @Before
@@ -62,8 +64,8 @@ public class DidClientLiveTests {
         Assume.assumeTrue(
             "Set _51DEGREES_RESOURCE_KEY to run the live 51Did cloud tests.",
             resourceKey != null);
-        client = new DidClient(
-            resourceKey, env("_51DEGREES_LICENSE_KEY", "LICENSE_KEY"));
+        licenceKey = env("_51DEGREES_LICENSE_KEY", "LICENSE_KEY");
+        client = new DidClient(resourceKey, licenceKey);
     }
 
     @Test
@@ -172,13 +174,14 @@ public class DidClientLiveTests {
 
     /**
      * Every factor the service compares, read by name. The identifier is
-     * created for a stated address rather than for the connection that
-     * asked, so when the same connection then presents it the address the
-     * identifier carries is not the one being checked and the verdict is a
-     * mismatch. That is the one mismatch a test can arrange without a
-     * browser, and a mismatch is the only verdict that carries the
-     * breakdown, since a verified verdict matched everywhere and has
-     * nothing to diagnose.
+     * created by a licensed caller that states another address, so when
+     * this connection then presents it as a page the address it carries is
+     * not the one being checked and the verdict is a mismatch. That is the
+     * one mismatch a test can arrange without a browser.
+     * <p>
+     * The address has to come from a licensed caller. The service takes
+     * the address of a caller that sends a resource key alone from the
+     * connection, whatever address that caller states.
      * <p>
      * The names are written out rather than taken from the package,
      * because a list the package supplied would agree with itself whatever
@@ -191,7 +194,7 @@ public class DidClientLiveTests {
             "Set _51DEGREES_LICENSE_KEY to redeem a sealed result.",
             client.hasLicenceKey());
 
-        List<FodId> identifiers = identifiersFor(
+        List<FodId> identifiers = identifiersCreatedFor(
             "id.usage", "standard", CREATED_FOR);
         Assume.assumeTrue(
             "This resource key returned no marketing 51Did, so there was "
@@ -342,26 +345,49 @@ public class DidClientLiveTests {
      */
     private List<FodId> identifiersFor(String name, String value)
             throws Exception {
-        return identifiersFor(name, value, null);
-    }
-
-    /**
-     * As above, creating from the given address where one is given, so a
-     * test can create from one address and present the identifier from
-     * another.
-     */
-    private List<FodId> identifiersFor(
-            String name, String value, String clientIp) throws Exception {
         String url = client.getEndpoint() + "json?resource="
             + DidClient.encode(resourceKey)
             + "&" + name + "=" + DidClient.encode(value)
-            + (clientIp == null
-                ? ""
-                : "&client-ip=" + DidClient.encode(clientIp))
             + "&values=FODiD.IdProbGlobal&values=FODiD.IdProbLic";
         HttpURLConnection connection = (HttpURLConnection)
             URI.create(url).toURL().openConnection();
         connection.setRequestProperty("User-Agent", "pipeline.did live test");
+        return readIdentifiers(connection);
+    }
+
+    /**
+     * As above, asked by a licensed caller that states the address the
+     * identifier is created for, so a test can create for one address and
+     * present the identifier from another. Both keys travel in the form
+     * body, because a query string is written to access logs.
+     */
+    private List<FodId> identifiersCreatedFor(
+            String name, String value, String clientIp) throws Exception {
+        String form = "resource=" + DidClient.encode(resourceKey)
+            + "&license=" + DidClient.encode(licenceKey)
+            + "&" + name + "=" + DidClient.encode(value)
+            + "&client-ip=" + DidClient.encode(clientIp)
+            + "&values=FODiD.IdProbGlobal&values=FODiD.IdProbLic";
+        HttpURLConnection connection = (HttpURLConnection)
+            URI.create(client.getEndpoint() + "json").toURL()
+                .openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("User-Agent", "pipeline.did live test");
+        connection.setRequestProperty("Content-Type",
+            "application/x-www-form-urlencoded; charset=utf-8");
+        connection.setDoOutput(true);
+        try (OutputStream out = connection.getOutputStream()) {
+            out.write(form.getBytes(StandardCharsets.UTF_8));
+        }
+        return readIdentifiers(connection);
+    }
+
+    /**
+     * Every identifier in the answer to a request sent to the {@code json}
+     * endpoint.
+     */
+    private static List<FodId> readIdentifiers(HttpURLConnection connection)
+            throws Exception {
         int status = connection.getResponseCode();
         String body = readAll(status >= 400
             ? connection.getErrorStream()
