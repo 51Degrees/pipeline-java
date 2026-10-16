@@ -33,7 +33,6 @@ import fiftyone.pipeline.engines.exceptions.PropertyMissingException;
 import fiftyone.pipeline.javascriptbuilder.data.JavaScriptBuilderData;
 import fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElement;
 import fiftyone.pipeline.javascriptbuilder.flowelements.JavaScriptBuilderElementBuilder;
-import fiftyone.pipeline.javascriptbuilder.helpers.TcpHelper;
 import fiftyone.pipeline.javascriptbuilder.helpers.TestServer;
 import fiftyone.pipeline.jsonbuilder.data.JsonBuilderData;
 import fiftyone.pipeline.jsonbuilder.flowelements.JsonBuilder;
@@ -117,9 +116,9 @@ public class JavaScriptBuilderTests {
         data.put("property", "thisIsAValue" );
         doReturn(data).when(elementDataMock).asKeyMap();
 
-        int port = TcpHelper.getAvailablePort();
-        testServer = new TestServer(port);
+        testServer = new TestServer();
         testServer.start();
+        int port = testServer.getPort();
 
         ensureDriverAlive();
         driver.navigate().to("http://localhost:" + port + "/");
