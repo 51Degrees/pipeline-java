@@ -38,19 +38,23 @@ import fiftyone.pipeline.javascriptbuilder.helpers.TestServer;
 import fiftyone.pipeline.jsonbuilder.data.JsonBuilderData;
 import fiftyone.pipeline.jsonbuilder.flowelements.JsonBuilder;
 import org.json.JSONObject;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.stubbing.Answer;
+import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -75,8 +79,10 @@ public class JavaScriptBuilderTests {
     private JavaScriptBuilderData result;
     private JavaScriptBuilderElement javaScriptBuilderElement;
 
+    private static final Duration PAGE_LOAD_TIMEOUT = Duration.ofSeconds(60);
+
     private TestServer testServer;
-    private ChromeDriver driver;
+    private static ChromeDriver driver;
 
 
     private JSONObject json;
@@ -115,10 +121,7 @@ public class JavaScriptBuilderTests {
         testServer = new TestServer(port);
         testServer.start();
 
-        ChromeOptions options = new ChromeOptions();
-        options.setAcceptInsecureCerts(true);
-        options.addArguments("--headless");
-        driver = new ChromeDriver(options);
+        ensureDriverAlive();
         driver.navigate().to("http://localhost:" + port + "/");
     }
 
@@ -126,7 +129,62 @@ public class JavaScriptBuilderTests {
     public void Cleanup() {
         json = null;
         testServer.stop();
-        driver.quit();
+    }
+
+    /**
+     * Start one browser for the whole class rather than one per test. Each
+     * start is a chance for Chrome to hang on a CI runner, and fifteen of them
+     * a run were failing nightly builds. Loading the page in {@link #Init()}
+     * gives each test a fresh window, so sharing the browser is safe.
+     */
+    @BeforeAll
+    public static void ClassInit() {
+        createDriver();
+    }
+
+    @AfterAll
+    public static void ClassCleanup() {
+        if (driver != null) {
+            driver.quit();
+            driver = null;
+        }
+    }
+
+    private static void createDriver() {
+        ChromeOptions options = new ChromeOptions();
+        options.setAcceptInsecureCerts(true);
+        options.addArguments(
+            "--headless",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu");
+        driver = new ChromeDriver(options);
+        // Bound a stuck navigation so it fails this test quickly rather than
+        // blocking until the runner gives up on the job.
+        driver.manage().timeouts().pageLoadTimeout(PAGE_LOAD_TIMEOUT);
+    }
+
+    /**
+     * The driver is shared across the class, so a test that leaves Chrome
+     * crashed would otherwise fail every test after it. Probe the session and
+     * recreate the driver if it has died.
+     */
+    private static void ensureDriverAlive() {
+        try {
+            if (driver != null) {
+                driver.getWindowHandle();
+            }
+        } catch (WebDriverException e) {
+            try {
+                driver.quit();
+            } catch (WebDriverException ignored) {
+                // Already gone.
+            }
+            driver = null;
+        }
+        if (driver == null) {
+            createDriver();
+        }
     }
 
     @SuppressWarnings("unchecked")
