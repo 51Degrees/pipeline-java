@@ -49,9 +49,21 @@ public class TestServer {
         exchange.close();
     };
 
-    public TestServer(int port) throws IOException {
-        InetSocketAddress address = new InetSocketAddress(port);
-        httpServer = HttpServer.create(address, 0);
+    /**
+     * Bind to a port the operating system chooses. Choosing a free port first
+     * and binding it afterwards leaves a gap in which something else, such as
+     * the browser opening a connection, can take the port, and the bind then
+     * fails with "Address already in use".
+     */
+    public TestServer() throws IOException {
+        httpServer = HttpServer.create(new InetSocketAddress(0), 0);
+    }
+
+    /**
+     * @return the port the server is bound to
+     */
+    public int getPort() {
+        return httpServer.getAddress().getPort();
     }
 
     public void start() {
