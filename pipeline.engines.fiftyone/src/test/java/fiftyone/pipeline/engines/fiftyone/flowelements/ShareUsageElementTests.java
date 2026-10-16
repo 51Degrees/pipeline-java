@@ -192,13 +192,31 @@ public class ShareUsageElementTests {
             List<String> blockedHeaders,
             List<String> includedQueryStringParams,
             List<Entry<String, String>> ignoreDataEvidenceFiler) {
+        createShareUsage(
+            sharePercentage,
+            minimumEntriesPerMessage,
+            minimumEntriesPerMessage * 2,
+            interval,
+            blockedHeaders,
+            includedQueryStringParams,
+            ignoreDataEvidenceFiler);
+    }
+
+    private void createShareUsage(
+            double sharePercentage,
+            int minimumEntriesPerMessage,
+            int maximumQueueSize,
+            @SuppressWarnings("SameParameterValue") int interval,
+            List<String> blockedHeaders,
+            List<String> includedQueryStringParams,
+            List<Entry<String, String>> ignoreDataEvidenceFiler) {
         sequenceElement = new SequenceElement(LoggerFactory.getLogger(SequenceElement.class));
         sequenceElement.addPipeline(pipeline);
         shareUsageElement = new ShareUsageElement(
             LoggerFactory.getLogger(ShareUsageElement.class),
             sharePercentage,
             minimumEntriesPerMessage,
-            minimumEntriesPerMessage * 2,
+            maximumQueueSize,
             100,
             100,
             interval,
@@ -772,9 +790,16 @@ public class ShareUsageElementTests {
      */
     @Test
     public void CheckForOffByOneError() throws Exception {
+        int count = 45;
+        // The queue holds every entry. With the usual 20, a first send slower
+        // than the 100ms add timeout - a cold JVM on a slow runner - leaves
+        // the queue full, and the element drops what it cannot queue. That is
+        // the element shedding load as designed, not the off-by-one this
+        // tests, and it failed this test with 40 of 45.
         createShareUsage(
                 1,
                 10,
+                count,
                 1,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -789,7 +814,6 @@ public class ShareUsageElementTests {
         // collect multiple <Devices> documents
         connector.getBaos().write("<allDevices>".getBytes(StandardCharsets.UTF_8));
         // Act
-        int count = 45;
         for (int i=0; i < count; i++) {
             shareUsageElement.process(data);
         }
@@ -920,9 +944,13 @@ public class ShareUsageElementTests {
     public void CheckForDrainQueueEvenIfError() throws Exception {
         logger.info("Test intentionally creates errors");
         LogbackHelper.intentionalErrorConfig();
+        int count = 45;
+        // The queue holds every entry, for the reason given in
+        // CheckForOffByOneError.
         createShareUsage(
                 1,
                 10,
+                count,
                 1,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -940,7 +968,6 @@ public class ShareUsageElementTests {
         // collect multiple <Devices> documents
         connector.getBaos().write("<allDevices>".getBytes(StandardCharsets.UTF_8));
         // Act
-        int count = 45;
         for (int i=0; i < count; i++) {
             shareUsageElement.process(data);
         }
