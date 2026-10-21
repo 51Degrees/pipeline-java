@@ -53,9 +53,12 @@ jobs:
         env:
           _51DEGREES_RESOURCE_KEY_BASIC: ${{ vars._51DEGREES_RESOURCE_KEY_BASIC }}
           _51DEGREES_RESOURCE_KEY_BESPOKE: ${{ secrets._51DEGREES_RESOURCE_KEY_BESPOKE }}
-          # Without a license key the tests that redeem a sealed verdict skip,
-          # so the server side of the creator context is never exercised.
-          _51DEGREES_LICENSE_KEY: ${{ secrets._51DEGREES_LICENSE_KEY_51DID }}
+          _51DEGREES_RESOURCE_KEY_51DID: ${{ vars._51DEGREES_RESOURCE_KEY_51DID }}
+          # Without a license key the tests that redeem a sealed verdict skip.
+          # The service only redeems with a license key of the resource key's
+          # own account, so each one is paired by suffix with the resource
+          # key it belongs to.
+          _51DEGREES_LICENSE_KEY_51DID: ${{ secrets._51DEGREES_LICENSE_KEY_51DID }}
         run: |
           $keys = Get-ChildItem env: |
             Where-Object { $_.Name -like '_51DEGREES_RESOURCE_KEY*' -and $_.Value }
@@ -67,6 +70,15 @@ jobs:
           foreach ($k in $keys) {
             Write-Host "::group::DidClientLiveTests with $($k.Name)"
             $env:_51DEGREES_RESOURCE_KEY = $k.Value
+            $licenseName = $k.Name -replace '^_51DEGREES_RESOURCE_KEY', '_51DEGREES_LICENSE_KEY'
+            $license = [Environment]::GetEnvironmentVariable($licenseName)
+            if ($license) {
+              Write-Host "License key: $licenseName"
+              $env:_51DEGREES_LICENSE_KEY = $license
+            } else {
+              Write-Host 'License key: none'
+              Remove-Item Env:_51DEGREES_LICENSE_KEY -ErrorAction SilentlyContinue
+            }
             mvn -B -pl pipeline.did -am test `
               -Dtest=DidClientLiveTests -DfailIfNoTests=false
             if ($LASTEXITCODE -ne 0) { $failed = $true }
