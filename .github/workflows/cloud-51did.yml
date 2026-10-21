@@ -1,7 +1,7 @@
 name: Cloud 51Did Tests
 
 # Runs the live cloud 51Did integration test (pipeline.did,
-# DidClientLiveTests) once for every _51DEGREES_RESOURCE_KEY* secret passed in
+# DidClientLiveTests) once for every _51DEGREES_RESOURCE_KEY* key passed in
 # below. Each run sets the single _51DEGREES_RESOURCE_KEY the test reads.
 #
 # The secrets are named one by one rather than passed as toJSON(secrets).
@@ -51,8 +51,7 @@ jobs:
       - name: Cloud 51Did test for each resource key secret
         shell: pwsh
         env:
-          _51DEGREES_RESOURCE_KEY_FREE: ${{ secrets._51DEGREES_RESOURCE_KEY_FREE }}
-          _51DEGREES_RESOURCE_KEY_PAID: ${{ secrets._51DEGREES_RESOURCE_KEY_PAID }}
+          _51DEGREES_RESOURCE_KEY_BASIC: ${{ vars._51DEGREES_RESOURCE_KEY_BASIC }}
           _51DEGREES_RESOURCE_KEY_BESPOKE: ${{ secrets._51DEGREES_RESOURCE_KEY_BESPOKE }}
         run: |
           $keys = Get-ChildItem env: |
