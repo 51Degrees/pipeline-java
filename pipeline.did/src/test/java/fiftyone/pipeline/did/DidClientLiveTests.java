@@ -54,6 +54,7 @@ import static org.junit.Assert.assertTrue;
 public class DidClientLiveTests {
 
     private String resourceKey;
+    private String licenceKey;
     private DidClient client;
 
     @Before
@@ -62,8 +63,8 @@ public class DidClientLiveTests {
         Assume.assumeTrue(
             "Set _51DEGREES_RESOURCE_KEY to run the live 51Did cloud tests.",
             resourceKey != null);
-        client = new DidClient(
-            resourceKey, env("_51DEGREES_LICENSE_KEY", "LICENSE_KEY"));
+        licenceKey = env("_51DEGREES_LICENSE_KEY", "LICENSE_KEY");
+        client = new DidClient(resourceKey, licenceKey);
     }
 
     @Test
@@ -348,7 +349,9 @@ public class DidClientLiveTests {
     /**
      * As above, creating from the given address where one is given, so a
      * test can create from one address and present the identifier from
-     * another.
+     * another. The service takes a supplied address only from a caller
+     * presenting a licence key, a server acting for a visitor, so the
+     * licence key goes with it.
      */
     private List<FodId> identifiersFor(
             String name, String value, String clientIp) throws Exception {
@@ -357,7 +360,8 @@ public class DidClientLiveTests {
             + "&" + name + "=" + DidClient.encode(value)
             + (clientIp == null
                 ? ""
-                : "&client-ip=" + DidClient.encode(clientIp))
+                : "&client-ip=" + DidClient.encode(clientIp)
+                    + "&license=" + DidClient.encode(licenceKey))
             + "&values=FODiD.IdProbGlobal&values=FODiD.IdProbLic";
         HttpURLConnection connection = (HttpURLConnection)
             URI.create(url).toURL().openConnection();
